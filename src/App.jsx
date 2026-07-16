@@ -295,8 +295,8 @@ function App() {
 
                 <div className="photo-frame">
                     <img
-                        src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=720&q=80"
-                        alt="Foto generica para substituir pela foto da Duda"
+                        src="/duda-photo.png"
+                        alt="Foto da Duda"
                     />
                 </div>
 

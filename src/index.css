@@ -83,8 +83,8 @@ h1 span {
 .address, .invite-text { position: relative; z-index: 4; margin: 0 auto; max-width: 330px; text-align: center; line-height: 1.45; color: #526965; }
 .map-link { position: relative; z-index: 4; display: block; width: fit-content; margin: 10px auto 0; padding: 9px 14px; border: 1px solid rgba(49, 95, 81, 0.2); border-radius: 8px; background: rgba(221, 245, 215, 0.72); color: var(--palette-deep, #315f51); font-weight: 900; text-decoration: none; }
 
-.photo-frame { position: relative; z-index: 3; width: min(52%, 220px); aspect-ratio: 3 / 4; margin: 18px auto 14px; overflow: hidden; border: 10px solid rgba(255, 255, 255, 0.86); border-radius: 8px; box-shadow: 0 22px 40px rgba(16, 86, 78, 0.18); filter: grayscale(1); }
-.photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+.photo-frame { position: relative; z-index: 3; width: min(52%, 220px); aspect-ratio: 3 / 4; margin: 18px auto 14px; overflow: hidden; border: 10px solid rgba(255, 255, 255, 0.86); border-radius: 8px; box-shadow: 0 22px 40px rgba(16, 86, 78, 0.18); }
+.photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .invite-text { color: #1f3b37; font-family: "Playfair Display", Georgia, serif; font-size: 1.16rem; }
 .dress-code { position: relative; z-index: 4; display: grid; gap: 4px; width: min(100%, 350px); margin: 14px auto 0; padding: 14px 16px; border: 1px solid rgba(25, 102, 92, 0.18); border-radius: 8px; background: rgba(232, 255, 249, 0.88); text-align: center; color: #1d4540; }
 .dress-code strong { color: #0b6d61; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; }
