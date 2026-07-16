@@ -10,7 +10,7 @@ Projeto separado da landing do Romeu.
 - Google Maps: https://www.google.com/maps/search/?api=1&query=Rua%20Corumbatai%20100%20Vila%20Virginia%20Itaquaquecetuba
 - Instagram do espaco: https://www.instagram.com/quintaldoibizaoficial/
 - Instagram da Duda: https://www.instagram.com/mariizsq_/
-- Logo do espaco: `public/quintal-ibiza-logo.jpg`
+- Logo do espaco: `public/quintal-ibiza-logo.svg`
 - Globo espelhado do convite: `public/disco-ball.jpg`
 - Balao 16 prateado: `public/balloon-16.jpg`
 - Favicon: `public/favicon.svg`
@@ -25,6 +25,16 @@ npm install
 npm run dev
 ```
 
+
+## Testar RSVP localmente
+
+O comando `npm run dev` abre apenas o Vite. Ele mostra a tela, mas nao executa as funcoes `/api` da Vercel. Para testar confirmacao de presenca e mensagens usando as APIs, rode pelo Vercel CLI:
+
+```bash
+vercel dev
+```
+
+Se testar pelo Vite puro, o formulario vai mostrar uma mensagem avisando que o servidor de confirmacao esta indisponivel.
 ## Banco Turso/libSQL na Vercel
 
 Crie/instale o Turso pela Vercel Marketplace ou CLI:
@@ -102,3 +112,5 @@ ORDER BY created_at DESC;
 ## Trocar a foto
 
 Substitua a URL da imagem em `src/App.jsx` no bloco `.photo-frame` pela foto final da Duda.
+
+

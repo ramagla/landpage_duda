@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
 const RSVP_DEADLINE = '14/10/2026'
@@ -19,6 +19,41 @@ function formatCountdown(targetDate) {
     }
 }
 
+
+function hasFirstAndLastName(value) {
+    return String(value || '').trim().split(/\s+/).filter(Boolean).length >= 2
+}
+
+function formatWhatsapp(value) {
+    let digits = String(value || '').replace(/\D/g, '')
+
+    if (digits.startsWith('55') && digits.length > 11) {
+        digits = digits.slice(2)
+    }
+
+    digits = digits.slice(0, 11)
+
+    if (digits.length === 0) return ''
+    if (digits.length <= 2) return `(${digits}`
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+async function readApiJson(response) {
+    const text = await response.text()
+
+    if (!text) {
+        throw new Error('Servidor de confirmacao indisponivel. Para testar localmente, rode com vercel dev ou publique na Vercel.')
+    }
+
+    try {
+        return JSON.parse(text)
+    } catch {
+        throw new Error('Servidor de confirmacao indisponivel. Para testar localmente, rode com vercel dev ou publique na Vercel.')
+    }
+}
 function Countdown() {
     const targetDate = useMemo(() => new Date(EVENT_DATE_ISO), [])
     const [time, setTime] = useState(() => formatCountdown(targetDate))
@@ -49,19 +84,14 @@ function MusicPlayer() {
     const embedUrl = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
 
     return (
-        <section className="music-card music-card--autoplay" aria-label="Musica do convite">
-            <div>
-                <span>Musica</span>
-                <strong>Trilha do convite</strong>
-            </div>
-            <iframe
-                className="youtube-frame"
-                src={embedUrl}
-                title="Musica do convite da Duda"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-            />
-        </section>
+        <iframe
+            className="youtube-audio-frame"
+            src={embedUrl}
+            title="Musica do convite da Duda"
+            allow="autoplay; encrypted-media"
+            tabIndex="-1"
+            aria-hidden="true"
+        />
     )
 }
 
@@ -69,6 +99,7 @@ function RsvpForm() {
     const [status, setStatus] = useState('idle')
     const [message, setMessage] = useState('')
     const [attending, setAttending] = useState('sim')
+    const [whatsappValue, setWhatsappValue] = useState('')
 
     async function handleSubmit(event) {
         event.preventDefault()
@@ -78,18 +109,26 @@ function RsvpForm() {
         const form = new FormData(event.currentTarget)
         const payload = {
             fullName: String(form.get('fullName') || '').trim(),
-            whatsapp: String(form.get('whatsapp') || '').trim(),
+            whatsapp: whatsappValue.trim(),
             attending: String(form.get('attending') || 'sim'),
             declineReason: String(form.get('declineReason') || '').trim(),
         }
 
         try {
+            if (!hasFirstAndLastName(payload.fullName)) {
+                throw new Error('Informe nome e sobrenome.')
+            }
+
+            if (payload.whatsapp.replace(/\D/g, '').length < 10) {
+                throw new Error('Informe um WhatsApp valido com DDD.')
+            }
+
             const response = await fetch('/api/rsvp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             })
-            const data = await response.json()
+            const data = await readApiJson(response)
 
             if (!response.ok) {
                 throw new Error(data?.error || 'Nao foi possivel confirmar agora.')
@@ -98,6 +137,7 @@ function RsvpForm() {
             setStatus('success')
             setMessage(data.message || 'Confirmacao salva com carinho.')
             event.currentTarget.reset()
+            setWhatsappValue('')
             setAttending('sim')
         } catch (error) {
             setStatus('error')
@@ -110,11 +150,21 @@ function RsvpForm() {
             <div className="form-grid">
                 <label>
                     <span>Nome e sobrenome</span>
-                    <input name="fullName" type="text" placeholder="Seu nome completo" required />
+                    <input name="fullName" type="text" placeholder="Seu nome completo" autoComplete="name" required />
                 </label>
                 <label>
                     <span>WhatsApp cadastrado</span>
-                    <input name="whatsapp" type="tel" placeholder="(11) 99999-9999" required />
+                    <input
+                        name="whatsapp"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="(11) 99999-9999"
+                        value={whatsappValue}
+                        onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
+                        autoComplete="tel"
+                        maxLength="15"
+                        required
+                    />
                 </label>
             </div>
 
@@ -147,7 +197,6 @@ function RsvpForm() {
         </form>
     )
 }
-
 function BirthdayMessageForm() {
     const [status, setStatus] = useState('idle')
     const [feedback, setFeedback] = useState('')
@@ -169,7 +218,7 @@ function BirthdayMessageForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             })
-            const data = await response.json()
+            const data = await readApiJson(response)
 
             if (!response.ok) {
                 throw new Error(data?.error || 'Nao foi possivel salvar a mensagem agora.')
@@ -215,13 +264,12 @@ function App() {
                 <div className="sparkle sparkle--one" aria-hidden="true" />
                 <div className="sparkle sparkle--two" aria-hidden="true" />
                 <div className="sparkle sparkle--three" aria-hidden="true" />
-                <div className="star star--mint" aria-hidden="true">★</div>
-                <div className="star star--silver" aria-hidden="true">★</div>
-                <div className="martini" aria-hidden="true" />
+                <div className="star star--mint" aria-hidden="true">?</div>
+                <div className="star star--silver" aria-hidden="true">?</div>
 
                 <div className="hero-copy">
                     <p className="eyebrow">Sweet birthday</p>
-                    <h1 id="invite-title"><img className="balloon-age" src="/balloon-16.jpg" alt="16 anos" />Duda</h1>
+                    <h1 id="invite-title"><img className="balloon-age" src="/balloon-16-transparent.png" alt="16 anos" />Duda</h1>
                     <p className="tagline">Uma tarde para brilhar, dancar e guardar na memoria.</p>
                 </div>
 
@@ -238,7 +286,7 @@ function App() {
                 <a className="map-link" href={MAP_URL} target="_blank" rel="noreferrer">Abrir no Google Maps</a>
 
                 <div className="venue-card">
-                    <img src="/quintal-ibiza-logo.jpg" alt="Logo Quintal do Ibiza" />
+                    <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
                     <div>
                         <strong>Quintal do Ibiza</strong>
                         <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">@quintaldoibizaoficial</a>
@@ -287,4 +335,10 @@ function App() {
 }
 
 export default App
+
+
+
+
+
+
 

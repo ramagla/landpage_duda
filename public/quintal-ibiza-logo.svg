@@ -1,0 +1,22 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" role="img" aria-labelledby="title desc">
+  <title id="title">Quintal do Ibiza</title>
+  <desc id="desc">Logo vetorial do Quintal do Ibiza Lounge e Gastrobar</desc>
+  <rect width="720" height="720" fill="#ffffff"/>
+  <g transform="translate(360 116)" fill="none" stroke="#151515" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-92 86 V-12 L-55 -42 H55 L92 -12 V86"/>
+    <path d="M-48 86 V0 H48 V86"/>
+  </g>
+  <g transform="translate(360 180)" fill="#151515">
+    <rect x="-5" y="8" width="10" height="114" rx="5" transform="rotate(10)"/>
+    <path d="M-4 22 C-88 5 -117 -41 -123 -87 C-68 -72 -29 -38 -4 22Z"/>
+    <path d="M3 19 C-52 -28 -54 -83 -35 -124 C1 -81 14 -36 3 19Z"/>
+    <path d="M9 16 C14 -48 48 -92 92 -113 C92 -57 62 -13 9 16Z"/>
+    <path d="M8 25 C60 -10 114 -11 155 11 C101 39 50 43 8 25Z"/>
+    <path d="M-7 32 C-61 29 -102 51 -127 88 C-73 89 -33 70 -7 32Z"/>
+  </g>
+  <g fill="#111111" text-anchor="middle">
+    <text x="360" y="382" font-family="Georgia, 'Times New Roman', serif" font-size="66" letter-spacing="-2">QUINTAL</text>
+    <text x="360" y="443" font-family="Georgia, 'Times New Roman', serif" font-size="58" letter-spacing="1">DO IBIZA</text>
+    <text x="360" y="508" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="13">LOUNGE &amp; GASTROBAR</text>
+  </g>
+</svg>

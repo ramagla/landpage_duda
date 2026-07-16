@@ -58,6 +58,10 @@ function cleanText(value) {
     return String(value || '').trim().replace(/\s+/g, ' ')
 }
 
+function hasFirstAndLastName(value) {
+    return String(value || '').trim().split(/\s+/).filter(Boolean).length >= 2
+}
+
 function normalizePhone(value) {
     let digits = String(value || '').replace(/\D/g, '')
 
@@ -87,7 +91,7 @@ function validatePayload(body) {
     const attending = body.attending === 'nao' ? 'nao' : 'sim'
     const declineReason = cleanText(body.declineReason)
 
-    if (fullName.length < 3) return { error: 'Informe nome e sobrenome.' }
+    if (!hasFirstAndLastName(fullName)) return { error: 'Informe nome e sobrenome.' }
     if (!/^\d{10,11}$/.test(whatsappDigits)) return { error: 'Informe um WhatsApp valido com DDD.' }
     if (attending === 'nao' && declineReason.length < 4) return { error: 'Se nao puder ir, conte o motivo para a Duda.' }
 
@@ -151,3 +155,5 @@ export default async function handler(request, response) {
         return response.status(500).json({ error: error.message || 'Erro ao salvar confirmacao.' })
     }
 }
+
+
