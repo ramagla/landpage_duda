@@ -1,0 +1,7 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="16 anos da Duda">
+  <rect width="64" height="64" rx="14" fill="#ddf5d7"/>
+  <circle cx="46" cy="18" r="14" fill="#c8dded" opacity="0.9"/>
+  <circle cx="18" cy="48" r="13" fill="#c8e0bd" opacity="0.95"/>
+  <path d="M48 36l2.9 6 6.6.9-4.8 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.8-4.6 6.6-.9L48 36z" fill="#aed3a0" stroke="#315f51" stroke-width="1.5"/>
+  <text x="12" y="39" font-family="Georgia, serif" font-size="27" font-weight="700" fill="#1b3b35">16</text>
+</svg>
