@@ -285,7 +285,7 @@ function GiftPanel() {
         <section className="confirm-panel gift-panel" aria-labelledby="gift-title">
             <p className="panel-kicker">Sugestao de presente</p>
             <h2 id="gift-title">Um carinho para a Duda</h2>
-            <p>Quem quiser presentear pode enviar um Pix para a Duda escolher algo especial.</p>
+            <p>Sugestoes: perfume, acessorios femininos, cremes e maquiagem. Quem preferir, tambem pode enviar um Pix para a Duda escolher algo especial.</p>
 
             <div className="pix-card">
                 <img src="/pix-duda.svg" alt="QR Code Pix para presente da Duda" />

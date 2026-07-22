@@ -37,9 +37,9 @@ Se testar pelo Vite puro, o formulario vai mostrar uma mensagem avisando que o s
 
 ## Sugestao de presente
 
-O site mostra uma area opcional de presente com Pix:
+O site mostra uma area opcional de presente com sugestoes e Pix:
 
-- Chave Pix: `56765986898`
+- Sugestoes: perfume, acessorios femininos, cremes e maquiagem`r`n- Chave Pix: `56765986898`
 - Nome para conferir antes do pagamento: `Maria Eduarda Almeida Araujo`
 - QR Code: `public/pix-duda.svg`
 - BR Code copia e cola: `public/pix-duda-brcode.txt`
