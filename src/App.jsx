@@ -6,6 +6,8 @@ const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Rua%20Corumbata
 const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
+const PIX_KEY = '56765986898'
+const PIX_NAME = 'Maria Eduarda Almeida Araujo'
 
 function formatCountdown(targetDate) {
     const now = new Date()
@@ -278,6 +280,24 @@ function RsvpForm() {
         </form>
     )
 }
+function GiftPanel() {
+    return (
+        <section className="confirm-panel gift-panel" aria-labelledby="gift-title">
+            <p className="panel-kicker">Sugestao de presente</p>
+            <h2 id="gift-title">Um carinho para a Duda</h2>
+            <p>Quem quiser presentear pode enviar um Pix para a Duda escolher algo especial.</p>
+
+            <div className="pix-card">
+                <img src="/pix-duda.svg" alt="QR Code Pix para presente da Duda" />
+                <div>
+                    <span>Chave Pix</span>
+                    <strong>{PIX_KEY}</strong>
+                    <small>Antes de fazer o Pix, confirme se o nome aparece como <b>{PIX_NAME}</b>.</small>
+                </div>
+            </div>
+        </section>
+    )
+}
 function BirthdayMessageForm() {
     const [status, setStatus] = useState('idle')
     const [feedback, setFeedback] = useState('')
@@ -404,6 +424,8 @@ function App() {
                     <p>A confirmacao segue a lista de convidados. Cada pessoa pode levar apenas a quantidade de acompanhantes liberada no cadastro.</p>
                     <RsvpForm />
                 </section>
+
+                <GiftPanel />
 
                 <section className="confirm-panel message-panel" aria-labelledby="message-title">
                     <p className="panel-kicker">Carinho para guardar</p>

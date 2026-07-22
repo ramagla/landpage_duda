@@ -35,6 +35,17 @@ vercel dev
 
 Se testar pelo Vite puro, o formulario vai mostrar uma mensagem avisando que o servidor de confirmacao esta indisponivel.
 
+## Sugestao de presente
+
+O site mostra uma area opcional de presente com Pix:
+
+- Chave Pix: `56765986898`
+- Nome para conferir antes do pagamento: `Maria Eduarda Almeida Araujo`
+- QR Code: `public/pix-duda.svg`
+- BR Code copia e cola: `public/pix-duda-brcode.txt`
+
+O QR Code foi gerado sem valor fixo.
+
 ## Banco Turso/libSQL na Vercel
 
 Crie/instale o Turso pela Vercel Marketplace ou CLI:
