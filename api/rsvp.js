@@ -1,4 +1,4 @@
-﻿import { createClient } from '@libsql/client'
+import { createClient } from '@libsql/client'
 
 let client
 let schemaReady
@@ -48,6 +48,11 @@ async function ensureSchema() {
                 )
             `)
             await db.execute('ALTER TABLE rsvps ADD COLUMN whatsapp_digits TEXT').catch(ignoreDuplicateColumn)
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS rsvps_whatsapp_digits_unique
+                ON rsvps (whatsapp_digits)
+                WHERE whatsapp_digits IS NOT NULL
+            `)
         })()
     }
 
@@ -115,6 +120,19 @@ async function isInvited(whatsappDigits) {
     return result.rows.length > 0
 }
 
+async function findExistingRsvp(whatsappDigits) {
+    const result = await getClient().execute({
+        sql: 'SELECT id, attending FROM rsvps WHERE whatsapp_digits = ? LIMIT 1',
+        args: [whatsappDigits],
+    })
+
+    return result.rows[0] || null
+}
+
+function isUniqueConstraintError(error) {
+    return String(error?.message || '').toLowerCase().includes('unique')
+}
+
 export default async function handler(request, response) {
     if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST')
@@ -130,6 +148,10 @@ export default async function handler(request, response) {
 
         if (!(await isInvited(payload.whatsappDigits))) {
             return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
+        }
+
+        if (await findExistingRsvp(payload.whatsappDigits)) {
+            return response.status(409).json({ error: 'Este WhatsApp ja confirmou presenca neste convite.' })
         }
 
         await getClient().execute({
@@ -152,6 +174,10 @@ export default async function handler(request, response) {
 
         return response.status(201).json({ message })
     } catch (error) {
+        if (isUniqueConstraintError(error)) {
+            return response.status(409).json({ error: 'Este WhatsApp ja confirmou presenca neste convite.' })
+        }
+
         return response.status(500).json({ error: error.message || 'Erro ao salvar confirmacao.' })
     }
 }

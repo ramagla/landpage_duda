@@ -103,10 +103,11 @@ function RsvpForm() {
 
     async function handleSubmit(event) {
         event.preventDefault()
+        const formElement = event.currentTarget
         setStatus('loading')
         setMessage('')
 
-        const form = new FormData(event.currentTarget)
+        const form = new FormData(formElement)
         const payload = {
             fullName: String(form.get('fullName') || '').trim(),
             whatsapp: whatsappValue.trim(),
@@ -136,7 +137,7 @@ function RsvpForm() {
 
             setStatus('success')
             setMessage(data.message || 'Confirmacao salva com carinho.')
-            event.currentTarget.reset()
+            formElement.reset()
             setWhatsappValue('')
             setAttending('sim')
         } catch (error) {
@@ -203,10 +204,11 @@ function BirthdayMessageForm() {
 
     async function handleSubmit(event) {
         event.preventDefault()
+        const formElement = event.currentTarget
         setStatus('loading')
         setFeedback('')
 
-        const form = new FormData(event.currentTarget)
+        const form = new FormData(formElement)
         const payload = {
             name: String(form.get('name') || '').trim(),
             message: String(form.get('message') || '').trim(),
@@ -226,7 +228,7 @@ function BirthdayMessageForm() {
 
             setStatus('success')
             setFeedback(data.message || 'Mensagem guardada para a Duda.')
-            event.currentTarget.reset()
+            formElement.reset()
         } catch (error) {
             setStatus('error')
             setFeedback(error.message)
