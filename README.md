@@ -1,4 +1,4 @@
-﻿# Landing page - 16 anos da Duda
+# Landing page - 16 anos da Duda
 
 Projeto separado da landing do Romeu.
 
@@ -16,7 +16,7 @@ Projeto separado da landing do Romeu.
 - Favicon: `public/favicon.svg`
 - Musica: YouTube `_zR6ROjoOX0`, carregada automaticamente no convite
 - Confirmacao ate: 14/10/2026
-- Convite: individual, validado pelo WhatsApp cadastrado na lista de convidados
+- Convite: validado pela lista de convidados, com limite de acompanhantes por convidado
 
 ## Rodar localmente
 
@@ -24,7 +24,6 @@ Projeto separado da landing do Romeu.
 npm install
 npm run dev
 ```
-
 
 ## Testar RSVP localmente
 
@@ -35,6 +34,7 @@ vercel dev
 ```
 
 Se testar pelo Vite puro, o formulario vai mostrar uma mensagem avisando que o servidor de confirmacao esta indisponivel.
+
 ## Banco Turso/libSQL na Vercel
 
 Crie/instale o Turso pela Vercel Marketplace ou CLI:
@@ -50,21 +50,26 @@ TURSO_DATABASE_URL=libsql://...
 TURSO_AUTH_TOKEN=...
 ```
 
-A API cria automaticamente as tabelas `invited_guests`, `rsvps` e `birthday_messages` quando os endpoints forem usados.
+A API cria/migra automaticamente as tabelas `invited_guests`, `rsvps`, `rsvp_companions` e `birthday_messages` quando os endpoints forem usados.
 
 ## Cadastrar lista de convidados
 
 Arquivo pronto: `sql/invited-guests.sql`
 
-Cadastre o WhatsApp apenas com numeros, de preferencia com DDD e sem o codigo do Brasil. Exemplo: `11999999999`.
+Formato novo da lista:
+
+- `guest_name`: nome completo do convidado.
+- `age`: idade do convidado. Menor de 6 anos nao conta no buffet.
+- `whatsapp_digits`: somente numeros com DDD, sem `+55`. Para menor de idade sem celular, use `NULL`.
+- `max_companions`: quantidade maxima de acompanhantes liberada para esse convidado.
 
 ```sql
-INSERT INTO invited_guests (guest_name, whatsapp_digits) VALUES
-  ('Nome do Convidado 1', '11999999999'),
-  ('Nome do Convidado 2', '11988888888');
+INSERT OR IGNORE INTO invited_guests (guest_name, age, whatsapp_digits, max_companions) VALUES
+  ('Nome do Convidado 1', 38, '11999999999', 1),
+  ('Crianca Sem Celular', 5, NULL, 0);
 ```
 
-Se a pessoa tentar confirmar com um celular que nao esta em `invited_guests`, a API retorna:
+Se a pessoa tentar confirmar sem estar em `invited_guests`, a API retorna:
 
 ```text
 Sinto muito, mas voce nao esta na lista de convidados.
@@ -76,7 +81,9 @@ Sinto muito, mas voce nao esta na lista de convidados.
 SELECT
   id,
   guest_name,
+  age,
   whatsapp_digits,
+  max_companions,
   created_at
 FROM invited_guests
 ORDER BY guest_name;
@@ -91,10 +98,25 @@ SELECT
   whatsapp,
   whatsapp_digits,
   attending,
+  companions_count,
+  buffet_count,
   decline_reason,
   created_at
 FROM rsvps
 ORDER BY created_at DESC;
+```
+
+## Ver acompanhantes confirmados
+
+```sql
+SELECT
+  r.full_name,
+  c.companion_name,
+  c.age,
+  c.counts_buffet
+FROM rsvp_companions c
+JOIN rsvps r ON r.id = c.rsvp_id
+ORDER BY r.created_at DESC, c.companion_name;
 ```
 
 ## Ver mensagens de parabens no SQL
@@ -112,5 +134,3 @@ ORDER BY created_at DESC;
 ## Trocar a foto
 
 Substitua a URL da imagem em `src/App.jsx` no bloco `.photo-frame` pela foto final da Duda.
-
-

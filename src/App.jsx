@@ -100,6 +100,34 @@ function RsvpForm() {
     const [message, setMessage] = useState('')
     const [attending, setAttending] = useState('sim')
     const [whatsappValue, setWhatsappValue] = useState('')
+    const [companions, setCompanions] = useState([])
+
+    function createCompanion() {
+        return {
+            id: window.crypto?.randomUUID?.() || String(Date.now()),
+            name: '',
+            age: '',
+        }
+    }
+
+    function handleAttendingChange(value) {
+        setAttending(value)
+        if (value === 'nao') setCompanions([])
+    }
+
+    function addCompanion() {
+        setCompanions((current) => current.length >= 10 ? current : [...current, createCompanion()])
+    }
+
+    function removeCompanion(id) {
+        setCompanions((current) => current.filter((companion) => companion.id !== id))
+    }
+
+    function updateCompanion(id, field, value) {
+        setCompanions((current) => current.map((companion) => (
+            companion.id === id ? { ...companion, [field]: value } : companion
+        )))
+    }
 
     async function handleSubmit(event) {
         event.preventDefault()
@@ -113,6 +141,9 @@ function RsvpForm() {
             whatsapp: whatsappValue.trim(),
             attending: String(form.get('attending') || 'sim'),
             declineReason: String(form.get('declineReason') || '').trim(),
+            companions: attending === 'sim'
+                ? companions.map((companion) => ({ name: companion.name.trim(), age: companion.age }))
+                : [],
         }
 
         try {
@@ -120,8 +151,8 @@ function RsvpForm() {
                 throw new Error('Informe nome e sobrenome.')
             }
 
-            if (payload.whatsapp.replace(/\D/g, '').length < 10) {
-                throw new Error('Informe um WhatsApp valido com DDD.')
+            if (payload.whatsapp && payload.whatsapp.replace(/\D/g, '').length < 10) {
+                throw new Error('Informe um WhatsApp valido com DDD ou deixe em branco se for menor de idade.')
             }
 
             const response = await fetch('/api/rsvp', {
@@ -140,6 +171,7 @@ function RsvpForm() {
             formElement.reset()
             setWhatsappValue('')
             setAttending('sim')
+            setCompanions([])
         } catch (error) {
             setStatus('error')
             setMessage(error.message)
@@ -164,7 +196,6 @@ function RsvpForm() {
                         onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
                         autoComplete="tel"
                         maxLength="15"
-                        required
                     />
                 </label>
             </div>
@@ -172,11 +203,11 @@ function RsvpForm() {
             <fieldset className="choice-group">
                 <legend>Voce vai?</legend>
                 <label className="choice">
-                    <input defaultChecked name="attending" type="radio" value="sim" onChange={() => setAttending('sim')} />
+                    <input defaultChecked name="attending" type="radio" value="sim" onChange={() => handleAttendingChange('sim')} />
                     <span>Sim, vou comemorar</span>
                 </label>
                 <label className="choice">
-                    <input name="attending" type="radio" value="nao" onChange={() => setAttending('nao')} />
+                    <input name="attending" type="radio" value="nao" onChange={() => handleAttendingChange('nao')} />
                     <span>Nao vou</span>
                 </label>
             </fieldset>
@@ -188,7 +219,56 @@ function RsvpForm() {
                 </label>
             ) : null}
 
-            <p className="guest-check-note">Convite individual. A confirmacao e liberada apenas para celulares cadastrados na lista de convidados.</p>
+            {attending === 'sim' ? (
+                <section className="companions-box" aria-label="Acompanhantes">
+                    <div className="companions-box__header">
+                        <div>
+                            <span>Acompanhantes</span>
+                            <p>Adicione somente quem esta liberado na lista. Menor de 6 anos nao conta no buffet.</p>
+                        </div>
+                        <button className="secondary-button" disabled={companions.length >= 10} type="button" onClick={addCompanion}>
+                            Adicionar
+                        </button>
+                    </div>
+
+                    {companions.length > 0 ? (
+                        <div className="companions-list">
+                            {companions.map((companion, index) => (
+                                <div className="companion-row" key={companion.id}>
+                                    <label>
+                                        <span>Acompanhante {index + 1}</span>
+                                        <input
+                                            type="text"
+                                            placeholder="Nome completo"
+                                            value={companion.name}
+                                            onChange={(event) => updateCompanion(companion.id, 'name', event.target.value)}
+                                            required
+                                        />
+                                    </label>
+                                    <label>
+                                        <span>Idade</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="120"
+                                            inputMode="numeric"
+                                            placeholder="Idade"
+                                            value={companion.age}
+                                            onChange={(event) => updateCompanion(companion.id, 'age', event.target.value)}
+                                            required
+                                        />
+                                    </label>
+                                    <button className="icon-button" type="button" onClick={() => removeCompanion(companion.id)} aria-label={`Remover acompanhante ${index + 1}`}>
+                                        x
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+                </section>
+            ) : null}
+
+            <p className="guest-check-note">A confirmacao usa a lista de convidados. Adultos devem informar WhatsApp; menores podem confirmar pelo nome cadastrado.</p>
 
             <button disabled={status === 'loading'} type="submit">
                 {status === 'loading' ? 'Consultando lista...' : 'Confirmar presenca'}
@@ -321,7 +401,7 @@ function App() {
                 <section className="confirm-panel" aria-labelledby="confirm-title">
                     <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
                     <h2 id="confirm-title">Confirme sua presenca</h2>
-                    <p>Este convite e individual. A confirmacao sera feita pelo WhatsApp cadastrado na lista de convidados.</p>
+                    <p>A confirmacao segue a lista de convidados. Cada pessoa pode levar apenas a quantidade de acompanhantes liberada no cadastro.</p>
                     <RsvpForm />
                 </section>
 
