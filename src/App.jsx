@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
 const RSVP_DEADLINE = '14/10/2026'
@@ -21,11 +21,6 @@ function formatCountdown(targetDate) {
     }
 }
 
-
-function hasFirstAndLastName(value) {
-    return String(value || '').trim().split(/\s+/).filter(Boolean).length >= 2
-}
-
 function formatWhatsapp(value) {
     let digits = String(value || '').replace(/\D/g, '')
 
@@ -43,6 +38,10 @@ function formatWhatsapp(value) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
+function digitsOnly(value) {
+    return String(value || '').replace(/\D/g, '')
+}
+
 async function readApiJson(response) {
     const text = await response.text()
 
@@ -56,6 +55,12 @@ async function readApiJson(response) {
         throw new Error('Servidor de confirmacao indisponivel. Para testar localmente, rode com vercel dev ou publique na Vercel.')
     }
 }
+
+function getInvitationCode() {
+    if (typeof window === 'undefined') return ''
+    return new URLSearchParams(window.location.search).get('convite') || ''
+}
+
 function Countdown() {
     const targetDate = useMemo(() => new Date(EVENT_DATE_ISO), [])
     const [time, setTime] = useState(() => formatCountdown(targetDate))
@@ -97,32 +102,31 @@ function MusicPlayer() {
     )
 }
 
+function createCompanion(slot) {
+    return { id: String(slot.slot), slot: slot.slot, name: slot.name || '', age: slot.age === '' ? '' : String(slot.age) }
+}
+
 function RsvpForm() {
-    const [status, setStatus] = useState('idle')
+    const invitationCode = useMemo(() => getInvitationCode(), [])
+    const [lookupStatus, setLookupStatus] = useState('idle')
+    const [submitStatus, setSubmitStatus] = useState('idle')
     const [message, setMessage] = useState('')
     const [attending, setAttending] = useState('sim')
     const [whatsappValue, setWhatsappValue] = useState('')
+    const [guest, setGuest] = useState(null)
     const [companions, setCompanions] = useState([])
+    const [alreadyConfirmed, setAlreadyConfirmed] = useState(false)
 
-    function createCompanion() {
-        return {
-            id: window.crypto?.randomUUID?.() || String(Date.now()),
-            name: '',
-            age: '',
-        }
+    function resetGuest() {
+        setGuest(null)
+        setCompanions([])
+        setAlreadyConfirmed(false)
+        setSubmitStatus('idle')
     }
 
-    function handleAttendingChange(value) {
-        setAttending(value)
-        if (value === 'nao') setCompanions([])
-    }
-
-    function addCompanion() {
-        setCompanions((current) => current.length >= 10 ? current : [...current, createCompanion()])
-    }
-
-    function removeCompanion(id) {
-        setCompanions((current) => current.filter((companion) => companion.id !== id))
+    function handlePhoneChange(value) {
+        setWhatsappValue(formatWhatsapp(value))
+        resetGuest()
     }
 
     function updateCompanion(id, field, value) {
@@ -131,31 +135,60 @@ function RsvpForm() {
         )))
     }
 
+    async function lookupGuest(event) {
+        event.preventDefault()
+        setLookupStatus('loading')
+        setMessage('')
+        resetGuest()
+
+        try {
+            if (digitsOnly(whatsappValue).length < 10) {
+                throw new Error('Digite um WhatsApp valido com DDD.')
+            }
+
+            const params = new URLSearchParams({ whatsapp: whatsappValue })
+            if (invitationCode) params.set('code', invitationCode)
+
+            const response = await fetch(`/api/guest?${params.toString()}`)
+            const data = await readApiJson(response)
+
+            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel consultar seu convite.')
+
+            setGuest(data.guest)
+            setCompanions((data.guest.companions || []).map(createCompanion))
+            setAlreadyConfirmed(Boolean(data.alreadyConfirmed))
+            setLookupStatus('success')
+            setMessage(data.alreadyConfirmed
+                ? 'Este convite ja foi respondido. Para alterar, fale com o Rafael.'
+                : `Convite encontrado para ${data.guest.name}.`)
+        } catch (error) {
+            setLookupStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    function handleAttendingChange(value) {
+        setAttending(value)
+    }
+
     async function handleSubmit(event) {
         event.preventDefault()
-        const formElement = event.currentTarget
-        setStatus('loading')
+        setSubmitStatus('loading')
         setMessage('')
 
-        const form = new FormData(formElement)
+        const form = new FormData(event.currentTarget)
         const payload = {
-            fullName: String(form.get('fullName') || '').trim(),
+            invitationCode,
             whatsapp: whatsappValue.trim(),
             attending: String(form.get('attending') || 'sim'),
             declineReason: String(form.get('declineReason') || '').trim(),
             companions: attending === 'sim'
-                ? companions.map((companion) => ({ name: companion.name.trim(), age: companion.age }))
+                ? companions.map((companion) => ({ slot: companion.slot, name: companion.name.trim(), age: companion.age }))
                 : [],
         }
 
         try {
-            if (!hasFirstAndLastName(payload.fullName)) {
-                throw new Error('Informe nome e sobrenome.')
-            }
-
-            if (payload.whatsapp && payload.whatsapp.replace(/\D/g, '').length < 10) {
-                throw new Error('Informe um WhatsApp valido com DDD ou deixe em branco se for menor de idade.')
-            }
+            if (!guest) throw new Error('Consulte seu celular antes de confirmar.')
 
             const response = await fetch('/api/rsvp', {
                 method: 'POST',
@@ -164,122 +197,120 @@ function RsvpForm() {
             })
             const data = await readApiJson(response)
 
-            if (!response.ok) {
-                throw new Error(data?.error || 'Nao foi possivel confirmar agora.')
-            }
+            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel confirmar agora.')
 
-            setStatus('success')
+            setSubmitStatus('success')
+            setAlreadyConfirmed(true)
             setMessage(data.message || 'Confirmacao salva com carinho.')
-            formElement.reset()
-            setWhatsappValue('')
-            setAttending('sim')
-            setCompanions([])
         } catch (error) {
-            setStatus('error')
+            setSubmitStatus('error')
             setMessage(error.message)
         }
     }
 
     return (
-        <form className="rsvp" onSubmit={handleSubmit}>
-            <div className="form-grid">
+        <div className="rsvp-flow">
+            <form className="lookup-form" onSubmit={lookupGuest}>
                 <label>
-                    <span>Nome e sobrenome</span>
-                    <input name="fullName" type="text" placeholder="Seu nome completo" autoComplete="name" required />
-                </label>
-                <label>
-                    <span>WhatsApp cadastrado</span>
+                    <span>Digite seu celular</span>
                     <input
-                        name="whatsapp"
+                        name="lookupWhatsapp"
                         type="tel"
                         inputMode="numeric"
                         placeholder="(11) 99999-9999"
                         value={whatsappValue}
-                        onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
+                        onChange={(event) => handlePhoneChange(event.target.value)}
                         autoComplete="tel"
                         maxLength="15"
+                        required
                     />
                 </label>
-            </div>
+                <button className="secondary-button" disabled={lookupStatus === 'loading'} type="submit">
+                    {lookupStatus === 'loading' ? 'Consultando...' : 'Abrir meu convite'}
+                </button>
+            </form>
 
-            <fieldset className="choice-group">
-                <legend>Voce vai?</legend>
-                <label className="choice">
-                    <input defaultChecked name="attending" type="radio" value="sim" onChange={() => handleAttendingChange('sim')} />
-                    <span>Sim, vou comemorar</span>
-                </label>
-                <label className="choice">
-                    <input name="attending" type="radio" value="nao" onChange={() => handleAttendingChange('nao')} />
-                    <span>Nao vou</span>
-                </label>
-            </fieldset>
-
-            {attending === 'nao' ? (
-                <label>
-                    <span>Conta pra Duda o motivo</span>
-                    <textarea name="declineReason" placeholder="Uma justificativa curtinha e carinhosa" required />
-                </label>
-            ) : null}
-
-            {attending === 'sim' ? (
-                <section className="companions-box" aria-label="Acompanhantes">
-                    <div className="companions-box__header">
-                        <div>
-                            <span>Acompanhantes</span>
-                            <p>Adicione somente quem esta liberado na lista. Menor de 6 anos nao conta no buffet.</p>
-                        </div>
-                        <button className="secondary-button" disabled={companions.length >= 10} type="button" onClick={addCompanion}>
-                            Adicionar
-                        </button>
+            {guest ? (
+                <form className="rsvp" onSubmit={handleSubmit}>
+                    <div className="guest-found-card">
+                        <span>Convite liberado</span>
+                        <strong>{guest.name}</strong>
+                        <small>{guest.maxCompanions === 0 ? 'Sem acompanhantes.' : `Ate ${guest.maxCompanions} acompanhante${guest.maxCompanions === 1 ? '' : 's'} neste convite.`}</small>
                     </div>
 
-                    {companions.length > 0 ? (
-                        <div className="companions-list">
-                            {companions.map((companion, index) => (
-                                <div className="companion-row" key={companion.id}>
-                                    <label>
-                                        <span>Acompanhante {index + 1}</span>
-                                        <input
-                                            type="text"
-                                            placeholder="Nome completo"
-                                            value={companion.name}
-                                            onChange={(event) => updateCompanion(companion.id, 'name', event.target.value)}
-                                            required
-                                        />
-                                    </label>
-                                    <label>
-                                        <span>Idade</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="120"
-                                            inputMode="numeric"
-                                            placeholder="Idade"
-                                            value={companion.age}
-                                            onChange={(event) => updateCompanion(companion.id, 'age', event.target.value)}
-                                            required
-                                        />
-                                    </label>
-                                    <button className="icon-button" type="button" onClick={() => removeCompanion(companion.id)} aria-label={`Remover acompanhante ${index + 1}`}>
-                                        x
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                    <fieldset className="choice-group" disabled={alreadyConfirmed}>
+                        <legend>Voce vai?</legend>
+                        <label className="choice">
+                            <input defaultChecked name="attending" type="radio" value="sim" onChange={() => handleAttendingChange('sim')} />
+                            <span>Sim, vou comemorar</span>
+                        </label>
+                        <label className="choice">
+                            <input name="attending" type="radio" value="nao" onChange={() => handleAttendingChange('nao')} />
+                            <span>Nao vou</span>
+                        </label>
+                    </fieldset>
+
+                    {attending === 'nao' ? (
+                        <label>
+                            <span>Conta pra Duda o motivo</span>
+                            <textarea name="declineReason" placeholder="Uma justificativa curtinha e carinhosa" disabled={alreadyConfirmed} required />
+                        </label>
                     ) : null}
-                </section>
+
+                    {attending === 'sim' && guest.maxCompanions > 0 ? (
+                        <section className="companions-box" aria-label="Acompanhantes">
+                            <div className="companions-box__header">
+                                <div>
+                                    <span>Acompanhantes liberados</span>
+                                    <p>Preencha somente quem vai com voce. Menor de 6 anos nao conta no buffet.</p>
+                                </div>
+                            </div>
+
+                            <div className="companions-list">
+                                {companions.map((companion, index) => (
+                                    <div className="companion-row companion-row--fixed" key={companion.id}>
+                                        <label>
+                                            <span>Acompanhante {index + 1}</span>
+                                            <input
+                                                type="text"
+                                                placeholder="Nome do acompanhante"
+                                                value={companion.name}
+                                                onChange={(event) => updateCompanion(companion.id, 'name', event.target.value)}
+                                                disabled={alreadyConfirmed}
+                                            />
+                                        </label>
+                                        <label>
+                                            <span>Idade</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="120"
+                                                inputMode="numeric"
+                                                placeholder="Idade"
+                                                value={companion.age}
+                                                onChange={(event) => updateCompanion(companion.id, 'age', event.target.value)}
+                                                disabled={alreadyConfirmed}
+                                            />
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    ) : null}
+
+                    <p className="guest-check-note">Este convite e individual. Use o celular informado para abrir e confirmar somente os nomes deste convite.</p>
+
+                    <button disabled={submitStatus === 'loading' || alreadyConfirmed} type="submit">
+                        {submitStatus === 'loading' ? 'Salvando...' : alreadyConfirmed ? 'Convite respondido' : 'Confirmar presenca'}
+                    </button>
+                </form>
             ) : null}
 
-            <p className="guest-check-note">A confirmacao usa a lista de convidados. Adultos devem informar WhatsApp; menores podem confirmar pelo nome cadastrado.</p>
-
-            <button disabled={status === 'loading'} type="submit">
-                {status === 'loading' ? 'Consultando lista...' : 'Confirmar presenca'}
-            </button>
-
-            {message ? <p className={`form-message form-message--${status}`}>{message}</p> : null}
-        </form>
+            {message ? <p className={`form-message form-message--${lookupStatus === 'error' || submitStatus === 'error' ? 'error' : 'success'}`}>{message}</p> : null}
+        </div>
     )
 }
+
 function GiftPanel() {
     return (
         <section className="confirm-panel gift-panel" aria-labelledby="gift-title">
@@ -298,6 +329,7 @@ function GiftPanel() {
         </section>
     )
 }
+
 function BirthdayMessageForm() {
     const [status, setStatus] = useState('idle')
     const [feedback, setFeedback] = useState('')
@@ -322,9 +354,7 @@ function BirthdayMessageForm() {
             })
             const data = await readApiJson(response)
 
-            if (!response.ok) {
-                throw new Error(data?.error || 'Nao foi possivel salvar a mensagem agora.')
-            }
+            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel salvar a mensagem agora.')
 
             setStatus('success')
             setFeedback(data.message || 'Mensagem guardada para a Duda.')
@@ -353,7 +383,179 @@ function BirthdayMessageForm() {
     )
 }
 
-function App() {
+function AdminPage() {
+    const [password, setPassword] = useState(() => window.localStorage.getItem('dudaAdminPassword') || '')
+    const [status, setStatus] = useState('idle')
+    const [message, setMessage] = useState('')
+    const [data, setData] = useState(null)
+    const [editing, setEditing] = useState(null)
+
+    async function callAdmin(payload = {}) {
+        setStatus('loading')
+        setMessage('')
+
+        const response = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, ...payload }),
+        })
+        const body = await readApiJson(response)
+
+        if (!response.ok) throw new Error(body?.error || 'Nao foi possivel abrir o painel.')
+
+        window.localStorage.setItem('dudaAdminPassword', password)
+        setData(body)
+        setStatus('success')
+        return body
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault()
+
+        try {
+            await callAdmin()
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    async function handleSaveGuest(event) {
+        event.preventDefault()
+        const form = new FormData(event.currentTarget)
+
+        try {
+            const result = await callAdmin({
+                action: 'saveGuest',
+                id: form.get('id'),
+                guestName: form.get('guestName'),
+                inviteCode: form.get('inviteCode'),
+                age: form.get('age'),
+                whatsapp: form.get('whatsapp'),
+                maxCompanions: form.get('maxCompanions'),
+            })
+            setMessage(result.message || 'Convidado salvo.')
+            setEditing(null)
+            event.currentTarget.reset()
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    const baseUrl = typeof window === 'undefined' ? '' : window.location.origin
+
+    return (
+        <main className="admin-shell">
+            <section className="confirm-panel admin-login" aria-labelledby="admin-title">
+                <p className="panel-kicker">Area reservada</p>
+                <h2 id="admin-title">Lista da Duda</h2>
+                <form className="lookup-form" onSubmit={handleLogin}>
+                    <label>
+                        <span>Senha</span>
+                        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha do painel" required />
+                    </label>
+                    <button type="submit" disabled={status === 'loading'}>{status === 'loading' ? 'Abrindo...' : 'Entrar'}</button>
+                </form>
+                {message ? <p className={`form-message form-message--${status === 'error' ? 'error' : 'success'}`}>{message}</p> : null}
+            </section>
+
+            {data ? (
+                <>
+                    <section className="admin-summary" aria-label="Resumo das confirmacoes">
+                        <div><span>Convidados</span><strong>{data.totals.invited}</strong></div>
+                        <div><span>Confirmados</span><strong>{data.totals.confirmed}</strong></div>
+                        <div><span>Nao vao</span><strong>{data.totals.declined}</strong></div>
+                        <div><span>Pendentes</span><strong>{data.totals.pending}</strong></div>
+                        <div><span>Buffet</span><strong>{data.totals.buffet}</strong></div>
+                    </section>
+
+                    <section className="confirm-panel admin-form-panel" aria-labelledby="guest-form-title">
+                        <p className="panel-kicker">Cadastro</p>
+                        <h2 id="guest-form-title">Convidado</h2>
+                        <form key={editing?.id || 'new-guest'} className="admin-guest-form" onSubmit={handleSaveGuest}>
+                            <input name="id" type="hidden" value={editing?.id || ''} />
+                            <label>
+                                <span>Nome</span>
+                                <input name="guestName" defaultValue={editing?.name || ''} placeholder="Nome do convidado" required />
+                            </label>
+                            <label>
+                                <span>Codigo do link</span>
+                                <input name="inviteCode" defaultValue={editing?.inviteCode || ''} placeholder="ex: glaucia" />
+                            </label>
+                            <label>
+                                <span>Idade</span>
+                                <input name="age" defaultValue={editing?.age || ''} type="number" min="0" max="120" placeholder="Opcional" />
+                            </label>
+                            <label>
+                                <span>WhatsApp</span>
+                                <input name="whatsapp" defaultValue={formatWhatsapp(editing?.whatsapp || '')} placeholder="(11) 99999-9999" />
+                            </label>
+                            <label>
+                                <span>Acompanhantes</span>
+                                <input name="maxCompanions" defaultValue={editing?.maxCompanions ?? 0} type="number" min="0" max="20" required />
+                            </label>
+                            <button type="submit" disabled={status === 'loading'}>{editing ? 'Salvar alteracao' : 'Cadastrar convidado'}</button>
+                        </form>
+                    </section>
+
+                    <section className="confirm-panel admin-table-panel" aria-labelledby="guest-list-title">
+                        <p className="panel-kicker">Confirmacoes</p>
+                        <h2 id="guest-list-title">Lista geral</h2>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Status</th>
+                                        <th>Acomp.</th>
+                                        <th>Buffet</th>
+                                        <th>WhatsApp</th>
+                                        <th>Link</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.guests.map((guestItem) => (
+                                        <tr key={guestItem.id}>
+                                            <td>
+                                                <strong>{guestItem.name}</strong>
+                                                {guestItem.companions.length > 0 ? <small>{guestItem.companions.map((item) => `${item.name} (${item.age})`).join(', ')}</small> : null}
+                                                {guestItem.declineReason ? <small>Motivo: {guestItem.declineReason}</small> : null}
+                                            </td>
+                                            <td><span className={`status-pill status-pill--${guestItem.status}`}>{guestItem.status === 'sim' ? 'Confirmou' : guestItem.status === 'nao' ? 'Nao vai' : 'Pendente'}</span></td>
+                                            <td>{guestItem.companionsCount}/{guestItem.maxCompanions}</td>
+                                            <td>{guestItem.buffetCount}</td>
+                                            <td>{formatWhatsapp(guestItem.whatsapp)}</td>
+                                            <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
+                                            <td><button className="secondary-button" type="button" onClick={() => setEditing(guestItem)}>Editar</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section className="confirm-panel admin-table-panel" aria-labelledby="message-list-title">
+                        <p className="panel-kicker">Mensagens</p>
+                        <h2 id="message-list-title">Parabens enviados</h2>
+                        <div className="message-list">
+                            {data.messages.length === 0 ? <p>Nenhuma mensagem ainda.</p> : data.messages.map((item) => (
+                                <article key={item.id}>
+                                    <strong>{item.name}</strong>
+                                    <p>{item.message}</p>
+                                    <small>{item.createdAt}</small>
+                                </article>
+                            ))}
+                        </div>
+                    </section>
+                </>
+            ) : null}
+        </main>
+    )
+}
+
+function LandingPage() {
     return (
         <main className="page-shell">
             <section className="invite-card" aria-labelledby="invite-title">
@@ -396,10 +598,7 @@ function App() {
                 </div>
 
                 <div className="photo-frame">
-                    <img
-                        src="/duda-photo.png"
-                        alt="Foto da Duda"
-                    />
+                    <img src="/duda-photo.png" alt="Foto da Duda" />
                 </div>
 
                 <p className="invite-text">
@@ -420,8 +619,8 @@ function App() {
             <div className="side-stack">
                 <section className="confirm-panel" aria-labelledby="confirm-title">
                     <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
-                    <h2 id="confirm-title">Confirme sua presenca</h2>
-                    <p>A confirmacao segue a lista de convidados. Cada pessoa pode levar apenas a quantidade de acompanhantes liberada no cadastro.</p>
+                    <h2 id="confirm-title">Abra seu convite</h2>
+                    <p>Digite o celular para localizar seu convite. Links individuais, como <b>?convite=glaucia</b>, liberam o cadastro do celular daquele convite.</p>
                     <RsvpForm />
                 </section>
 
@@ -438,11 +637,9 @@ function App() {
     )
 }
 
+function App() {
+    const isAdmin = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/admin'
+    return isAdmin ? <AdminPage /> : <LandingPage />
+}
+
 export default App
-
-
-
-
-
-
-

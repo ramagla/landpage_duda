@@ -1,179 +1,37 @@
-import { createClient } from '@libsql/client'
+﻿import {
+    cleanText,
+    ensureSchema,
+    getClient,
+    getGuestCompanionSlots,
+    isUniqueConstraintError,
+    normalizePhone,
+    parseAge,
+    parseBody,
+    publicGuest,
+} from './_db.js'
 
-let client
-let schemaReady
-
-function getClient() {
-    if (!client) {
-        const url = process.env.TURSO_DATABASE_URL
-        const authToken = process.env.TURSO_AUTH_TOKEN
-
-        if (!url || !authToken) {
-            throw new Error('Turso nao configurado. Defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN na Vercel.')
-        }
-
-        client = createClient({ url, authToken })
-    }
-
-    return client
+function validPhoneDigits(value) {
+    return /^\d{10,11}$/.test(value)
 }
 
-async function ignoreDuplicateColumn(error) {
-    if (!String(error?.message || '').toLowerCase().includes('duplicate column')) {
-        throw error
-    }
-}
-
-async function ensureInvitedGuestsSchema(db) {
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS invited_guests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guest_name TEXT NOT NULL,
-            age INTEGER,
-            whatsapp_digits TEXT,
-            max_companions INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    `)
-
-    const info = await db.execute('PRAGMA table_info(invited_guests)')
-    const columns = new Map(info.rows.map((row) => [String(row.name), row]))
-    const whatsappColumn = columns.get('whatsapp_digits')
-    const mustMigrate = !columns.has('age')
-        || !columns.has('max_companions')
-        || Number(whatsappColumn?.notnull || 0) === 1
-
-    if (mustMigrate) {
-        const ageExpression = columns.has('age') ? 'age' : 'NULL'
-        const companionsExpression = columns.has('max_companions') ? 'max_companions' : '0'
-
-        await db.execute(`
-            CREATE TABLE IF NOT EXISTS invited_guests_next (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guest_name TEXT NOT NULL,
-                age INTEGER,
-                whatsapp_digits TEXT,
-                max_companions INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL DEFAULT (datetime('now'))
-            )
-        `)
-        await db.execute(`
-            INSERT OR IGNORE INTO invited_guests_next (id, guest_name, age, whatsapp_digits, max_companions, created_at)
-            SELECT id, COALESCE(NULLIF(TRIM(guest_name), ''), 'Convidado'), ${ageExpression}, NULLIF(whatsapp_digits, ''), ${companionsExpression}, created_at
-            FROM invited_guests
-        `)
-        await db.execute('DROP TABLE invited_guests')
-        await db.execute('ALTER TABLE invited_guests_next RENAME TO invited_guests')
-    }
-
-    await db.execute(`
-        CREATE UNIQUE INDEX IF NOT EXISTS invited_guests_whatsapp_unique
-        ON invited_guests (whatsapp_digits)
-        WHERE whatsapp_digits IS NOT NULL AND whatsapp_digits <> ''
-    `)
-    await db.execute('CREATE INDEX IF NOT EXISTS invited_guests_name_index ON invited_guests (guest_name)')
-}
-
-async function ensureSchema() {
-    if (!schemaReady) {
-        schemaReady = (async () => {
-            const db = getClient()
-            await ensureInvitedGuestsSchema(db)
-            await db.execute(`
-                CREATE TABLE IF NOT EXISTS rsvps (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    invited_guest_id INTEGER,
-                    full_name TEXT NOT NULL,
-                    whatsapp TEXT,
-                    whatsapp_digits TEXT,
-                    attending TEXT NOT NULL CHECK (attending IN ('sim', 'nao')),
-                    decline_reason TEXT,
-                    companions_count INTEGER NOT NULL DEFAULT 0,
-                    buffet_count INTEGER NOT NULL DEFAULT 0,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-                )
-            `)
-            await db.execute('ALTER TABLE rsvps ADD COLUMN invited_guest_id INTEGER').catch(ignoreDuplicateColumn)
-            await db.execute('ALTER TABLE rsvps ADD COLUMN whatsapp_digits TEXT').catch(ignoreDuplicateColumn)
-            await db.execute('ALTER TABLE rsvps ADD COLUMN companions_count INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
-            await db.execute('ALTER TABLE rsvps ADD COLUMN buffet_count INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
-            await db.execute(`
-                CREATE UNIQUE INDEX IF NOT EXISTS rsvps_invited_guest_unique
-                ON rsvps (invited_guest_id)
-                WHERE invited_guest_id IS NOT NULL
-            `)
-            await db.execute(`
-                CREATE UNIQUE INDEX IF NOT EXISTS rsvps_whatsapp_digits_unique
-                ON rsvps (whatsapp_digits)
-                WHERE whatsapp_digits IS NOT NULL AND whatsapp_digits <> ''
-            `)
-            await db.execute(`
-                CREATE TABLE IF NOT EXISTS rsvp_companions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    rsvp_id INTEGER NOT NULL,
-                    companion_name TEXT NOT NULL,
-                    age INTEGER NOT NULL,
-                    counts_buffet INTEGER NOT NULL DEFAULT 1,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-                )
-            `)
-        })()
-    }
-
-    await schemaReady
-}
-
-function cleanText(value) {
-    return String(value || '').trim().replace(/\s+/g, ' ')
-}
-
-function hasFirstAndLastName(value) {
-    return String(value || '').trim().split(/\s+/).filter(Boolean).length >= 2
-}
-
-function normalizePhone(value) {
-    let digits = String(value || '').replace(/\D/g, '')
-
-    if (digits.startsWith('55') && digits.length > 11) {
-        digits = digits.slice(2)
-    }
-
-    return digits
-}
-
-function parseBody(body) {
-    if (typeof body !== 'string') {
-        return body || {}
-    }
-
-    try {
-        return JSON.parse(body)
-    } catch {
-        return {}
-    }
-}
-
-function parseAge(value) {
-    const normalized = Number.parseInt(String(value ?? '').trim(), 10)
-    return Number.isInteger(normalized) ? normalized : null
-}
-
-function normalizeCompanions(rawCompanions, attending) {
+function normalizeCompanions(rawCompanions, attending, maxCompanions) {
     if (attending !== 'sim') return { companions: [] }
 
     const companions = Array.isArray(rawCompanions) ? rawCompanions : []
-    if (companions.length > 10) return { error: 'Informe no maximo 10 acompanhantes no formulario.' }
-
     const normalized = []
+
     for (const [index, companion] of companions.entries()) {
         const name = cleanText(companion?.name)
         const age = parseAge(companion?.age)
+        const hasAnyValue = Boolean(name) || age !== null
 
-        if (!name && age === null) continue
+        if (!hasAnyValue) continue
+        if (index >= maxCompanions) return { error: `Este convite permite ${maxCompanions} acompanhante${maxCompanions === 1 ? '' : 's'}.` }
         if (name.length < 2) return { error: `Informe o nome do acompanhante ${index + 1}.` }
         if (age === null || age < 0 || age > 120) return { error: `Informe uma idade valida para ${name}.` }
 
         normalized.push({
+            slot: Number(companion?.slot || index + 1),
             name,
             age,
             countsBuffet: age >= 6 ? 1 : 0,
@@ -183,61 +41,54 @@ function normalizeCompanions(rawCompanions, attending) {
     return { companions: normalized }
 }
 
-function validatePayload(body) {
-    const fullName = cleanText(body.fullName)
-    const whatsapp = cleanText(body.whatsapp)
-    const whatsappDigits = normalizePhone(whatsapp)
-    const attending = body.attending === 'nao' ? 'nao' : 'sim'
-    const declineReason = cleanText(body.declineReason)
-    const companionValidation = normalizeCompanions(body.companions, attending)
+async function findGuest({ whatsappDigits, invitationCode }) {
+    const code = cleanText(invitationCode).toLowerCase()
 
-    if (!hasFirstAndLastName(fullName)) return { error: 'Informe nome e sobrenome.' }
-    if (whatsappDigits && !/^\d{10,11}$/.test(whatsappDigits)) return { error: 'Informe um WhatsApp valido com DDD ou deixe em branco se for menor de idade.' }
-    if (attending === 'nao' && declineReason.length < 4) return { error: 'Se nao puder ir, conte o motivo para a Duda.' }
-    if (companionValidation.error) return { error: companionValidation.error }
-
-    return {
-        data: {
-            fullName,
-            whatsapp,
-            whatsappDigits,
-            attending,
-            declineReason: attending === 'nao' ? declineReason : '',
-            companions: companionValidation.companions,
-        },
-    }
-}
-
-async function findInvitedGuest(payload) {
-    if (payload.whatsappDigits) {
+    if (code) {
         const result = await getClient().execute({
             sql: `
-                SELECT id, guest_name, age, whatsapp_digits, max_companions
+                SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
                 FROM invited_guests
-                WHERE whatsapp_digits = ?
+                WHERE lower(invite_code) = ?
                 LIMIT 1
             `,
-            args: [payload.whatsappDigits],
+            args: [code],
         })
+        const guest = result.rows[0] || null
+        if (!guest) return { guest: null }
 
-        return { guest: result.rows[0] || null }
+        const registeredPhone = normalizePhone(guest.whatsapp_digits)
+        if (registeredPhone && registeredPhone !== whatsappDigits) {
+            return { error: 'Esse celular nao pertence a este convite.' }
+        }
+
+        return { guest, canBindPhone: !registeredPhone }
     }
 
     const result = await getClient().execute({
         sql: `
-            SELECT id, guest_name, age, whatsapp_digits, max_companions
+            SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
             FROM invited_guests
-            WHERE lower(guest_name) = lower(?)
-            LIMIT 2
+            WHERE whatsapp_digits = ?
+            LIMIT 1
         `,
-        args: [payload.fullName],
+        args: [whatsappDigits],
     })
 
-    if (result.rows.length > 1) {
-        return { error: 'Existe mais de um convidado com esse nome. Informe o WhatsApp para confirmar.' }
-    }
+    return { guest: result.rows[0] || null, canBindPhone: false }
+}
 
-    return { guest: result.rows[0] || null }
+async function bindPhoneIfNeeded(guestId, whatsappDigits, canBindPhone) {
+    if (!canBindPhone) return
+
+    await getClient().execute({
+        sql: `
+            UPDATE invited_guests
+            SET whatsapp_digits = ?
+            WHERE id = ? AND (whatsapp_digits IS NULL OR whatsapp_digits = '')
+        `,
+        args: [whatsappDigits, guestId],
+    })
 }
 
 async function findExistingRsvp(invitedGuestId, whatsappDigits) {
@@ -245,17 +96,13 @@ async function findExistingRsvp(invitedGuestId, whatsappDigits) {
         sql: `
             SELECT id, attending
             FROM rsvps
-            WHERE invited_guest_id = ? OR (? <> '' AND whatsapp_digits = ?)
+            WHERE invited_guest_id = ? OR whatsapp_digits = ?
             LIMIT 1
         `,
-        args: [invitedGuestId, whatsappDigits || '', whatsappDigits || ''],
+        args: [invitedGuestId, whatsappDigits],
     })
 
     return result.rows[0] || null
-}
-
-function isUniqueConstraintError(error) {
-    return String(error?.message || '').toLowerCase().includes('unique')
 }
 
 function countMainGuestForBuffet(age) {
@@ -267,10 +114,10 @@ async function saveCompanions(rsvpId, companions) {
     for (const companion of companions) {
         await getClient().execute({
             sql: `
-                INSERT INTO rsvp_companions (rsvp_id, companion_name, age, counts_buffet)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO rsvp_companions (rsvp_id, companion_slot, companion_name, age, counts_buffet)
+                VALUES (?, ?, ?, ?, ?)
             `,
-            args: [rsvpId, companion.name, companion.age, companion.countsBuffet],
+            args: [rsvpId, companion.slot, companion.name, companion.age, companion.countsBuffet],
         })
     }
 }
@@ -282,31 +129,32 @@ export default async function handler(request, response) {
     }
 
     try {
-        const validation = validatePayload(parseBody(request.body))
-        if (validation.error) return response.status(400).json({ error: validation.error })
+        const body = parseBody(request.body)
+        const whatsappDigits = normalizePhone(body.whatsapp)
+        const attending = body.attending === 'nao' ? 'nao' : 'sim'
+        const declineReason = cleanText(body.declineReason)
 
-        const payload = validation.data
+        if (!validPhoneDigits(whatsappDigits)) return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
+        if (attending === 'nao' && declineReason.length < 4) return response.status(400).json({ error: 'Se nao puder ir, conte o motivo para a Duda.' })
+
         await ensureSchema()
+        const lookup = await findGuest({ whatsappDigits, invitationCode: body.invitationCode })
+        if (lookup.error) return response.status(403).json({ error: lookup.error })
+        if (!lookup.guest) return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
 
-        const invitedLookup = await findInvitedGuest(payload)
-        if (invitedLookup.error) return response.status(409).json({ error: invitedLookup.error })
-        if (!invitedLookup.guest) {
-            return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
+        const maxCompanions = Number(lookup.guest.max_companions || 0)
+        const companionValidation = normalizeCompanions(body.companions, attending, maxCompanions)
+        if (companionValidation.error) return response.status(400).json({ error: companionValidation.error })
+
+        if (await findExistingRsvp(lookup.guest.id, whatsappDigits)) {
+            return response.status(409).json({ error: 'Este convite ja teve a presenca confirmada.' })
         }
 
-        const maxCompanions = Number(invitedLookup.guest.max_companions || 0)
-        if (payload.companions.length > maxCompanions) {
-            return response.status(400).json({
-                error: `Este convite permite ${maxCompanions} acompanhante${maxCompanions === 1 ? '' : 's'}.`,
-            })
-        }
+        await bindPhoneIfNeeded(lookup.guest.id, whatsappDigits, lookup.canBindPhone)
 
-        if (await findExistingRsvp(invitedLookup.guest.id, payload.whatsappDigits)) {
-            return response.status(409).json({ error: 'Este convidado ja confirmou presenca neste convite.' })
-        }
-
-        const buffetCount = payload.attending === 'sim'
-            ? countMainGuestForBuffet(invitedLookup.guest.age) + payload.companions.reduce((total, companion) => total + companion.countsBuffet, 0)
+        const companions = companionValidation.companions
+        const buffetCount = attending === 'sim'
+            ? countMainGuestForBuffet(lookup.guest.age) + companions.reduce((total, companion) => total + companion.countsBuffet, 0)
             : 0
 
         const result = await getClient().execute({
@@ -315,30 +163,31 @@ export default async function handler(request, response) {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `,
             args: [
-                invitedLookup.guest.id,
-                payload.fullName,
-                payload.whatsapp,
-                payload.whatsappDigits || null,
-                payload.attending,
-                payload.declineReason,
-                payload.companions.length,
+                lookup.guest.id,
+                lookup.guest.guest_name,
+                body.whatsapp,
+                whatsappDigits,
+                attending,
+                attending === 'nao' ? declineReason : '',
+                companions.length,
                 buffetCount,
             ],
         })
 
         const rsvpId = Number(result.lastInsertRowid)
-        if (payload.attending === 'sim' && payload.companions.length > 0) {
-            await saveCompanions(rsvpId, payload.companions)
+        if (attending === 'sim' && companions.length > 0) {
+            await saveCompanions(rsvpId, companions)
         }
 
-        const message = payload.attending === 'sim'
-            ? `Presenca confirmada. Acompanhantes: ${payload.companions.length}. Pessoas para buffet: ${buffetCount}.`
+        const message = attending === 'sim'
+            ? `Presenca confirmada para ${lookup.guest.guest_name}. Acompanhantes: ${companions.length}. Pessoas para buffet: ${buffetCount}.`
             : 'Resposta registrada. Obrigado por avisar com carinho.'
+        const slots = await getGuestCompanionSlots(lookup.guest.id, maxCompanions)
 
-        return response.status(201).json({ message })
+        return response.status(201).json({ message, guest: publicGuest(lookup.guest, slots) })
     } catch (error) {
         if (isUniqueConstraintError(error)) {
-            return response.status(409).json({ error: 'Este convidado ja confirmou presenca neste convite.' })
+            return response.status(409).json({ error: 'Este convite ja teve a presenca confirmada ou este celular ja esta em uso.' })
         }
 
         return response.status(500).json({ error: error.message || 'Erro ao salvar confirmacao.' })
