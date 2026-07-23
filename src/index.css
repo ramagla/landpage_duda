@@ -1654,3 +1654,185 @@ button[type='submit'] {
         grid-template-columns: 1fr;
     }
 }
+
+/* Event photo palette: aqua balloons, chrome silver, warm champagne */
+:root {
+    --palette-mint-1: #c9fff0;
+    --palette-mint-2: #80f1d4;
+    --palette-mint-3: #24d9b9;
+    --palette-blue-1: #a7f4ee;
+    --palette-blue-2: #64d9df;
+    --palette-ink: #173834;
+    --palette-deep: #08786f;
+    --palette-teal-dark: #06574f;
+    --palette-chrome: #d8ddd8;
+    --palette-champagne: #f4e7bc;
+    --palette-wood: #7a5735;
+    --palette-soft-border: rgba(8, 120, 111, 0.24);
+}
+
+body {
+    background:
+        radial-gradient(circle at 20% 14%, rgba(101, 246, 219, 0.42), transparent 28%),
+        radial-gradient(circle at 80% 8%, rgba(244, 231, 188, 0.5), transparent 26%),
+        radial-gradient(circle at 12% 76%, rgba(83, 223, 208, 0.34), transparent 34%),
+        linear-gradient(135deg, #c9fff0 0%, #f9fff9 42%, #b9edf0 100%);
+    color: var(--palette-ink);
+}
+
+.opening-gate {
+    background:
+        radial-gradient(circle at 50% 18%, rgba(244, 231, 188, 0.55), transparent 26%),
+        radial-gradient(circle at 24% 32%, rgba(36, 217, 185, 0.32), transparent 30%),
+        radial-gradient(circle at 84% 28%, rgba(216, 221, 216, 0.6), transparent 24%),
+        linear-gradient(135deg, #c5fff0 0%, #f7fff9 46%, #afe7ee 100%);
+}
+
+.opening-gate::before {
+    opacity: 0.42;
+    background-image:
+        radial-gradient(circle, rgba(8, 120, 111, 0.38) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(244, 231, 188, 0.76) 0 1.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(216, 221, 216, 0.78) 0 1.5px, transparent 2.5px);
+    background-position: 0 0, 22px 30px, 42px 12px;
+    background-size: 58px 68px, 88px 76px, 102px 94px;
+}
+
+.opening-gate__brand p,
+.eyebrow,
+.panel-kicker,
+label span,
+legend,
+.companions-box__header span,
+.dress-code strong,
+.guest-found-card span {
+    color: #08786f;
+}
+
+.opening-gate__balloon,
+.balloon-age {
+    filter: contrast(1.08) saturate(1.05) drop-shadow(0 16px 24px rgba(8, 120, 111, 0.18));
+}
+
+.opening-gate__disco,
+.disco-image {
+    opacity: 0.86;
+    filter: grayscale(0.16) contrast(1.12) saturate(0.92);
+    box-shadow: 0 18px 34px rgba(60, 96, 92, 0.16), inset 0 0 0 8px rgba(255, 255, 255, 0.35);
+}
+
+.envelope__back {
+    background: linear-gradient(135deg, #72ead4, #1fc2aa);
+}
+
+.envelope__flap {
+    background: linear-gradient(180deg, #c3fff1, #46d8c1 68%, #20bfa9);
+}
+
+.envelope__pocket--left {
+    background: linear-gradient(135deg, #67e4d0, #10aa97);
+}
+
+.envelope__pocket--right {
+    background: linear-gradient(225deg, #70ead6, #0f9d8c);
+}
+
+.envelope__front {
+    background: linear-gradient(180deg, #b7fff1, #34ceb7 72%, #0fa28f);
+}
+
+.envelope__seal,
+.duda-instagram-card > span {
+    background: linear-gradient(135deg, #ffffff, #f4e7bc);
+    color: #08786f;
+}
+
+.invite-card,
+.confirm-panel,
+.access-card {
+    border-color: rgba(8, 120, 111, 0.18);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(241, 255, 250, 0.78));
+    box-shadow: 0 20px 52px rgba(8, 95, 87, 0.14), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.invite-card::before {
+    border-color: rgba(8, 120, 111, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(244, 231, 188, 0.42);
+}
+
+.name-script,
+.confirm-panel h2,
+.guest-found-card strong,
+.invite-text {
+    color: #142f2c;
+}
+
+.tagline,
+.address,
+.confirm-panel p,
+.access-card p,
+.opening-gate__brand small {
+    color: #3c6761;
+}
+
+.countdown__item,
+.choice,
+.companion-attendance label,
+.guest-found-card,
+.dress-code,
+.pix-card {
+    border-color: rgba(8, 120, 111, 0.18);
+    background: linear-gradient(135deg, rgba(201, 255, 240, 0.82), rgba(244, 231, 188, 0.28));
+}
+
+.countdown strong,
+.pix-card strong,
+.duda-instagram-card a,
+.venue-card strong,
+.map-link {
+    color: #06574f;
+}
+
+.map-link {
+    border-color: rgba(8, 120, 111, 0.22);
+    background: linear-gradient(135deg, rgba(201, 255, 240, 0.86), rgba(244, 231, 188, 0.36));
+}
+
+button[type='submit'],
+.access-card button,
+.secondary-button,
+.admin-card button,
+.admin-table button {
+    background: linear-gradient(135deg, #098c7e, #055b54);
+    box-shadow: 0 14px 26px rgba(8, 120, 111, 0.24);
+}
+
+button[type='submit']:hover,
+.access-card button:not(:disabled):hover,
+.secondary-button:hover,
+.admin-card button:hover,
+.admin-table button:hover {
+    background: linear-gradient(135deg, #0ba897, #06665e);
+}
+
+.venue-card,
+.duda-instagram-card {
+    border-color: rgba(216, 221, 216, 0.72);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(201, 255, 240, 0.42));
+}
+
+.photo-frame {
+    border-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 34px rgba(8, 120, 111, 0.14), 0 0 0 1px rgba(216, 221, 216, 0.65);
+}
+
+.form-message--success,
+.status-pill--sim {
+    background: rgba(201, 255, 240, 0.92);
+    color: #06574f;
+}
+
+.status-pill--pendente {
+    background: rgba(216, 221, 216, 0.56);
+    color: #58706d;
+}
