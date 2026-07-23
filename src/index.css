@@ -903,7 +903,7 @@ button[type='submit'] {
     width: min(86vw, 450px);
     aspect-ratio: 2.08 / 1;
     filter: drop-shadow(0 22px 34px rgba(49, 95, 81, 0.25));
-    animation: envelopeRise 1100ms 760ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: envelopeRise 1500ms 850ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .envelope__back,
@@ -936,7 +936,7 @@ button[type='submit'] {
     clip-path: polygon(0 0, 100% 0, 50% 64%);
     background: linear-gradient(180deg, #a7eadc, #6dcab8);
     transform-origin: top center;
-    animation: envelopeFlapOpen 1200ms 1650ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation: envelopeFlapOpen 2200ms 2050ms cubic-bezier(0.18, 0.72, 0.18, 1) forwards;
 }
 
 .envelope__pocket--left {
@@ -973,7 +973,7 @@ button[type='submit'] {
     font-family: "Great Vibes", cursive;
     font-size: 2rem;
     box-shadow: 0 8px 18px rgba(49, 95, 81, 0.2);
-    animation: sealFade 560ms 1500ms ease forwards;
+    animation: sealFade 900ms 1850ms ease forwards;
 }
 
 .envelope span {
@@ -1003,7 +1003,7 @@ button[type='submit'] {
     box-shadow: 0 24px 52px rgba(49, 95, 81, 0.2);
     transform: translateY(190px) scale(0.96);
     opacity: 0;
-    animation: accessCardReveal 1300ms 2450ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation: accessCardReveal 1900ms 3850ms cubic-bezier(0.18, 0.72, 0.18, 1) forwards;
 }
 
 .access-card h1 {
