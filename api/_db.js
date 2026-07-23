@@ -127,13 +127,14 @@ async function seedInvitedGuests(db) {
     for (const [guestName, inviteCode, maxCompanions] of INVITED_GUEST_SEEDS) {
         await db.execute({
             sql: `
-                INSERT INTO invited_guests (guest_name, invite_code, max_companions)
-                VALUES (?, ?, ?)
+                INSERT INTO invited_guests (guest_name, invite_code, whatsapp_digits, max_companions)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(invite_code) DO UPDATE SET
                     guest_name = excluded.guest_name,
+                    whatsapp_digits = COALESCE(invited_guests.whatsapp_digits, excluded.whatsapp_digits),
                     max_companions = excluded.max_companions
             `,
-            args: [guestName, inviteCode, maxCompanions],
+            args: [guestName, inviteCode, '', maxCompanions],
         })
     }
 }
