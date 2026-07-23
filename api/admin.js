@@ -272,6 +272,39 @@ async function findGuestIdByInviteCode(inviteCode) {
     return Number(result.rows[0]?.id || 0)
 }
 
+async function deleteGuest(body) {
+    const id = Number.parseInt(String(body.id || ''), 10)
+    if (!Number.isInteger(id) || id <= 0) return { error: 'Convidado invalido.' }
+
+    const exists = await getClient().execute({
+        sql: 'SELECT id, guest_name FROM invited_guests WHERE id = ? LIMIT 1',
+        args: [id],
+    })
+    if (!exists.rows[0]) return { error: 'Convidado nao encontrado.' }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM rsvp_companions
+            WHERE rsvp_id IN (SELECT id FROM rsvps WHERE invited_guest_id = ?)
+        `,
+        args: [id],
+    })
+    await getClient().execute({
+        sql: 'DELETE FROM rsvps WHERE invited_guest_id = ?',
+        args: [id],
+    })
+    await getClient().execute({
+        sql: 'DELETE FROM guest_companions WHERE invited_guest_id = ?',
+        args: [id],
+    })
+    await getClient().execute({
+        sql: 'DELETE FROM invited_guests WHERE id = ?',
+        args: [id],
+    })
+
+    return { message: `Convidado ${exists.rows[0].guest_name} excluido.` }
+}
+
 async function saveGuest(body) {
     const id = Number.parseInt(String(body.id || ''), 10)
     const name = cleanText(body.guestName)
@@ -340,6 +373,13 @@ export default async function handler(request, response) {
             if (saved.error) return response.status(400).json({ error: saved.error })
             const summary = await getSummary()
             return response.status(200).json({ message: saved.message, ...summary })
+        }
+
+        if (body.action === 'deleteGuest') {
+            const deleted = await deleteGuest(body)
+            if (deleted.error) return response.status(400).json({ error: deleted.error })
+            const summary = await getSummary()
+            return response.status(200).json({ message: deleted.message, ...summary })
         }
 
         return response.status(200).json(await getSummary())

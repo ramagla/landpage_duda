@@ -524,6 +524,23 @@ function AdminPage() {
         }
     }
 
+    async function handleDeleteGuest(guestItem) {
+        const confirmed = window.confirm(`Excluir ${guestItem.name} da lista? Isso tambem remove confirmacoes e acompanhantes deste convite.`)
+        if (!confirmed) return
+
+        try {
+            const result = await callAdmin({ action: 'deleteGuest', id: guestItem.id })
+            setMessage(result.message || 'Convidado excluido.')
+            if (editing?.id === guestItem.id) {
+                setEditing(null)
+                setAdminCompanionCount(0)
+            }
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
     const baseUrl = typeof window === 'undefined' ? '' : window.location.origin
 
     return (
@@ -646,7 +663,12 @@ function AdminPage() {
                                             <td>{guestItem.buffetCount}</td>
                                             <td>{formatWhatsapp(guestItem.whatsapp)}</td>
                                             <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
-                                            <td><button className="secondary-button" type="button" onClick={() => { setEditing(guestItem); setAdminCompanionCount(Number(guestItem.maxCompanions || 0)) }}>Editar</button></td>
+                                            <td>
+                                                <div className="admin-row-actions">
+                                                    <button className="secondary-button" type="button" onClick={() => { setEditing(guestItem); setAdminCompanionCount(Number(guestItem.maxCompanions || 0)) }}>Editar</button>
+                                                    <button className="danger-button" type="button" onClick={() => handleDeleteGuest(guestItem)}>Excluir</button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

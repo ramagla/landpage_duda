@@ -1836,3 +1836,24 @@ button[type='submit']:hover,
     background: rgba(216, 221, 216, 0.56);
     color: #58706d;
 }
+
+.admin-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.danger-button {
+    min-height: 42px;
+    border: 1px solid rgba(148, 50, 50, 0.22);
+    border-radius: 8px;
+    background: #fff4f0;
+    color: #943232;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.danger-button:hover {
+    background: #ffe7df;
+}
