@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
 const RSVP_DEADLINE = '14/10/2026'
@@ -744,7 +744,7 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
 
             <section className="opening-gate__brand" aria-hidden="true">
                 <p>Sweet birthday</p>
-                <strong>16</strong>
+                <img className="opening-gate__balloon" src="/balloon-16-transparent.png" alt="" />
                 <span>Duda</span>
                 <small>Uma tarde para brilhar, dancar e guardar na memoria.</small>
             </section>
@@ -835,7 +835,10 @@ function LandingPage() {
 
                 <div className="hero-copy">
                     <p className="eyebrow">Sweet birthday</p>
-                    <h1 id="invite-title"><img className="balloon-age" src="/balloon-16-transparent.png" alt="16 anos" />Duda</h1>
+                    <h1 id="invite-title">
+                        <img className="balloon-age" src="/balloon-16-transparent.png" alt="16 anos" />
+                        <span className="name-script">Duda</span>
+                    </h1>
                     <p className="tagline">Uma tarde para brilhar, dancar e guardar na memoria.</p>
                 </div>
 

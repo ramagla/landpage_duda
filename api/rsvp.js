@@ -1,4 +1,4 @@
-﻿import {
+import {
     cleanText,
     ensureSchema,
     getClient,
@@ -98,7 +98,7 @@ async function bindPhoneIfNeeded(guestId, whatsappDigits, canBindPhone) {
         sql: `
             UPDATE invited_guests
             SET whatsapp_digits = ?
-            WHERE id = ? AND (whatsapp_digits IS NULL OR whatsapp_digits = '')
+            WHERE id = ? AND (whatsapp_digits IS NULL OR whatsapp_digits = '' OR whatsapp_digits LIKE 'seed-%')
         `,
         args: [whatsappDigits, guestId],
     })

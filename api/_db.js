@@ -1,4 +1,4 @@
-﻿import { createClient } from '@libsql/client'
+import { createClient } from '@libsql/client'
 
 let client
 let schemaReady
@@ -93,6 +93,14 @@ export function parseBody(body) {
     }
 }
 
+export function guestPhonePlaceholder(inviteCode) {
+    return `seed-${slugify(inviteCode)}`
+}
+
+export function isGuestPhonePlaceholder(value) {
+    return String(value || '').startsWith('seed-')
+}
+
 export function normalizePhone(value) {
     let digits = String(value || '').replace(/\D/g, '')
 
@@ -123,7 +131,17 @@ export function isUniqueConstraintError(error) {
     return String(error?.message || '').toLowerCase().includes('unique')
 }
 
+async function normalizeBlankGuestPhones(db) {
+    await db.execute(`
+        UPDATE invited_guests
+        SET whatsapp_digits = 'seed-' || COALESCE(NULLIF(invite_code, ''), 'guest-' || id)
+        WHERE whatsapp_digits IS NULL OR whatsapp_digits = ''
+    `)
+}
+
 async function seedInvitedGuests(db) {
+    await normalizeBlankGuestPhones(db)
+
     for (const [guestName, inviteCode, maxCompanions] of INVITED_GUEST_SEEDS) {
         await db.execute({
             sql: `
@@ -131,10 +149,14 @@ async function seedInvitedGuests(db) {
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(invite_code) DO UPDATE SET
                     guest_name = excluded.guest_name,
-                    whatsapp_digits = COALESCE(invited_guests.whatsapp_digits, excluded.whatsapp_digits),
+                    whatsapp_digits = CASE
+                        WHEN invited_guests.whatsapp_digits IS NULL OR invited_guests.whatsapp_digits = ''
+                        THEN excluded.whatsapp_digits
+                        ELSE invited_guests.whatsapp_digits
+                    END,
                     max_companions = excluded.max_companions
             `,
-            args: [guestName, inviteCode, '', maxCompanions],
+            args: [guestName, inviteCode, guestPhonePlaceholder(inviteCode), maxCompanions],
         })
     }
 }
@@ -276,7 +298,7 @@ export function publicGuest(row, companions = []) {
         name: row.guest_name,
         inviteCode: row.invite_code || '',
         maxCompanions: Number(row.max_companions || 0),
-        hasRegisteredPhone: Boolean(row.whatsapp_digits),
+        hasRegisteredPhone: Boolean(normalizePhone(row.whatsapp_digits)) && !isGuestPhonePlaceholder(row.whatsapp_digits),
         companions,
     }
 }

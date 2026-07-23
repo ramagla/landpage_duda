@@ -1,4 +1,4 @@
-﻿import { cleanText, ensureSchema, getClient, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
+import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
 
 function getAdminPassword() {
     return process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'duda16')
@@ -155,7 +155,7 @@ async function getSummary() {
             name: row.guest_name,
             inviteCode: row.invite_code || '',
             age: row.age ?? '',
-            whatsapp: row.whatsapp_digits || '',
+            whatsapp: isGuestPhonePlaceholder(row.whatsapp_digits) ? '' : row.whatsapp_digits || '',
             maxCompanions: Number(row.max_companions || 0),
             status: row.rsvp_id ? row.attending : 'pendente',
             declineReason: row.decline_reason || '',
@@ -280,6 +280,7 @@ async function saveGuest(body) {
     const maxCompanions = Math.max(Number.parseInt(String(body.maxCompanions || 0), 10) || 0, 0)
     const inviteCode = slugify(body.inviteCode || name)
     const presetValidation = parsePresetCompanions(body.presetCompanions, maxCompanions)
+    const storedWhatsapp = whatsapp || guestPhonePlaceholder(inviteCode)
 
     if (name.length < 2) return { error: 'Informe o nome do convidado.' }
     if (whatsapp && !/^\d{10,11}$/.test(whatsapp)) return { error: 'WhatsApp invalido. Use DDD + numero.' }
@@ -294,7 +295,7 @@ async function saveGuest(body) {
                 SET guest_name = ?, invite_code = ?, age = ?, whatsapp_digits = ?, max_companions = ?
                 WHERE id = ?
             `,
-            args: [name, inviteCode, age, whatsapp || null, maxCompanions, id],
+            args: [name, inviteCode, age, storedWhatsapp, maxCompanions, id],
         })
     } else {
         await getClient().execute({
@@ -307,7 +308,7 @@ async function saveGuest(body) {
                     whatsapp_digits = excluded.whatsapp_digits,
                     max_companions = excluded.max_companions
             `,
-            args: [name, inviteCode, age, whatsapp || null, maxCompanions],
+            args: [name, inviteCode, age, storedWhatsapp, maxCompanions],
         })
         guestId = await findGuestIdByInviteCode(inviteCode)
     }
