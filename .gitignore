@@ -1,6 +1,9 @@
-﻿node_modules
+node_modules
 dist
 .env
 .env.local
 .vercel
 .DS_Store
+duda-local.db
+duda-local.db-*
+*.db-journal

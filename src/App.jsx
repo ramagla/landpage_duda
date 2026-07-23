@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
 const RSVP_DEADLINE = '14/10/2026'
@@ -61,6 +61,31 @@ function getInvitationCode() {
     return new URLSearchParams(window.location.search).get('convite') || ''
 }
 
+
+const OPENING_SESSION_KEY = 'dudaInvitationUnlocked'
+
+function readOpeningSession() {
+    if (typeof window === 'undefined') return null
+
+    try {
+        const stored = JSON.parse(window.sessionStorage.getItem(OPENING_SESSION_KEY) || 'null')
+        if (!stored?.guest?.name || digitsOnly(stored.whatsapp).length < 10) return null
+        return stored
+    } catch {
+        return null
+    }
+}
+
+function saveOpeningSession(data) {
+    if (typeof window === 'undefined') return
+
+    window.sessionStorage.setItem(OPENING_SESSION_KEY, JSON.stringify({
+        guest: data.guest,
+        whatsapp: data.whatsapp,
+        alreadyConfirmed: Boolean(data.alreadyConfirmed),
+        rsvp: data.rsvp || null,
+    }))
+}
 function Countdown() {
     const targetDate = useMemo(() => new Date(EVENT_DATE_ISO), [])
     const [time, setTime] = useState(() => formatCountdown(targetDate))
@@ -87,7 +112,9 @@ function Countdown() {
     )
 }
 
-function MusicPlayer() {
+function MusicPlayer({ enabled }) {
+    if (!enabled) return null
+
     const embedUrl = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
 
     return (
@@ -103,25 +130,33 @@ function MusicPlayer() {
 }
 
 function createCompanion(slot) {
-    return { id: String(slot.slot), slot: slot.slot, name: slot.name || '', age: slot.age === '' ? '' : String(slot.age) }
+    return {
+        id: String(slot.slot),
+        slot: slot.slot,
+        name: slot.name || '',
+        age: slot.age === '' ? '' : String(slot.age),
+        attending: slot.attending === 'nao' ? 'nao' : 'sim',
+    }
 }
 
-function RsvpForm() {
+function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyConfirmed = false, onGuestResolved, onGuestCleared }) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
-    const [lookupStatus, setLookupStatus] = useState('idle')
+    const [lookupStatus, setLookupStatus] = useState(initialGuest ? 'success' : 'idle')
     const [submitStatus, setSubmitStatus] = useState('idle')
     const [message, setMessage] = useState('')
     const [attending, setAttending] = useState('sim')
-    const [whatsappValue, setWhatsappValue] = useState('')
-    const [guest, setGuest] = useState(null)
-    const [companions, setCompanions] = useState([])
-    const [alreadyConfirmed, setAlreadyConfirmed] = useState(false)
+    const [whatsappValue, setWhatsappValue] = useState(() => formatWhatsapp(initialWhatsapp))
+    const [guest, setGuest] = useState(initialGuest)
+    const [companions, setCompanions] = useState(() => (initialGuest?.companions || []).map(createCompanion))
+    const [alreadyConfirmed, setAlreadyConfirmed] = useState(Boolean(initialAlreadyConfirmed))
+
 
     function resetGuest() {
         setGuest(null)
         setCompanions([])
         setAlreadyConfirmed(false)
         setSubmitStatus('idle')
+        onGuestCleared?.()
     }
 
     function handlePhoneChange(value) {
@@ -155,6 +190,7 @@ function RsvpForm() {
             if (!response.ok) throw new Error(data?.error || 'Nao foi possivel consultar seu convite.')
 
             setGuest(data.guest)
+            onGuestResolved?.(data.guest)
             setCompanions((data.guest.companions || []).map(createCompanion))
             setAlreadyConfirmed(Boolean(data.alreadyConfirmed))
             setLookupStatus('success')
@@ -183,7 +219,12 @@ function RsvpForm() {
             attending: String(form.get('attending') || 'sim'),
             declineReason: String(form.get('declineReason') || '').trim(),
             companions: attending === 'sim'
-                ? companions.map((companion) => ({ slot: companion.slot, name: companion.name.trim(), age: companion.age }))
+                ? companions.map((companion) => ({
+                    slot: companion.slot,
+                    name: companion.name.trim(),
+                    age: companion.age,
+                    attending: companion.attending === 'nao' ? 'nao' : 'sim',
+                }))
                 : [],
         }
 
@@ -200,6 +241,7 @@ function RsvpForm() {
             if (!response.ok) throw new Error(data?.error || 'Nao foi possivel confirmar agora.')
 
             setSubmitStatus('success')
+            if (data.guest) onGuestResolved?.(data.guest)
             setAlreadyConfirmed(true)
             setMessage(data.message || 'Confirmacao salva com carinho.')
         } catch (error) {
@@ -210,7 +252,7 @@ function RsvpForm() {
 
     return (
         <div className="rsvp-flow">
-            <form className="lookup-form" onSubmit={lookupGuest}>
+            {!guest ? <form className="lookup-form" onSubmit={lookupGuest}>
                 <label>
                     <span>Digite seu celular</span>
                     <input
@@ -228,7 +270,7 @@ function RsvpForm() {
                 <button className="secondary-button" disabled={lookupStatus === 'loading'} type="submit">
                     {lookupStatus === 'loading' ? 'Consultando...' : 'Abrir meu convite'}
                 </button>
-            </form>
+            </form> : null}
 
             {guest ? (
                 <form className="rsvp" onSubmit={handleSubmit}>
@@ -262,21 +304,45 @@ function RsvpForm() {
                             <div className="companions-box__header">
                                 <div>
                                     <span>Acompanhantes liberados</span>
-                                    <p>Preencha somente quem vai com voce. Menor de 6 anos nao conta no buffet.</p>
+                                    <p>Marque se cada acompanhante vai ou nao. Ate 6 anos nao conta no buffet.</p>
                                 </div>
                             </div>
 
                             <div className="companions-list">
                                 {companions.map((companion, index) => (
                                     <div className="companion-row companion-row--fixed" key={companion.id}>
+                                        <fieldset className="companion-attendance" disabled={alreadyConfirmed}>
+                                            <legend>Acompanhante {index + 1}</legend>
+                                            <label>
+                                                <input
+                                                    checked={companion.attending !== 'nao'}
+                                                    name={`companionAttendance${companion.slot}`}
+                                                    type="radio"
+                                                    value="sim"
+                                                    onChange={() => updateCompanion(companion.id, 'attending', 'sim')}
+                                                />
+                                                <span>Vai</span>
+                                            </label>
+                                            <label>
+                                                <input
+                                                    checked={companion.attending === 'nao'}
+                                                    name={`companionAttendance${companion.slot}`}
+                                                    type="radio"
+                                                    value="nao"
+                                                    onChange={() => updateCompanion(companion.id, 'attending', 'nao')}
+                                                />
+                                                <span>Nao vai</span>
+                                            </label>
+                                        </fieldset>
                                         <label>
-                                            <span>Acompanhante {index + 1}</span>
+                                            <span>Nome</span>
                                             <input
                                                 type="text"
                                                 placeholder="Nome do acompanhante"
                                                 value={companion.name}
                                                 onChange={(event) => updateCompanion(companion.id, 'name', event.target.value)}
-                                                disabled={alreadyConfirmed}
+                                                disabled={alreadyConfirmed || companion.attending === 'nao'}
+                                                required={companion.attending !== 'nao'}
                                             />
                                         </label>
                                         <label>
@@ -289,7 +355,8 @@ function RsvpForm() {
                                                 placeholder="Idade"
                                                 value={companion.age}
                                                 onChange={(event) => updateCompanion(companion.id, 'age', event.target.value)}
-                                                disabled={alreadyConfirmed}
+                                                disabled={alreadyConfirmed || companion.attending === 'nao'}
+                                                required={companion.attending !== 'nao'}
                                             />
                                         </label>
                                     </div>
@@ -389,6 +456,7 @@ function AdminPage() {
     const [message, setMessage] = useState('')
     const [data, setData] = useState(null)
     const [editing, setEditing] = useState(null)
+    const [adminCompanionCount, setAdminCompanionCount] = useState(0)
 
     async function callAdmin(payload = {}) {
         setStatus('loading')
@@ -424,6 +492,17 @@ function AdminPage() {
         event.preventDefault()
         const form = new FormData(event.currentTarget)
 
+        const maxCompanions = Math.max(Number.parseInt(String(form.get('maxCompanions') || 0), 10) || 0, 0)
+        const presetCompanions = Array.from({ length: maxCompanions }, (_, index) => {
+            const slot = index + 1
+
+            return {
+                slot,
+                name: String(form.get(`companionName${slot}`) || '').trim(),
+                age: String(form.get(`companionAge${slot}`) || '').trim(),
+            }
+        })
+
         try {
             const result = await callAdmin({
                 action: 'saveGuest',
@@ -432,10 +511,12 @@ function AdminPage() {
                 inviteCode: form.get('inviteCode'),
                 age: form.get('age'),
                 whatsapp: form.get('whatsapp'),
-                maxCompanions: form.get('maxCompanions'),
+                maxCompanions,
+                presetCompanions,
             })
             setMessage(result.message || 'Convidado salvo.')
             setEditing(null)
+            setAdminCompanionCount(0)
             event.currentTarget.reset()
         } catch (error) {
             setStatus('error')
@@ -493,8 +574,44 @@ function AdminPage() {
                             </label>
                             <label>
                                 <span>Acompanhantes</span>
-                                <input name="maxCompanions" defaultValue={editing?.maxCompanions ?? 0} type="number" min="0" max="20" required />
+                                <input
+                                    name="maxCompanions"
+                                    defaultValue={editing?.maxCompanions ?? 0}
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    onChange={(event) => setAdminCompanionCount(Math.max(Number.parseInt(event.target.value, 10) || 0, 0))}
+                                    required
+                                />
                             </label>
+                            {adminCompanionCount > 0 ? (
+                                <section className="admin-companions-field" aria-label="Acompanhantes pre-cadastrados">
+                                    <div className="admin-companions-title">
+                                        <span>Acompanhantes ja conhecidos</span>
+                                        <small>Preencha uma linha para cada acompanhante que voce ja souber. Os campos vazios ficam liberados para o convidado preencher.</small>
+                                    </div>
+                                    <div className="admin-companion-lines">
+                                        {Array.from({ length: adminCompanionCount }, (_, index) => {
+                                            const slot = index + 1
+                                            const preset = (editing?.presetCompanions || []).find((item) => Number(item.slot) === slot) || editing?.presetCompanions?.[index] || {}
+
+                                            return (
+                                                <div className="admin-companion-line" key={slot}>
+                                                    <strong>{slot}</strong>
+                                                    <label>
+                                                        <span>Nome</span>
+                                                        <input name={`companionName${slot}`} defaultValue={preset.name || ''} placeholder={`Acompanhante ${slot}`} />
+                                                    </label>
+                                                    <label>
+                                                        <span>Idade</span>
+                                                        <input name={`companionAge${slot}`} defaultValue={preset.age ?? ''} type="number" min="0" max="120" placeholder="Opcional" />
+                                                    </label>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </section>
+                            ) : null}
                             <button type="submit" disabled={status === 'loading'}>{editing ? 'Salvar alteracao' : 'Cadastrar convidado'}</button>
                         </form>
                     </section>
@@ -520,7 +637,8 @@ function AdminPage() {
                                         <tr key={guestItem.id}>
                                             <td>
                                                 <strong>{guestItem.name}</strong>
-                                                {guestItem.companions.length > 0 ? <small>{guestItem.companions.map((item) => `${item.name} (${item.age})`).join(', ')}</small> : null}
+                                                {guestItem.companions.length > 0 ? <small>{guestItem.companions.map((item) => `${item.name} (${item.age})${item.attending === 'nao' ? ' - nao vai' : ''}`).join(', ')}</small> : null}
+                                                {guestItem.companions.length === 0 && guestItem.presetCompanions?.length > 0 ? <small>Pre-cadastrados: {guestItem.presetCompanions.map((item) => `${item.name}${item.age !== '' ? ' (' + item.age + ')' : ''}`).join(', ')}</small> : null}
                                                 {guestItem.declineReason ? <small>Motivo: {guestItem.declineReason}</small> : null}
                                             </td>
                                             <td><span className={`status-pill status-pill--${guestItem.status}`}>{guestItem.status === 'sim' ? 'Confirmou' : guestItem.status === 'nao' ? 'Nao vai' : 'Pendente'}</span></td>
@@ -528,7 +646,7 @@ function AdminPage() {
                                             <td>{guestItem.buffetCount}</td>
                                             <td>{formatWhatsapp(guestItem.whatsapp)}</td>
                                             <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
-                                            <td><button className="secondary-button" type="button" onClick={() => setEditing(guestItem)}>Editar</button></td>
+                                            <td><button className="secondary-button" type="button" onClick={() => { setEditing(guestItem); setAdminCompanionCount(Number(guestItem.maxCompanions || 0)) }}>Editar</button></td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -555,9 +673,156 @@ function AdminPage() {
     )
 }
 
-function LandingPage() {
+function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
+    const invitationCode = useMemo(() => getInvitationCode(), [])
+    const inputRef = useRef(null)
+    const [stage, setStage] = useState('intro')
+    const [whatsappValue, setWhatsappValue] = useState('')
+    const [message, setMessage] = useState('')
+    const [validatedData, setValidatedData] = useState(null)
+
+    useEffect(() => {
+        const cardTimer = window.setTimeout(() => setStage('card-visible'), 4300)
+        const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 4300)
+
+        return () => {
+            window.clearTimeout(cardTimer)
+            window.clearTimeout(focusTimer)
+        }
+    }, [])
+
+    async function handleSubmit(event) {
+        event.preventDefault()
+        setMessage('')
+
+        try {
+            if (digitsOnly(whatsappValue).length < 10) {
+                throw new Error('Digite um WhatsApp valido com DDD.')
+            }
+
+            setStage('checking')
+            const params = new URLSearchParams({ whatsapp: whatsappValue })
+            if (invitationCode) params.set('code', invitationCode)
+
+            const response = await fetch(`/api/guest?${params.toString()}`)
+            const data = await readApiJson(response)
+
+            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel consultar seu convite.')
+
+            const openingData = {
+                guest: data.guest,
+                whatsapp: whatsappValue,
+                alreadyConfirmed: Boolean(data.alreadyConfirmed),
+                rsvp: data.rsvp || null,
+            }
+
+            saveOpeningSession(openingData)
+            setValidatedData(openingData)
+            setStage('unlocked')
+        } catch (error) {
+            setStage('error')
+            setMessage(error.message)
+        }
+    }
+
+    function enterInvitation() {
+        if (!validatedData) return
+        onMusicStart?.()
+        setStage('completed')
+        window.setTimeout(() => onUnlocked(validatedData), 650)
+    }
+
+    const isChecking = stage === 'checking'
+    const isUnlocked = stage === 'unlocked'
+    const isCompleted = stage === 'completed'
+
     return (
-        <main className="page-shell">
+        <main className={`opening-gate opening-gate--${stage}`} aria-label="Abertura do convite da Duda">
+            <div className="opening-gate__sparkles" aria-hidden="true" />
+            <img className="opening-gate__disco opening-gate__disco--left" src="/disco-ball.jpg" alt="" aria-hidden="true" />
+            <img className="opening-gate__disco opening-gate__disco--right" src="/disco-ball.jpg" alt="" aria-hidden="true" />
+
+            <section className="opening-gate__brand" aria-hidden="true">
+                <p>Sweet birthday</p>
+                <strong>16</strong>
+                <span>Duda</span>
+                <small>Uma tarde para brilhar, dancar e guardar na memoria.</small>
+            </section>
+
+            <div className="envelope-stage">
+                <form className="access-card" onSubmit={handleSubmit} aria-live="polite">
+                    <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
+                    <h1>Abra seu convite</h1>
+                    <p>Digite o celular para localizar seu convite individual.</p>
+                    <label>
+                        <span>Celular</span>
+                        <input
+                            ref={inputRef}
+                            name="openingWhatsapp"
+                            type="tel"
+                            inputMode="numeric"
+                            placeholder="(11) _____-____"
+                            value={whatsappValue}
+                            onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
+                            autoComplete="tel"
+                            maxLength="15"
+                            disabled={isChecking || isUnlocked || isCompleted}
+                            required
+                        />
+                    </label>
+                    <button
+                        type={isUnlocked ? 'button' : 'submit'}
+                        onClick={isUnlocked ? enterInvitation : undefined}
+                        disabled={isChecking || isCompleted}
+                    >
+                        {isChecking ? 'Consultando...' : isUnlocked ? 'Convite liberado' : 'Abrir meu convite'}
+                    </button>
+                    <small>{isUnlocked ? 'Toque para entrar no convite completo.' : 'O numero sera usado somente para localizar e confirmar este convite.'}</small>
+                    {message ? <p className="form-message form-message--error">{message}</p> : null}
+                </form>
+
+                <div className="envelope" aria-hidden="true">
+                    <div className="envelope__back" />
+                    <div className="envelope__letter-shadow" />
+                    <div className="envelope__flap" />
+                    <div className="envelope__pocket envelope__pocket--left" />
+                    <div className="envelope__pocket envelope__pocket--right" />
+                    <div className="envelope__front" />
+                    <div className="envelope__seal">D</div>
+                    <span>Feito especialmente para voce</span>
+                </div>
+            </div>
+
+            <p className="opening-gate__footer">O envelope abre e revela o acesso ao convite</p>
+        </main>
+    )
+}
+
+function LandingPage() {
+    const [openingData, setOpeningData] = useState(() => readOpeningSession())
+    const [musicStarted, setMusicStarted] = useState(false)
+    const activeGuest = openingData?.guest || null
+
+    function handleUnlocked(data) {
+        setOpeningData(data)
+    }
+
+    function handleGuestResolved(guest) {
+        setOpeningData((current) => {
+            if (!current) return current
+
+            const next = { ...current, guest }
+            saveOpeningSession(next)
+            return next
+        })
+    }
+
+    if (!openingData) {
+        return <OpeningInvitationGate onUnlocked={handleUnlocked} onMusicStart={() => setMusicStarted(true)} />
+    }
+
+    return (
+        <main className="page-shell page-shell--revealed">
             <section className="invite-card" aria-labelledby="invite-title">
                 <div className="disco-cluster" aria-hidden="true">
                     <img className="disco-image disco-image--small" src="/disco-ball.jpg" alt="" />
@@ -567,9 +832,6 @@ function LandingPage() {
                 <img className="disco-image disco-image--hero" src="/disco-ball.jpg" alt="" aria-hidden="true" />
                 <div className="sparkle sparkle--one" aria-hidden="true" />
                 <div className="sparkle sparkle--two" aria-hidden="true" />
-                <div className="sparkle sparkle--three" aria-hidden="true" />
-                <div className="star star--mint" aria-hidden="true">?</div>
-                <div className="star star--silver" aria-hidden="true">?</div>
 
                 <div className="hero-copy">
                     <p className="eyebrow">Sweet birthday</p>
@@ -578,7 +840,7 @@ function LandingPage() {
                 </div>
 
                 <Countdown />
-                <MusicPlayer />
+                <MusicPlayer enabled={musicStarted} />
 
                 <div className="event-details" aria-label="Informacoes do aniversario">
                     <p>14 Novembro 2026</p>
@@ -601,9 +863,7 @@ function LandingPage() {
                     <img src="/duda-photo.png" alt="Foto da Duda" />
                 </div>
 
-                <p className="invite-text">
-                    A Duda esta fazendo 16 e quer voce por perto para transformar esse dia em uma lembranca linda.
-                </p>
+                <p className="invite-text">{activeGuest.name}, a Duda quer voce por perto para transformar esse dia em uma lembranca linda.</p>
 
                 <div className="duda-instagram-card">
                     <span>D</span>
@@ -619,9 +879,14 @@ function LandingPage() {
             <div className="side-stack">
                 <section className="confirm-panel" aria-labelledby="confirm-title">
                     <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
-                    <h2 id="confirm-title">Abra seu convite</h2>
-                    <p>Digite o celular para localizar seu convite. Links individuais, como <b>?convite=glaucia</b>, liberam o cadastro do celular daquele convite.</p>
-                    <RsvpForm />
+                    <h2 id="confirm-title">Oi, {activeGuest.name}</h2>
+                    <p>Confira os nomes liberados e confirme a presenca deste convite.</p>
+                    <RsvpForm
+                        initialGuest={activeGuest}
+                        initialWhatsapp={openingData.whatsapp}
+                        initialAlreadyConfirmed={openingData.alreadyConfirmed}
+                        onGuestResolved={handleGuestResolved}
+                    />
                 </section>
 
                 <GiftPanel />
@@ -636,7 +901,6 @@ function LandingPage() {
         </main>
     )
 }
-
 function App() {
     const isAdmin = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/admin'
     return isAdmin ? <AdminPage /> : <LandingPage />

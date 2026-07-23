@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client'
+﻿import { createClient } from '@libsql/client'
 
 let client
 let schemaReady
@@ -54,14 +54,20 @@ const INVITED_GUEST_SEEDS = [
 
 export function getClient() {
     if (!client) {
-        const url = process.env.TURSO_DATABASE_URL
+        const configuredUrl = process.env.TURSO_DATABASE_URL
+        const url = configuredUrl || (process.env.NODE_ENV === 'production' ? '' : 'file:./duda-local.db')
         const authToken = process.env.TURSO_AUTH_TOKEN
+        const isLocalSqlite = url.startsWith('file:') || url === ':memory:'
 
-        if (!url || !authToken) {
+        if (!url) {
+            throw new Error('Banco nao configurado. Defina TURSO_DATABASE_URL na Vercel ou use file:./duda-local.db localmente.')
+        }
+
+        if (!isLocalSqlite && !authToken) {
             throw new Error('Turso nao configurado. Defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN na Vercel.')
         }
 
-        client = createClient({ url, authToken })
+        client = createClient(isLocalSqlite ? { url } : { url, authToken })
     }
 
     return client
@@ -213,10 +219,12 @@ export async function ensureSchema() {
                     companion_name TEXT NOT NULL,
                     age INTEGER NOT NULL,
                     counts_buffet INTEGER NOT NULL DEFAULT 1,
+                    attending TEXT NOT NULL DEFAULT 'sim',
                     created_at TEXT NOT NULL DEFAULT (datetime('now'))
                 )
             `)
             await db.execute('ALTER TABLE rsvp_companions ADD COLUMN companion_slot INTEGER').catch(ignoreDuplicateColumn)
+            await db.execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch(ignoreDuplicateColumn)
 
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS birthday_messages (
@@ -234,6 +242,9 @@ export async function ensureSchema() {
     await schemaReady
 }
 
+export async function ensureCompanionAttendanceColumn() {
+    await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch(ignoreDuplicateColumn)
+}
 export async function getGuestCompanionSlots(invitedGuestId, maxCompanions) {
     const result = await getClient().execute({
         sql: `

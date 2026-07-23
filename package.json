@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "local": "npx -y node@20.19.0 local-dev-server.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -25,5 +26,8 @@
     "globals": "^17.6.0",
     "jpeg-js": "^0.4.4",
     "pngjs": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }

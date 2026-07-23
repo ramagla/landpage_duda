@@ -1,4 +1,4 @@
-﻿# Landing page - 16 anos da Duda
+# Landing page - 16 anos da Duda
 
 Projeto separado da landing do Romeu.
 
@@ -10,22 +10,29 @@ Projeto separado da landing do Romeu.
 - Google Maps: https://www.google.com/maps/search/?api=1&query=Rua%20Corumbatai%20100%20Vila%20Virginia%20Itaquaquecetuba
 - Instagram do espaco: https://www.instagram.com/quintaldoibizaoficial/
 - Instagram da Duda: https://www.instagram.com/mariizsq_/
-- Musica: YouTube `_zR6ROjoOX0`, carregada automaticamente no convite
+- Musica: YouTube `_zR6ROjoOX0`, iniciada no toque de abrir convite para funcionar no mobile
 - Confirmacao ate: 14/10/2026
 - Convite: validado por celular ou por link individual `?convite=nome`
 
-## Rodar localmente
+## Rodar localmente com SQLite
 
 ```bash
 npm install
-npm run dev
+npm run local
 ```
 
-O `npm run dev` abre apenas o Vite. Para testar as APIs `/api`, use:
+Abra:
 
-```bash
-vercel dev
+```text
+http://localhost:5174
+http://localhost:5174/admin
 ```
+
+Senha local do admin: `duda16`.
+
+Esse modo usa SQLite local no arquivo `duda-local.db` e executa tambem as APIs `/api`. Use esse modo para testar RSVP, mensagens, admin e lista de convidados antes de integrar com a Vercel.
+
+O `npm run dev` abre apenas o Vite na porta `5173`; ele serve para ver tela, mas nao executa as APIs.
 
 ## Banco e variaveis da Vercel
 

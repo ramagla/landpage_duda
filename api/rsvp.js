@@ -10,6 +10,12 @@
     publicGuest,
 } from './_db.js'
 
+
+async function ensureCompanionAttendanceColumn() {
+    await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
+        if (!String(error?.message || '').toLowerCase().includes('duplicate column')) throw error
+    })
+}
 function validPhoneDigits(value) {
     return /^\d{10,11}$/.test(value)
 }
@@ -21,20 +27,27 @@ function normalizeCompanions(rawCompanions, attending, maxCompanions) {
     const normalized = []
 
     for (const [index, companion] of companions.entries()) {
+        const slot = Number(companion?.slot || index + 1)
+        const companionAttending = companion?.attending === 'nao' ? 'nao' : 'sim'
         const name = cleanText(companion?.name)
         const age = parseAge(companion?.age)
-        const hasAnyValue = Boolean(name) || age !== null
+        const hasAnyValue = Boolean(name) || age !== null || companionAttending === 'nao'
 
         if (!hasAnyValue) continue
-        if (index >= maxCompanions) return { error: `Este convite permite ${maxCompanions} acompanhante${maxCompanions === 1 ? '' : 's'}.` }
-        if (name.length < 2) return { error: `Informe o nome do acompanhante ${index + 1}.` }
-        if (age === null || age < 0 || age > 120) return { error: `Informe uma idade valida para ${name}.` }
+        if (index >= maxCompanions || slot > maxCompanions) return { error: `Este convite permite ${maxCompanions} acompanhante${maxCompanions === 1 ? '' : 's'}.` }
+
+        const displayName = name || `Acompanhante ${slot}`
+
+        if (companionAttending === 'sim' && name.length < 2) return { error: `Informe o nome do acompanhante ${index + 1}.` }
+        if (companionAttending === 'sim' && (age === null || age < 0 || age > 120)) return { error: `Informe uma idade valida para ${name}.` }
+        if (age !== null && (age < 0 || age > 120)) return { error: `Informe uma idade valida para ${displayName}.` }
 
         normalized.push({
-            slot: Number(companion?.slot || index + 1),
-            name,
-            age,
-            countsBuffet: age >= 6 ? 1 : 0,
+            slot,
+            name: displayName,
+            age: age ?? 0,
+            attending: companionAttending,
+            countsBuffet: companionAttending === 'sim' && age > 6 ? 1 : 0,
         })
     }
 
@@ -107,17 +120,17 @@ async function findExistingRsvp(invitedGuestId, whatsappDigits) {
 
 function countMainGuestForBuffet(age) {
     const parsedAge = parseAge(age)
-    return parsedAge !== null && parsedAge < 6 ? 0 : 1
+    return parsedAge !== null && parsedAge <= 6 ? 0 : 1
 }
 
 async function saveCompanions(rsvpId, companions) {
     for (const companion of companions) {
         await getClient().execute({
             sql: `
-                INSERT INTO rsvp_companions (rsvp_id, companion_slot, companion_name, age, counts_buffet)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO rsvp_companions (rsvp_id, companion_slot, companion_name, age, counts_buffet, attending)
+                VALUES (?, ?, ?, ?, ?, ?)
             `,
-            args: [rsvpId, companion.slot, companion.name, companion.age, companion.countsBuffet],
+            args: [rsvpId, companion.slot, companion.name, companion.age, companion.countsBuffet, companion.attending],
         })
     }
 }
@@ -138,6 +151,7 @@ export default async function handler(request, response) {
         if (attending === 'nao' && declineReason.length < 4) return response.status(400).json({ error: 'Se nao puder ir, conte o motivo para a Duda.' })
 
         await ensureSchema()
+        await ensureCompanionAttendanceColumn()
         const lookup = await findGuest({ whatsappDigits, invitationCode: body.invitationCode })
         if (lookup.error) return response.status(403).json({ error: lookup.error })
         if (!lookup.guest) return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
@@ -153,6 +167,7 @@ export default async function handler(request, response) {
         await bindPhoneIfNeeded(lookup.guest.id, whatsappDigits, lookup.canBindPhone)
 
         const companions = companionValidation.companions
+        const confirmedCompanionCount = companions.filter((companion) => companion.attending === 'sim').length
         const buffetCount = attending === 'sim'
             ? countMainGuestForBuffet(lookup.guest.age) + companions.reduce((total, companion) => total + companion.countsBuffet, 0)
             : 0
@@ -169,7 +184,7 @@ export default async function handler(request, response) {
                 whatsappDigits,
                 attending,
                 attending === 'nao' ? declineReason : '',
-                companions.length,
+                confirmedCompanionCount,
                 buffetCount,
             ],
         })
@@ -180,7 +195,7 @@ export default async function handler(request, response) {
         }
 
         const message = attending === 'sim'
-            ? `Presenca confirmada para ${lookup.guest.guest_name}. Acompanhantes: ${companions.length}. Pessoas para buffet: ${buffetCount}.`
+            ? `Presenca confirmada para ${lookup.guest.guest_name}. Acompanhantes confirmados: ${confirmedCompanionCount}. Pessoas para buffet: ${buffetCount}.`
             : 'Resposta registrada. Obrigado por avisar com carinho.'
         const slots = await getGuestCompanionSlots(lookup.guest.id, maxCompanions)
 
