@@ -15,6 +15,10 @@ import {
     isRsvpClosedAt,
 } from '../shared/rsvp-deadline.js'
 
+import {
+    enforceRateLimit,
+} from './_rate-limit.js'
+
 function getRsvpNow() {
     const testNow = process.env.NODE_ENV !== 'production'
         ? String(process.env.RSVP_TEST_NOW || '').trim()
@@ -232,6 +236,17 @@ export default async function handler(request, response) {
 
         if (!validPhoneDigits(whatsappDigits)) return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
         if (attending === 'nao' && declineReason.length < 4) return response.status(400).json({ error: 'Se nao puder ir, conte o motivo para a Duda.' })
+
+        const rateAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'rsvp',
+            limit: 10,
+            windowSeconds: 10 * 60,
+            message: 'Muitas tentativas de confirmacao. Aguarde alguns minutos e tente novamente.',
+        })
+
+        if (!rateAllowed) return
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()

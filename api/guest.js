@@ -8,6 +8,10 @@ import {
     publicGuest,
 } from './_db.js'
 
+import {
+    enforceRateLimit,
+} from './_rate-limit.js'
+
 function validPhoneDigits(value) {
     return /^\d{10,11}$/.test(value)
 }
@@ -153,6 +157,17 @@ export default async function handler(request, response) {
         if (!validPhoneDigits(whatsappDigits)) {
             return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
         }
+
+        const rateAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'guest',
+            limit: 20,
+            windowSeconds: 10 * 60,
+            message: 'Muitas consultas ao convite. Aguarde alguns minutos e tente novamente.',
+        })
+
+        if (!rateAllowed) return
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()

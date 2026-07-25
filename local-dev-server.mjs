@@ -91,6 +91,7 @@ async function handleApi(request, response, url) {
         body,
         query,
         headers: request.headers,
+        socket: request.socket,
     }, createResponseAdapter(response))
     return true
 }

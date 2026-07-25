@@ -7,6 +7,10 @@ import {
     parseBody,
 } from './_db.js'
 
+import {
+    enforceRateLimit,
+} from './_rate-limit.js'
+
 export default async function handler(
     request,
     response,
@@ -30,6 +34,17 @@ export default async function handler(
     }
 
     try {
+        const rateAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'admin-login',
+            limit: 10,
+            windowSeconds: 15 * 60,
+            message: 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.',
+        })
+
+        if (!rateAllowed) return
+
         const body = parseBody(
             request.body,
         )
