@@ -9,18 +9,24 @@ import {
     enforceRateLimit,
 } from './_rate-limit.js'
 
+
 function validatePayload(body) {
-    const name = cleanText(
-        body.name,
+    const invitationCode = cleanText(
+        body.invitationCode,
     )
 
     const message = cleanText(
         body.message,
     )
 
-    if (name.length < 2) {
+    /*
+     * O token individual possui 256 bits e 64 caracteres hexadecimais.
+     * O usuario nunca precisa digitar esse token:
+     * ele vem automaticamente da URL do convite.
+     */
+    if (!/^[a-f0-9]{64}$/i.test(invitationCode)) {
         return {
-            error: 'Informe seu nome.',
+            error: 'Não foi possível identificar este convite.',
         }
     }
 
@@ -32,17 +38,37 @@ function validatePayload(body) {
 
     if (message.length > 500) {
         return {
-            error: 'A mensagem pode ter no maximo 500 caracteres.',
+            error: 'A mensagem pode ter no máximo 500 caracteres.',
         }
     }
 
     return {
         data: {
-            name,
+            invitationCode,
             message,
         },
     }
 }
+
+
+async function findGuestByToken(invitationCode) {
+    const result = await getClient().execute({
+        sql: `
+            SELECT
+                id,
+                guest_name
+            FROM invited_guests
+            WHERE invite_token = ?
+            LIMIT 1
+        `,
+        args: [
+            invitationCode,
+        ],
+    })
+
+    return result.rows[0] || null
+}
+
 
 export default async function handler(
     request,
@@ -57,7 +83,7 @@ export default async function handler(
         return response
             .status(405)
             .json({
-                error: 'Metodo nao permitido.',
+                error: 'Método não permitido.',
             })
     }
 
@@ -74,10 +100,41 @@ export default async function handler(
                 })
         }
 
+        /*
+         * Limite contra tentativa de descobrir tokens validos.
+         */
+        const lookupAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'messages-lookup',
+            limit: 20,
+            windowSeconds: 60 * 60,
+            message: 'Muitas tentativas de envio. Aguarde um pouco e tente novamente.',
+        })
+
+        if (!lookupAllowed) return
+
+        await ensureSchema()
+
+        const guest = await findGuestByToken(
+            validation.data.invitationCode,
+        )
+
+        if (!guest) {
+            return response
+                .status(403)
+                .json({
+                    error: 'Este convite não foi encontrado.',
+                })
+        }
+
+        /*
+         * Limite de 5 mensagens/hora para o mesmo convidado + IP.
+         */
         const rateAllowed = await enforceRateLimit({
             request,
             response,
-            scope: 'messages',
+            scope: `messages:${Number(guest.id)}`,
             limit: 5,
             windowSeconds: 60 * 60,
             message: 'Muitas mensagens enviadas. Aguarde um pouco e tente novamente.',
@@ -85,18 +142,26 @@ export default async function handler(
 
         if (!rateAllowed) return
 
-        await ensureSchema()
+        /*
+         * O nome NÃO vem do navegador.
+         * Ele sempre e obtido diretamente do cadastro do convidado.
+         */
+        const guestName = cleanText(
+            guest.guest_name,
+        )
 
         await getClient().execute({
             sql: `
                 INSERT INTO birthday_messages (
+                    invited_guest_id,
                     name,
                     message
                 )
-                VALUES (?, ?)
+                VALUES (?, ?, ?)
             `,
             args: [
-                validation.data.name,
+                Number(guest.id),
+                guestName,
                 validation.data.message,
             ],
         })
@@ -104,7 +169,7 @@ export default async function handler(
         return response
             .status(201)
             .json({
-                message: 'Mensagem salva para a Duda.',
+                message: 'Mensagem guardada para a Duda.',
             })
     } catch (error) {
         return response

@@ -4984,3 +4984,444 @@ html {
 }
 
 /* === AJUSTE FINO CTA SELO MOBILE - END === */
+
+
+/* ======================================================================
+   MENSAGEM - REMETENTE IDENTIFICADO PELO CONVITE
+   ====================================================================== */
+
+.message-sender {
+    display: grid;
+    gap: 3px;
+
+    margin-bottom: 14px;
+    padding: 11px 13px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, 0.18);
+
+    border-radius: 9px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(201, 255, 240, 0.72),
+            rgba(244, 231, 188, 0.28)
+        );
+}
+
+.message-sender span {
+    color: #42746e;
+
+    font-size: 0.68rem;
+    font-weight: 900;
+
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.message-sender strong {
+    color: #063f3a;
+
+    font-family:
+        'Playfair Display',
+        Georgia,
+        serif;
+
+    font-size: 1.18rem;
+    line-height: 1.15;
+}
+
+/* === MENSAGEM REMETENTE - END === */
+
+
+/* ======================================================================
+   ADMIN - MENSAGENS PARA A DUDA
+   ====================================================================== */
+
+.admin-messages-panel {
+    display: grid;
+    gap: 20px;
+}
+
+.admin-messages-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.admin-messages-heading h2 {
+    margin-bottom: 4px;
+}
+
+.admin-messages-subtitle {
+    margin: 0;
+    color: #557570;
+    font-size: 0.9rem;
+}
+
+.admin-message-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    min-width: 74px;
+    min-height: 44px;
+    padding: 8px 13px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, 0.18);
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(201, 255, 240, 0.86),
+            rgba(244, 231, 188, 0.52)
+        );
+
+    color: #075e57;
+    font-weight: 900;
+}
+
+.admin-messages-toolbar {
+    display: grid;
+    grid-template-columns:
+        minmax(240px, 1fr)
+        auto;
+
+    gap: 12px;
+    align-items: end;
+}
+
+.admin-message-search {
+    display: grid;
+    gap: 6px;
+}
+
+.admin-message-search span {
+    color: #315f59;
+
+    font-size: 0.72rem;
+    font-weight: 900;
+
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.admin-message-search input {
+    width: 100%;
+    min-height: 46px;
+}
+
+.admin-export-messages {
+    min-height: 46px;
+    padding-inline: 18px;
+}
+
+.admin-message-filter-result {
+    margin: -8px 0 0;
+
+    color: #557570;
+    font-size: 0.78rem;
+}
+
+.admin-message-list {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 14px;
+}
+
+.admin-message-card {
+    display: grid;
+    gap: 13px;
+
+    padding: 16px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, 0.15);
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.98),
+            rgba(222, 255, 247, 0.64)
+        );
+
+    box-shadow:
+        0 12px 28px
+        rgba(38, 109, 98, 0.08);
+}
+
+.admin-message-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.admin-message-card__top > div {
+    display: grid;
+    gap: 2px;
+}
+
+.admin-message-card__label {
+    color: #62817c;
+
+    font-size: 0.63rem;
+    font-weight: 900;
+
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-message-card__top strong {
+    color: #083f3a;
+
+    font-family:
+        'Playfair Display',
+        Georgia,
+        serif;
+
+    font-size: 1.17rem;
+}
+
+.admin-message-card time {
+    color: #607f7a;
+
+    font-size: 0.72rem;
+
+    white-space: nowrap;
+}
+
+.admin-message-card > p {
+    margin: 0;
+
+    color: #264f4a;
+
+    font-size: 0.94rem;
+    line-height: 1.6;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.admin-message-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding-top: 10px;
+
+    border-top:
+        1px solid
+        rgba(8, 120, 111, 0.1);
+}
+
+.admin-message-card__footer small {
+    color: #528079;
+    font-size: 0.72rem;
+}
+
+.admin-message-delete {
+    min-height: 34px !important;
+    padding: 5px 11px !important;
+
+    border-color:
+        rgba(153, 32, 42, 0.24) !important;
+
+    background:
+        rgba(255, 245, 245, 0.92) !important;
+
+    color: #8b2831 !important;
+
+    font-size: 0.72rem !important;
+}
+
+.admin-message-delete:hover {
+    background:
+        rgba(255, 229, 231, 0.98) !important;
+}
+
+.admin-message-empty {
+    grid-column: 1 / -1;
+
+    display: grid;
+    place-items: center;
+    gap: 6px;
+
+    min-height: 180px;
+    padding: 30px;
+
+    border:
+        1px dashed
+        rgba(8, 120, 111, 0.22);
+
+    border-radius: 12px;
+
+    text-align: center;
+}
+
+.admin-message-empty > span {
+    font-size: 2rem;
+}
+
+.admin-message-empty strong {
+    color: #164c46;
+}
+
+.admin-message-empty p {
+    margin: 0;
+    color: #62817c;
+}
+
+
+@media (max-width: 760px) {
+    .admin-messages-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-message-list {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-messages-heading {
+        align-items: center;
+    }
+}
+
+
+@media (max-width: 520px) {
+    .admin-messages-heading {
+        align-items: flex-start;
+    }
+
+    .admin-message-card__top {
+        display: grid;
+        gap: 6px;
+    }
+
+    .admin-message-card time {
+        white-space: normal;
+    }
+
+    .admin-message-card__footer {
+        align-items: flex-end;
+    }
+}
+
+/* === ADMIN MENSAGENS PARA A DUDA - END === */
+
+
+/* ======================================================================
+   ADMIN - BOTAO SAIR
+   ====================================================================== */
+
+.admin-login .lookup-form:has(.admin-logout-button) {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.admin-logout-button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    width: auto !important;
+    min-width: 150px;
+    min-height: 42px;
+
+    padding: 8px 17px !important;
+
+    border:
+        1px solid
+        rgba(126, 60, 60, 0.20) !important;
+
+    border-radius: 999px !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.96),
+            rgba(255, 241, 238, 0.94)
+        ) !important;
+
+    color: #7d3b3b !important;
+
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+
+    letter-spacing: 0.01em;
+
+    box-shadow:
+        0 8px 20px
+        rgba(63, 84, 76, 0.08) !important;
+
+    cursor: pointer;
+
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        background 160ms ease;
+}
+
+.admin-logout-button span {
+    display: inline-flex;
+
+    font-size: 1rem;
+    line-height: 1;
+
+    transform: rotate(180deg);
+}
+
+.admin-logout-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff,
+            #ffe8e4
+        ) !important;
+
+    box-shadow:
+        0 11px 24px
+        rgba(105, 52, 52, 0.13) !important;
+}
+
+.admin-logout-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.admin-logout-button:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+
+@media (max-width: 520px) {
+    .admin-login .lookup-form:has(.admin-logout-button) {
+        justify-content: stretch;
+    }
+
+    .admin-logout-button {
+        width: 100% !important;
+    }
+}
+
+/* === ADMIN BOTAO SAIR - END === */

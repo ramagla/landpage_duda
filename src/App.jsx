@@ -797,34 +797,78 @@ function GiftPanel() {
     )
 }
 
-function BirthdayMessageForm() {
+function BirthdayMessageForm({
+    guest,
+    invitationCode,
+}) {
     const [status, setStatus] = useState('idle')
     const [feedback, setFeedback] = useState('')
 
+    const guestName = String(
+        guest?.name || '',
+    ).trim()
+
+    const canSend = Boolean(
+        guestName
+        && invitationCode
+    )
+
     async function handleSubmit(event) {
         event.preventDefault()
+
         const formElement = event.currentTarget
+
         setStatus('loading')
         setFeedback('')
 
-        const form = new FormData(formElement)
-        const payload = {
-            name: String(form.get('name') || '').trim(),
-            message: String(form.get('message') || '').trim(),
-        }
+        const form = new FormData(
+            formElement,
+        )
+
+        const message = String(
+            form.get('message') || '',
+        ).trim()
 
         try {
-            const response = await fetch('/api/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            })
-            const data = await readApiJson(response)
+            if (!canSend) {
+                throw new Error(
+                    'Não foi possível identificar o convidado.'
+                )
+            }
 
-            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel salvar a mensagem agora.')
+            const response = await fetch(
+                '/api/messages',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+
+                    body: JSON.stringify({
+                        invitationCode,
+                        message,
+                    }),
+                },
+            )
+
+            const data = await readApiJson(
+                response,
+            )
+
+            if (!response.ok) {
+                throw new Error(
+                    data?.error
+                    || 'Não foi possível salvar a mensagem agora.'
+                )
+            }
 
             setStatus('success')
-            setFeedback(data.message || 'Mensagem guardada para a Duda.')
+
+            setFeedback(
+                data.message
+                || 'Mensagem guardada para a Duda.',
+            )
+
             formElement.reset()
         } catch (error) {
             setStatus('error')
@@ -833,22 +877,55 @@ function BirthdayMessageForm() {
     }
 
     return (
-        <form className="message-form" onSubmit={handleSubmit}>
+        <form
+            className="message-form"
+            onSubmit={handleSubmit}
+        >
+            <div className="message-sender">
+                <span>Enviando como</span>
+
+                <strong>
+                    {guestName || 'Convidado'}
+                </strong>
+            </div>
+
             <label>
-                <span>Seu nome</span>
-                <input name="name" type="text" placeholder="Quem esta mandando carinho?" required />
+                <span>Mensagem de parabéns</span>
+
+                <textarea
+                    name="message"
+                    placeholder="Escreva uma mensagem para a Duda"
+                    maxLength="500"
+                    minLength="5"
+                    required
+                />
             </label>
-            <label>
-                <span>Mensagem de parabens</span>
-                <textarea name="message" placeholder="Escreva uma mensagem para a Duda" maxLength="500" required />
-            </label>
-            <button disabled={status === 'loading'} type="submit">
-                {status === 'loading' ? 'Salvando...' : 'Enviar mensagem'}
+
+            <button
+                type="submit"
+                disabled={
+                    status === 'loading'
+                    || !canSend
+                }
+            >
+                {status === 'loading'
+                    ? 'Salvando...'
+                    : 'Enviar mensagem'}
             </button>
-            {feedback ? <p className={`form-message form-message--${status}`}>{feedback}</p> : null}
+
+            {feedback ? (
+                <p
+                    className={`form-message form-message--${status}`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    {feedback}
+                </p>
+            ) : null}
         </form>
     )
 }
+
 
 function formatAdminAccessDate(value) {
     if (!value) return ''
@@ -881,6 +958,7 @@ function AdminPage() {
     const [data, setData] = useState(null)
     const [editing, setEditing] = useState(null)
     const [adminCompanionCount, setAdminCompanionCount] = useState(0)
+    const [messageSearch, setMessageSearch] = useState('')
 
     useEffect(() => {
         let cancelled = false
@@ -1086,6 +1164,116 @@ function AdminPage() {
         }
     }
 
+    async function handleDeleteMessage(messageItem) {
+        const confirmed = window.confirm(
+            `Excluir a mensagem de ${messageItem.name}?`
+        )
+
+        if (!confirmed) return
+
+        try {
+            const result = await callAdmin({
+                action: 'deleteMessage',
+                id: messageItem.id,
+            })
+
+            setMessage(
+                result.message
+                || 'Mensagem excluída.'
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    const normalizedMessageSearch = messageSearch
+        .trim()
+        .toLocaleLowerCase('pt-BR')
+
+    const filteredMessages = (
+        data?.messages
+        || []
+    ).filter((item) => {
+        if (!normalizedMessageSearch) {
+            return true
+        }
+
+        const searchable = `${item.name || ''} ${item.message || ''}`
+            .toLocaleLowerCase('pt-BR')
+
+        return searchable.includes(
+            normalizedMessageSearch
+        )
+    })
+
+    function handleExportMessages() {
+        if (filteredMessages.length === 0) {
+            setMessage(
+                'Não existem mensagens para exportar com o filtro atual.'
+            )
+            return
+        }
+
+        const escapeCsv = (value) => (
+            `"${String(value ?? '').replaceAll('"', '""')}"`
+        )
+
+        const rows = [
+            [
+                'Convidado',
+                'Mensagem',
+                'Data/Hora',
+            ],
+
+            ...filteredMessages.map((item) => [
+                item.name,
+                item.message,
+                formatAdminAccessDate(
+                    item.createdAt,
+                ),
+            ]),
+        ]
+
+        const csv = '\uFEFF' + rows
+            .map(
+                (row) => row
+                    .map(escapeCsv)
+                    .join(';')
+            )
+            .join('\r\n')
+
+        const blob = new Blob(
+            [csv],
+            {
+                type:
+                    'text/csv;charset=utf-8',
+            },
+        )
+
+        const url = URL.createObjectURL(
+            blob,
+        )
+
+        const link = document.createElement(
+            'a',
+        )
+
+        link.href = url
+        link.download = 'mensagens-duda.csv'
+
+        document.body.appendChild(
+            link,
+        )
+
+        link.click()
+        link.remove()
+
+        URL.revokeObjectURL(
+            url,
+        )
+    }
+
     const baseUrl = typeof window === 'undefined' ? '' : window.location.origin
 
     return (
@@ -1096,10 +1284,13 @@ function AdminPage() {
                 <form className="lookup-form" onSubmit={handleLogin}>
                     {data ? (
                         <button
+                            className="admin-logout-button"
                             type="button"
                             onClick={handleLogout}
                             disabled={status === 'loading'}
                         >
+                            <span aria-hidden="true">↪</span>
+
                             {status === 'loading'
                                 ? 'Saindo...'
                                 : 'Sair do painel'}
@@ -1144,6 +1335,10 @@ function AdminPage() {
                             <strong>{data.totals.viewed || 0}</strong>
                         </div>
                         <div><span>Buffet</span><strong>{data.totals.buffet}</strong></div>
+                        <div>
+                            <span>Mensagens</span>
+                            <strong>{data.messages?.length || 0}</strong>
+                        </div>
                     </section>
 
                     <section
@@ -1302,17 +1497,150 @@ function AdminPage() {
                         </div>
                     </section>
 
-                    <section className="confirm-panel admin-table-panel" aria-labelledby="message-list-title">
-                        <p className="panel-kicker">Mensagens</p>
-                        <h2 id="message-list-title">Parabens enviados</h2>
-                        <div className="message-list">
-                            {data.messages.length === 0 ? <p>Nenhuma mensagem ainda.</p> : data.messages.map((item) => (
-                                <article key={item.id}>
-                                    <strong>{item.name}</strong>
-                                    <p>{item.message}</p>
-                                    <small>{item.createdAt}</small>
-                                </article>
-                            ))}
+                    <section
+                        className="confirm-panel admin-messages-panel"
+                        aria-labelledby="message-list-title"
+                    >
+                        <div className="admin-messages-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Carinho para guardar
+                                </p>
+
+                                <h2 id="message-list-title">
+                                    Mensagens para a Duda
+                                </h2>
+
+                                <p className="admin-messages-subtitle">
+                                    {data.messages?.length || 0}
+                                    {' '}
+                                    {(data.messages?.length || 0) === 1
+                                        ? 'mensagem recebida'
+                                        : 'mensagens recebidas'}
+                                </p>
+                            </div>
+
+                            <span
+                                className="admin-message-count"
+                                aria-label={`${data.messages?.length || 0} mensagens`}
+                            >
+                                💌
+                                {' '}
+                                {data.messages?.length || 0}
+                            </span>
+                        </div>
+
+                        <div className="admin-messages-toolbar">
+                            <label className="admin-message-search">
+                                <span>Buscar mensagem</span>
+
+                                <input
+                                    type="search"
+                                    value={messageSearch}
+                                    onChange={(event) => (
+                                        setMessageSearch(
+                                            event.target.value
+                                        )
+                                    )}
+                                    placeholder="Nome ou texto da mensagem"
+                                />
+                            </label>
+
+                            <button
+                                className="admin-export-messages"
+                                type="button"
+                                onClick={handleExportMessages}
+                                disabled={
+                                    filteredMessages.length === 0
+                                }
+                            >
+                                Exportar CSV
+                            </button>
+                        </div>
+
+                        {messageSearch ? (
+                            <p className="admin-message-filter-result">
+                                {filteredMessages.length}
+                                {' '}
+                                {filteredMessages.length === 1
+                                    ? 'resultado encontrado'
+                                    : 'resultados encontrados'}
+                            </p>
+                        ) : null}
+
+                        <div className="admin-message-list">
+                            {filteredMessages.length === 0 ? (
+                                <div className="admin-message-empty">
+                                    <span aria-hidden="true">
+                                        💌
+                                    </span>
+
+                                    <strong>
+                                        {data.messages?.length
+                                            ? 'Nenhuma mensagem encontrada'
+                                            : 'Nenhuma mensagem ainda'}
+                                    </strong>
+
+                                    <p>
+                                        {data.messages?.length
+                                            ? 'Tente buscar por outro nome ou trecho.'
+                                            : 'As mensagens enviadas pelos convidados aparecerão aqui.'}
+                                    </p>
+                                </div>
+                            ) : (
+                                filteredMessages.map((item) => (
+                                    <article
+                                        className="admin-message-card"
+                                        key={item.id}
+                                    >
+                                        <div className="admin-message-card__top">
+                                            <div>
+                                                <span className="admin-message-card__label">
+                                                    Enviado por
+                                                </span>
+
+                                                <strong>
+                                                    {item.name}
+                                                </strong>
+                                            </div>
+
+                                            <time>
+                                                {formatAdminAccessDate(
+                                                    item.createdAt
+                                                )}
+                                            </time>
+                                        </div>
+
+                                        <p>
+                                            {item.message}
+                                        </p>
+
+                                        <div className="admin-message-card__footer">
+                                            {item.invitedGuestId ? (
+                                                <small>
+                                                    ✓ Vinculada ao convite
+                                                </small>
+                                            ) : (
+                                                <small>
+                                                    Mensagem antiga
+                                                </small>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                className="admin-message-delete"
+                                                onClick={() => (
+                                                    handleDeleteMessage(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                Excluir
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))
+                            )}
                         </div>
                     </section>
                 </>
@@ -1688,8 +2016,11 @@ function LandingPage() {
                 <section id="mensagem-duda" className="confirm-panel message-panel" aria-labelledby="message-title">
                     <p className="panel-kicker">Carinho para guardar</p>
                     <h2 id="message-title">Deixe sua mensagem</h2>
-                    <p>Escreva uma mensagem de parabens para a Duda receber junto com as confirmacoes.</p>
-                    <BirthdayMessageForm />
+                    <p>Escreva uma mensagem de parabéns para a Duda receber junto com as confirmações.</p>
+                    <BirthdayMessageForm
+                        guest={activeGuest}
+                        invitationCode={getInvitationCode()}
+                    />
                 </section>
             </div>
         </main>

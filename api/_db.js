@@ -288,10 +288,21 @@ export async function ensureSchema() {
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS birthday_messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER,
                     name TEXT NOT NULL,
                     message TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT (datetime('now'))
                 )
+            `)
+
+            await db.execute(
+                'ALTER TABLE birthday_messages ADD COLUMN invited_guest_id INTEGER'
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS birthday_messages_invited_guest_index
+                ON birthday_messages (invited_guest_id)
+                WHERE invited_guest_id IS NOT NULL
             `)
 
             /*

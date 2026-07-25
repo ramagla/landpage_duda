@@ -105,10 +105,18 @@ async function getSummary() {
     `)
 
     const messagesResult = await getClient().execute(`
-        SELECT id, name, message, created_at
-        FROM birthday_messages
-        ORDER BY id DESC
-        LIMIT 100
+        SELECT
+            bm.id,
+            bm.invited_guest_id,
+            bm.name,
+            bm.message,
+            bm.created_at,
+            ig.guest_name
+        FROM birthday_messages bm
+        LEFT JOIN invited_guests ig
+            ON ig.id = bm.invited_guest_id
+        ORDER BY bm.id DESC
+        LIMIT 500
     `)
 
     const companionsByRsvp = new Map()
@@ -203,12 +211,65 @@ async function getSummary() {
         guests,
         messages: messagesResult.rows.map((row) => ({
             id: Number(row.id),
-            name: row.name,
+            invitedGuestId: row.invited_guest_id
+                ? Number(row.invited_guest_id)
+                : null,
+            name: row.guest_name || row.name || 'Convidado',
             message: row.message,
             createdAt: row.created_at,
         })),
     }
 }
+
+async function deleteMessage(body) {
+    const id = Number.parseInt(
+        String(body.id || ''),
+        10,
+    )
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return {
+            error: 'Mensagem inválida.',
+        }
+    }
+
+    const existing = await getClient().execute({
+        sql: `
+            SELECT
+                id,
+                name
+            FROM birthday_messages
+            WHERE id = ?
+            LIMIT 1
+        `,
+        args: [
+            id,
+        ],
+    })
+
+    const message = existing.rows[0]
+
+    if (!message) {
+        return {
+            error: 'Mensagem não encontrada.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM birthday_messages
+            WHERE id = ?
+        `,
+        args: [
+            id,
+        ],
+    })
+
+    return {
+        message: `Mensagem de ${message.name || 'convidado'} excluída.`,
+    }
+}
+
 
 async function savePresetCompanions(guestId, companions) {
     await getClient().execute({
@@ -395,6 +456,13 @@ export default async function handler(request, response) {
 
         if (body.action === 'deleteGuest') {
             const deleted = await deleteGuest(body)
+            if (deleted.error) return response.status(400).json({ error: deleted.error })
+            const summary = await getSummary()
+            return response.status(200).json({ message: deleted.message, ...summary })
+        }
+
+        if (body.action === 'deleteMessage') {
+            const deleted = await deleteMessage(body)
             if (deleted.error) return response.status(400).json({ error: deleted.error })
             const summary = await getSummary()
             return response.status(200).json({ message: deleted.message, ...summary })
