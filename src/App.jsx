@@ -871,7 +871,7 @@ function AdminPage() {
                                             <td>{guestItem.companionsCount}/{guestItem.maxCompanions}</td>
                                             <td>{guestItem.buffetCount}</td>
                                             <td>{formatWhatsapp(guestItem.whatsapp)}</td>
-                                            <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
+                                            <td><code>{guestItem.inviteToken ? `${baseUrl}/?convite=${guestItem.inviteToken}` : '-'}</code></td>
                                             <td>
                                                 <div className="admin-row-actions">
                                                     <button
