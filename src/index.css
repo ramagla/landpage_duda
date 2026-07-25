@@ -5725,3 +5725,86 @@ html {
 }
 
 /* === ADMIN LISTA GERAL - END === */
+
+/* Admin synchronization controls - Fase 2B */
+.admin-sync-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(8, 120, 111, 0.16);
+    border-radius: 10px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.88),
+            rgba(201, 255, 240, 0.58)
+        );
+    box-shadow: 0 12px 28px rgba(8, 95, 87, 0.08);
+}
+
+.admin-sync-status {
+    display: grid;
+    gap: 3px;
+}
+
+.admin-sync-status span {
+    color: var(--palette-deep);
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-sync-status small {
+    color: #55736e;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.admin-refresh-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 0 15px;
+    border: 1px solid rgba(8, 120, 111, 0.2);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--palette-deep);
+    font-weight: 900;
+    cursor: pointer;
+    transition:
+        transform 160ms ease,
+        background 160ms ease,
+        border-color 160ms ease;
+}
+
+.admin-refresh-button:not(:disabled):hover {
+    transform: translateY(-1px);
+    border-color: rgba(8, 120, 111, 0.38);
+    background: rgba(201, 255, 240, 0.56);
+}
+
+.admin-refresh-button:disabled {
+    cursor: wait;
+    opacity: 0.62;
+}
+
+.admin-refresh-button > span {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+@media (max-width: 600px) {
+    .admin-sync-bar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-refresh-button {
+        width: 100%;
+    }
+}

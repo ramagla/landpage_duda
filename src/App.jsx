@@ -1039,6 +1039,10 @@ function AdminPage() {
     const [messageSearch, setMessageSearch] = useState('')
     const [guestSearch, setGuestSearch] = useState('')
     const [guestStatusFilter, setGuestStatusFilter] = useState('todos')
+    const [lastUpdatedAt, setLastUpdatedAt] = useState('')
+    const [refreshing, setRefreshing] = useState(false)
+    const adminRefreshRef = useRef(null)
+    const lastAutoRefreshAtRef = useRef(0)
 
     useEffect(() => {
         let cancelled = false
@@ -1071,6 +1075,10 @@ function AdminPage() {
 
                 setData(body)
                 setStatus('success')
+                setLastUpdatedAt(
+                    new Date().toISOString()
+                )
+                lastAutoRefreshAtRef.current = Date.now()
             } catch (error) {
                 if (cancelled) return
 
@@ -1118,9 +1126,106 @@ function AdminPage() {
 
         setData(body)
         setStatus('success')
+        setLastUpdatedAt(
+            new Date().toISOString()
+        )
 
         return body
     }
+
+    useEffect(() => {
+        /*
+         * Mantem no ref sempre a versao mais recente de callAdmin.
+         *
+         * O ref e atualizado apos o render, nunca durante o render.
+         */
+        adminRefreshRef.current = callAdmin
+    })
+
+    async function handleRefreshAdmin({
+        automatic = false,
+    } = {}) {
+        if (refreshing) {
+            return
+        }
+
+        setRefreshing(true)
+
+        try {
+            lastAutoRefreshAtRef.current = Date.now()
+
+            await callAdmin()
+
+            if (!automatic) {
+                setMessage(
+                    'Dados do painel atualizados.'
+                )
+            }
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
+    useEffect(() => {
+        if (!data) {
+            return undefined
+        }
+
+        function handleVisibilityChange() {
+            if (
+                document.visibilityState
+                !== 'visible'
+            ) {
+                return
+            }
+
+            const now = Date.now()
+
+            /*
+             * Evita consultas repetidas caso o usuario
+             * alterne entre abas varias vezes em poucos segundos.
+             */
+            if (
+                now
+                - lastAutoRefreshAtRef.current
+                < 30_000
+            ) {
+                return
+            }
+
+            lastAutoRefreshAtRef.current = now
+
+            setRefreshing(true)
+
+            Promise.resolve(
+                adminRefreshRef.current?.()
+            )
+                .catch((error) => {
+                    setStatus('error')
+                    setMessage(
+                        error.message
+                    )
+                })
+                .finally(() => {
+                    setRefreshing(false)
+                })
+        }
+
+        document.addEventListener(
+            'visibilitychange',
+            handleVisibilityChange
+        )
+
+        return () => {
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange
+            )
+        }
+    }, [data])
 
     async function handleLogin(event) {
         event.preventDefault()
@@ -1184,6 +1289,9 @@ function AdminPage() {
             setAdminCompanionCount(0)
             setPassword('')
             setStatus('idle')
+            setLastUpdatedAt('')
+            setRefreshing(false)
+            lastAutoRefreshAtRef.current = 0
             setMessage('Sessao encerrada.')
         } catch (error) {
             setStatus('error')
@@ -1710,6 +1818,43 @@ function AdminPage() {
 
             {data ? (
                 <>
+                    <section
+                        className="admin-sync-bar"
+                        aria-label="Sincronização do painel"
+                    >
+                        <div className="admin-sync-status">
+                            <span>
+                                Painel sincronizado
+                            </span>
+
+                            <small>
+                                {lastUpdatedAt
+                                    ? `Última atualização: ${formatAdminAccessDate(lastUpdatedAt)}`
+                                    : 'Aguardando atualização'}
+                            </small>
+                        </div>
+
+                        <button
+                            className="admin-refresh-button"
+                            type="button"
+                            onClick={() => (
+                                handleRefreshAdmin()
+                            )}
+                            disabled={
+                                refreshing
+                                || status === 'loading'
+                            }
+                        >
+                            <span aria-hidden="true">
+                                ⟳
+                            </span>
+
+                            {refreshing
+                                ? 'Atualizando...'
+                                : 'Atualizar dados'}
+                        </button>
+                    </section>
+
                     <section className="admin-summary" aria-label="Resumo das confirmacoes">
                         <div><span>Convidados</span><strong>{data.totals.invited}</strong></div>
                         <div><span>Confirmados</span><strong>{data.totals.confirmed}</strong></div>
