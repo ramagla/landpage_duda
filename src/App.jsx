@@ -2158,6 +2158,206 @@ function AdminPage() {
                             convidados
                         </p>
 
+                        <div className="admin-mobile-guests">
+                            {filteredGuests.length === 0 ? (
+                                <div className="admin-mobile-empty">
+                                    Nenhum convidado encontrado com os filtros atuais.
+                                </div>
+                            ) : (
+                                filteredGuests.map((guestItem) => (
+                                    <article
+                                        className={`admin-mobile-guest-card admin-mobile-guest-card--${guestItem.status}`}
+                                        key={`mobile-${guestItem.id}`}
+                                    >
+                                        <header className="admin-mobile-guest-header">
+                                            <div>
+                                                <strong className="admin-mobile-guest-name">
+                                                    {guestItem.name}
+                                                </strong>
+
+                                                <small>
+                                                    {guestItem.lastAccessAt
+                                                        ? `Último acesso: ${formatAdminAccessDate(guestItem.lastAccessAt)}`
+                                                        : 'Ainda não acessou'}
+                                                </small>
+                                            </div>
+
+                                            <span
+                                                className={`status-pill status-pill--${guestItem.status}`}
+                                            >
+                                                {getGuestStatusLabel(
+                                                    guestItem.status
+                                                )}
+                                            </span>
+                                        </header>
+
+                                        <div className="admin-mobile-guest-metrics">
+                                            <div>
+                                                <span>Acomp.</span>
+                                                <strong>
+                                                    {guestItem.companionsCount}
+                                                    /
+                                                    {guestItem.maxCompanions}
+                                                </strong>
+                                            </div>
+
+                                            <div>
+                                                <span>Buffet</span>
+                                                <strong>
+                                                    {guestItem.buffetCount}
+                                                </strong>
+                                            </div>
+
+                                            <div>
+                                                <span>WhatsApp</span>
+                                                <strong className="admin-mobile-phone">
+                                                    {guestItem.whatsapp
+                                                        ? formatWhatsapp(
+                                                            guestItem.whatsapp
+                                                        )
+                                                        : 'Não informado'}
+                                                </strong>
+                                            </div>
+                                        </div>
+
+                                        {guestItem.declineReason ? (
+                                            <div className="admin-mobile-decline">
+                                                <span>Motivo da ausência</span>
+                                                <strong>
+                                                    {guestItem.declineReason}
+                                                </strong>
+                                            </div>
+                                        ) : null}
+
+                                        {guestItem.companions.length > 0
+                                            || guestItem.presetCompanions?.length > 0 ? (
+                                            <details className="admin-mobile-companions">
+                                                <summary>
+                                                    Ver acompanhantes
+                                                </summary>
+
+                                                <div>
+                                                    {guestItem.companions.length > 0 ? (
+                                                        <p>
+                                                            {guestItem.companions
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name} (${item.age})${item.attending === 'nao' ? ' - não vai' : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </p>
+                                                    ) : (
+                                                        <p>
+                                                            {(guestItem.presetCompanions || [])
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name}${item.age !== '' ? ` (${item.age})` : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </details>
+                                        ) : null}
+
+                                        <button
+                                            className="admin-mobile-whatsapp-primary"
+                                            type="button"
+                                            onClick={() => (
+                                                handleOpenGuestWhatsapp(
+                                                    guestItem
+                                                )
+                                            )}
+                                            disabled={
+                                                !guestItem.whatsapp
+                                                || !guestItem.inviteToken
+                                            }
+                                        >
+                                            <span aria-hidden="true">
+                                                ↗
+                                            </span>
+
+                                            {guestItem.whatsapp
+                                                ? 'Enviar convite no WhatsApp'
+                                                : 'WhatsApp não cadastrado'}
+                                        </button>
+
+                                        <div className="admin-mobile-secondary-actions">
+                                            <button
+                                                className="admin-mobile-copy"
+                                                type="button"
+                                                onClick={() => (
+                                                    handleCopyGuestLink(
+                                                        guestItem
+                                                    )
+                                                )}
+                                                disabled={
+                                                    !guestItem.inviteToken
+                                                }
+                                            >
+                                                <span aria-hidden="true">
+                                                    ⧉
+                                                </span>
+                                                Copiar link
+                                            </button>
+
+                                            <button
+                                                className="admin-mobile-edit"
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditing(
+                                                        guestItem
+                                                    )
+
+                                                    setAdminCompanionCount(
+                                                        Number(
+                                                            guestItem.maxCompanions
+                                                            || 0
+                                                        )
+                                                    )
+
+                                                    window.requestAnimationFrame(
+                                                        () => {
+                                                            document
+                                                                .getElementById(
+                                                                    'cadastro-convidado'
+                                                                )
+                                                                ?.scrollIntoView({
+                                                                    behavior: 'smooth',
+                                                                    block: 'start',
+                                                                })
+                                                        }
+                                                    )
+                                                }}
+                                            >
+                                                <span aria-hidden="true">
+                                                    ✎
+                                                </span>
+                                                Editar
+                                            </button>
+
+                                            <button
+                                                className="admin-mobile-delete"
+                                                type="button"
+                                                onClick={() => (
+                                                    handleDeleteGuest(
+                                                        guestItem
+                                                    )
+                                                )}
+                                            >
+                                                <span aria-hidden="true">
+                                                    ×
+                                                </span>
+                                                Excluir
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))
+                            )}
+                        </div>
+
                         <div className="admin-table-wrap">
                             <table className="admin-table">
                                 <thead>
