@@ -1,4 +1,16 @@
-import { cleanText, ensureSchema, getClient, getGuestCompanionSlots, normalizePhone, publicGuest } from './_db.js'
+import {
+    cleanText,
+    ensureSchema,
+    getClient,
+    getGuestCompanionSlots,
+    isGuestPhonePlaceholder,
+    normalizePhone,
+    publicGuest,
+} from './_db.js'
+
+import {
+    enforceRateLimit,
+} from './_rate-limit.js'
 
 function validPhoneDigits(value) {
     return /^\d{10,11}$/.test(value)
@@ -10,25 +22,74 @@ async function ensureCompanionAttendanceColumn() {
         if (!String(error?.message || '').toLowerCase().includes('duplicate column')) throw error
     })
 }
-async function findGuest(whatsappDigits, invitationCode) {
-    const code = cleanText(invitationCode).toLowerCase()
+function allowLegacyInviteCodes() {
+    return String(process.env.ALLOW_LEGACY_INVITE_CODES || '').toLowerCase() === 'true'
+}
 
-    if (code) {
-        const result = await getClient().execute({
+async function findGuest(whatsappDigits, invitationCode) {
+    const token = cleanText(invitationCode)
+
+    if (token) {
+        let result = await getClient().execute({
             sql: `
-                SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
+                SELECT
+                    id,
+                    guest_name,
+                    invite_code,
+                    invite_token,
+                    age,
+                    whatsapp_digits,
+                    max_companions
                 FROM invited_guests
-                WHERE lower(invite_code) = ?
+                WHERE invite_token = ?
                 LIMIT 1
             `,
-            args: [code],
+            args: [token],
         })
-        const guest = result.rows[0] || null
-        if (!guest) return { guest: null }
 
-        const registeredPhone = normalizePhone(guest.whatsapp_digits)
+        let guest = result.rows[0] || null
+
+        /*
+         * Compatibilidade temporaria apenas quando explicitamente habilitada.
+         * Em producao mantenha ALLOW_LEGACY_INVITE_CODES=false.
+         */
+        if (!guest && allowLegacyInviteCodes()) {
+            result = await getClient().execute({
+                sql: `
+                    SELECT
+                        id,
+                        guest_name,
+                        invite_code,
+                        invite_token,
+                        age,
+                        whatsapp_digits,
+                        max_companions
+                    FROM invited_guests
+                    WHERE lower(invite_code) = ?
+                    LIMIT 1
+                `,
+                args: [token.toLowerCase()],
+            })
+
+            guest = result.rows[0] || null
+        }
+
+        if (!guest) {
+            return { guest: null }
+        }
+
+        /*
+         * Valores como seed-giovana-2 sao placeholders internos,
+         * nao numeros de telefone.
+         */
+        const registeredPhone = isGuestPhonePlaceholder(guest.whatsapp_digits)
+            ? ''
+            : normalizePhone(guest.whatsapp_digits)
+
         if (registeredPhone && registeredPhone !== whatsappDigits) {
-            return { error: 'Esse celular nao pertence a este convite.' }
+            return {
+                error: 'Esse celular não pertence a este convite.',
+            }
         }
 
         return { guest }
@@ -36,7 +97,14 @@ async function findGuest(whatsappDigits, invitationCode) {
 
     const result = await getClient().execute({
         sql: `
-            SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
+            SELECT
+                id,
+                guest_name,
+                invite_code,
+                invite_token,
+                age,
+                whatsapp_digits,
+                max_companions
             FROM invited_guests
             WHERE whatsapp_digits = ?
             LIMIT 1
@@ -44,7 +112,9 @@ async function findGuest(whatsappDigits, invitationCode) {
         args: [whatsappDigits],
     })
 
-    return { guest: result.rows[0] || null }
+    return {
+        guest: result.rows[0] || null,
+    }
 }
 
 async function getCompanionsForGuest(guestId, maxCompanions, rsvpId) {
@@ -88,11 +158,38 @@ export default async function handler(request, response) {
             return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
         }
 
+        const rateAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'guest',
+            limit: 20,
+            windowSeconds: 10 * 60,
+            message: 'Muitas consultas ao convite. Aguarde alguns minutos e tente novamente.',
+        })
+
+        if (!rateAllowed) return
+
         await ensureSchema()
         await ensureCompanionAttendanceColumn()
         const lookup = await findGuest(whatsappDigits, invitationCode)
         if (lookup.error) return response.status(403).json({ error: lookup.error })
         if (!lookup.guest) return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
+
+        /*
+         * O acesso é registrado somente depois de o convidado
+         * validar corretamente celular/link.
+         */
+        await getClient().execute({
+            sql: `
+                UPDATE invited_guests
+                SET
+                    first_access_at = COALESCE(first_access_at, datetime('now')),
+                    last_access_at = datetime('now'),
+                    access_count = COALESCE(access_count, 0) + 1
+                WHERE id = ?
+            `,
+            args: [lookup.guest.id],
+        })
 
         const rsvp = await getClient().execute({
             sql: 'SELECT id, attending, decline_reason, created_at FROM rsvps WHERE invited_guest_id = ? OR whatsapp_digits = ? LIMIT 1',

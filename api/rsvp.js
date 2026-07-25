@@ -4,6 +4,7 @@ import {
     getClient,
     getGuestCompanionSlots,
     isUniqueConstraintError,
+    isGuestPhonePlaceholder,
     normalizePhone,
     parseAge,
     parseBody,
@@ -13,6 +14,10 @@ import {
     RSVP_CLOSED_MESSAGE,
     isRsvpClosedAt,
 } from '../shared/rsvp-deadline.js'
+
+import {
+    enforceRateLimit,
+} from './_rate-limit.js'
 
 function getRsvpNow() {
     const testNow = process.env.NODE_ENV !== 'production'
@@ -73,33 +78,87 @@ function normalizeCompanions(rawCompanions, attending, maxCompanions) {
     return { companions: normalized }
 }
 
-async function findGuest({ whatsappDigits, invitationCode }) {
-    const code = cleanText(invitationCode).toLowerCase()
+function allowLegacyInviteCodes() {
+    return String(process.env.ALLOW_LEGACY_INVITE_CODES || '').toLowerCase() === 'true'
+}
 
-    if (code) {
-        const result = await getClient().execute({
+async function findGuest({ whatsappDigits, invitationCode }) {
+    const token = cleanText(invitationCode)
+
+    if (token) {
+        let result = await getClient().execute({
             sql: `
-                SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
+                SELECT
+                    id,
+                    guest_name,
+                    invite_code,
+                    invite_token,
+                    age,
+                    whatsapp_digits,
+                    max_companions
                 FROM invited_guests
-                WHERE lower(invite_code) = ?
+                WHERE invite_token = ?
                 LIMIT 1
             `,
-            args: [code],
+            args: [token],
         })
-        const guest = result.rows[0] || null
-        if (!guest) return { guest: null }
 
-        const registeredPhone = normalizePhone(guest.whatsapp_digits)
-        if (registeredPhone && registeredPhone !== whatsappDigits) {
-            return { error: 'Esse celular nao pertence a este convite.' }
+        let guest = result.rows[0] || null
+
+        if (!guest && allowLegacyInviteCodes()) {
+            result = await getClient().execute({
+                sql: `
+                    SELECT
+                        id,
+                        guest_name,
+                        invite_code,
+                        invite_token,
+                        age,
+                        whatsapp_digits,
+                        max_companions
+                    FROM invited_guests
+                    WHERE lower(invite_code) = ?
+                    LIMIT 1
+                `,
+                args: [token.toLowerCase()],
+            })
+
+            guest = result.rows[0] || null
         }
 
-        return { guest, canBindPhone: !registeredPhone }
+        if (!guest) {
+            return {
+                guest: null,
+                canBindPhone: false,
+            }
+        }
+
+        const registeredPhone = isGuestPhonePlaceholder(guest.whatsapp_digits)
+            ? ''
+            : normalizePhone(guest.whatsapp_digits)
+
+        if (registeredPhone && registeredPhone !== whatsappDigits) {
+            return {
+                error: 'Esse celular não pertence a este convite.',
+            }
+        }
+
+        return {
+            guest,
+            canBindPhone: !registeredPhone,
+        }
     }
 
     const result = await getClient().execute({
         sql: `
-            SELECT id, guest_name, invite_code, age, whatsapp_digits, max_companions
+            SELECT
+                id,
+                guest_name,
+                invite_code,
+                invite_token,
+                age,
+                whatsapp_digits,
+                max_companions
             FROM invited_guests
             WHERE whatsapp_digits = ?
             LIMIT 1
@@ -107,7 +166,10 @@ async function findGuest({ whatsappDigits, invitationCode }) {
         args: [whatsappDigits],
     })
 
-    return { guest: result.rows[0] || null, canBindPhone: false }
+    return {
+        guest: result.rows[0] || null,
+        canBindPhone: false,
+    }
 }
 
 async function bindPhoneIfNeeded(guestId, whatsappDigits, canBindPhone) {
@@ -174,6 +236,17 @@ export default async function handler(request, response) {
 
         if (!validPhoneDigits(whatsappDigits)) return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
         if (attending === 'nao' && declineReason.length < 4) return response.status(400).json({ error: 'Se nao puder ir, conte o motivo para a Duda.' })
+
+        const rateAllowed = await enforceRateLimit({
+            request,
+            response,
+            scope: 'rsvp',
+            limit: 10,
+            windowSeconds: 10 * 60,
+            message: 'Muitas tentativas de confirmacao. Aguarde alguns minutos e tente novamente.',
+        })
+
+        if (!rateAllowed) return
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()

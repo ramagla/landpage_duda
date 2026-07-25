@@ -171,6 +171,7 @@ export async function ensureSchema() {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     guest_name TEXT NOT NULL,
                     invite_code TEXT,
+                    invite_token TEXT,
                     age INTEGER,
                     whatsapp_digits TEXT,
                     max_companions INTEGER NOT NULL DEFAULT 0,
@@ -178,9 +179,13 @@ export async function ensureSchema() {
                 )
             `)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN invite_code TEXT').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN invite_token TEXT').catch(ignoreDuplicateColumn)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN age INTEGER').catch(ignoreDuplicateColumn)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN whatsapp_digits TEXT').catch(ignoreDuplicateColumn)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN max_companions INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN first_access_at TEXT').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN last_access_at TEXT').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
             await db.execute(`
                 CREATE UNIQUE INDEX IF NOT EXISTS invited_guests_whatsapp_unique
                 ON invited_guests (whatsapp_digits)
@@ -192,6 +197,37 @@ export async function ensureSchema() {
                 ON invited_guests (invite_code)
             `)
             await db.execute('CREATE INDEX IF NOT EXISTS invited_guests_name_index ON invited_guests (guest_name)')
+
+            /*
+             * O invite_code continua existindo apenas como identificador
+             * administrativo/legado.
+             *
+             * O invite_token e a credencial publica real do convite.
+             * Ele possui 32 bytes aleatorios = 256 bits.
+             */
+            await db.execute(`
+                UPDATE invited_guests
+                SET invite_token = lower(hex(randomblob(32)))
+                WHERE invite_token IS NULL OR invite_token = ''
+            `)
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS invited_guests_invite_token_unique
+                ON invited_guests (invite_token)
+                WHERE invite_token IS NOT NULL AND invite_token <> ''
+            `)
+
+            await db.execute(`
+                CREATE TRIGGER IF NOT EXISTS invited_guests_invite_token_after_insert
+                AFTER INSERT ON invited_guests
+                WHEN NEW.invite_token IS NULL OR NEW.invite_token = ''
+                BEGIN
+                    UPDATE invited_guests
+                    SET invite_token = lower(hex(randomblob(32)))
+                    WHERE id = NEW.id;
+                END
+            `)
+
 
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS guest_companions (
@@ -252,13 +288,32 @@ export async function ensureSchema() {
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS birthday_messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER,
                     name TEXT NOT NULL,
                     message TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT (datetime('now'))
                 )
             `)
 
-            await seedInvitedGuests(db)
+            await db.execute(
+                'ALTER TABLE birthday_messages ADD COLUMN invited_guest_id INTEGER'
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS birthday_messages_invited_guest_index
+                ON birthday_messages (invited_guest_id)
+                WHERE invited_guest_id IS NOT NULL
+            `)
+
+            /*
+             * A lista inicial antiga NÃO deve ser recriada
+             * automaticamente em produção.
+             *
+             * O seed só roda quando solicitado explicitamente.
+             */
+            if (process.env.SEED_INVITED_GUESTS === '1') {
+                await seedInvitedGuests(db)
+            }
         })()
     }
 
@@ -296,7 +351,6 @@ export function publicGuest(row, companions = []) {
     return {
         id: Number(row.id),
         name: row.guest_name,
-        inviteCode: row.invite_code || '',
         maxCompanions: Number(row.max_companions || 0),
         hasRegisteredPhone: Boolean(normalizePhone(row.whatsapp_digits)) && !isGuestPhonePlaceholder(row.whatsapp_digits),
         companions,

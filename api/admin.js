@@ -1,19 +1,5 @@
+import { verifyAdminRequest } from './_admin-session.js'
 import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
-
-function getAdminPassword() {
-    return process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'duda16')
-}
-
-function authorize(body) {
-    const password = String(body.password || '')
-    const expected = getAdminPassword()
-
-    if (!expected) return { error: 'ADMIN_PASSWORD nao configurado na Vercel.' }
-    if (password !== expected) return { error: 'Senha invalida.' }
-
-    return {}
-}
-
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -88,9 +74,13 @@ async function getSummary() {
             g.id,
             g.guest_name,
             g.invite_code,
+            g.invite_token,
             g.age,
             g.whatsapp_digits,
             g.max_companions,
+            g.first_access_at,
+            g.last_access_at,
+            g.access_count,
             r.id AS rsvp_id,
             r.attending,
             r.decline_reason,
@@ -115,10 +105,18 @@ async function getSummary() {
     `)
 
     const messagesResult = await getClient().execute(`
-        SELECT id, name, message, created_at
-        FROM birthday_messages
-        ORDER BY id DESC
-        LIMIT 100
+        SELECT
+            bm.id,
+            bm.invited_guest_id,
+            bm.name,
+            bm.message,
+            bm.created_at,
+            ig.guest_name
+        FROM birthday_messages bm
+        LEFT JOIN invited_guests ig
+            ON ig.id = bm.invited_guest_id
+        ORDER BY bm.id DESC
+        LIMIT 500
     `)
 
     const companionsByRsvp = new Map()
@@ -154,10 +152,18 @@ async function getSummary() {
             id,
             name: row.guest_name,
             inviteCode: row.invite_code || '',
+            inviteToken: row.invite_token || '',
             age: row.age ?? '',
             whatsapp: isGuestPhonePlaceholder(row.whatsapp_digits) ? '' : row.whatsapp_digits || '',
             maxCompanions: Number(row.max_companions || 0),
-            status: row.rsvp_id ? row.attending : 'pendente',
+            status: row.rsvp_id
+                ? row.attending
+                : row.last_access_at
+                    ? 'visualizou'
+                    : 'pendente',
+            firstAccessAt: row.first_access_at || '',
+            lastAccessAt: row.last_access_at || '',
+            accessCount: Number(row.access_count || 0),
             declineReason: row.decline_reason || '',
             companionsCount: Number(row.companions_count || 0),
             buffetCount: Number(row.buffet_count || 0),
@@ -175,6 +181,11 @@ async function getSummary() {
         const pendingCompanions = Math.max(maxCompanions - companionAnswers.length, 0)
 
         summary.invited += 1 + maxCompanions
+
+        if (guest.status === 'visualizou') {
+            summary.viewed += 1
+        }
+
         if (guest.status === 'sim') {
             summary.confirmed += 1 + confirmedCompanions
             summary.declined += declinedCompanions
@@ -186,19 +197,79 @@ async function getSummary() {
             summary.pending += 1 + maxCompanions
         }
         return summary
-    }, { invited: 0, confirmed: 0, declined: 0, pending: 0, buffet: 0 })
+    }, {
+        invited: 0,
+        confirmed: 0,
+        declined: 0,
+        pending: 0,
+        viewed: 0,
+        buffet: 0,
+    })
 
     return {
         totals,
         guests,
         messages: messagesResult.rows.map((row) => ({
             id: Number(row.id),
-            name: row.name,
+            invitedGuestId: row.invited_guest_id
+                ? Number(row.invited_guest_id)
+                : null,
+            name: row.guest_name || row.name || 'Convidado',
             message: row.message,
             createdAt: row.created_at,
         })),
     }
 }
+
+async function deleteMessage(body) {
+    const id = Number.parseInt(
+        String(body.id || ''),
+        10,
+    )
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return {
+            error: 'Mensagem inválida.',
+        }
+    }
+
+    const existing = await getClient().execute({
+        sql: `
+            SELECT
+                id,
+                name
+            FROM birthday_messages
+            WHERE id = ?
+            LIMIT 1
+        `,
+        args: [
+            id,
+        ],
+    })
+
+    const message = existing.rows[0]
+
+    if (!message) {
+        return {
+            error: 'Mensagem não encontrada.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM birthday_messages
+            WHERE id = ?
+        `,
+        args: [
+            id,
+        ],
+    })
+
+    return {
+        message: `Mensagem de ${message.name || 'convidado'} excluída.`,
+    }
+}
+
 
 async function savePresetCompanions(guestId, companions) {
     await getClient().execute({
@@ -355,15 +426,23 @@ async function saveGuest(body) {
 }
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store')
+
     if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST')
         return response.status(405).json({ error: 'Metodo nao permitido.' })
     }
 
     try {
+        const auth = verifyAdminRequest(request)
+
+        if (!auth.ok) {
+            return response
+                .status(auth.configError ? 500 : 401)
+                .json({ error: auth.error })
+        }
+
         const body = parseBody(request.body)
-        const auth = authorize(body)
-        if (auth.error) return response.status(auth.error.includes('configurado') ? 500 : 401).json({ error: auth.error })
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()
@@ -377,6 +456,13 @@ export default async function handler(request, response) {
 
         if (body.action === 'deleteGuest') {
             const deleted = await deleteGuest(body)
+            if (deleted.error) return response.status(400).json({ error: deleted.error })
+            const summary = await getSummary()
+            return response.status(200).json({ message: deleted.message, ...summary })
+        }
+
+        if (body.action === 'deleteMessage') {
+            const deleted = await deleteMessage(body)
             if (deleted.error) return response.status(400).json({ error: deleted.error })
             const summary = await getSummary()
             return response.status(200).json({ message: deleted.message, ...summary })

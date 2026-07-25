@@ -1,4 +1,4 @@
-﻿import { createServer as createHttpServer } from 'node:http'
+import { createServer as createHttpServer } from 'node:http'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createServer as createViteServer } from 'vite'
@@ -19,7 +19,18 @@ function loadEnvFile(filePath) {
 loadEnvFile(resolve('.env.local'))
 process.env.NODE_ENV ||= 'development'
 process.env.TURSO_DATABASE_URL ||= 'file:./duda-local.db'
-process.env.ADMIN_PASSWORD ||= 'duda16'
+
+if (!process.env.ADMIN_PASSWORD) {
+    throw new Error(
+        'ADMIN_PASSWORD nao configurado em .env.local.'
+    )
+}
+
+if (!process.env.ADMIN_SESSION_SECRET) {
+    throw new Error(
+        'ADMIN_SESSION_SECRET nao configurado em .env.local.'
+    )
+}
 
 function readBody(request) {
     return new Promise((resolveBody, reject) => {
@@ -59,7 +70,14 @@ function createResponseAdapter(response) {
 
 async function handleApi(request, response, url) {
     const endpoint = url.pathname.replace(/^\/api\//, '')
-    const allowed = new Set(['admin', 'guest', 'messages', 'rsvp'])
+    const allowed = new Set([
+        'admin',
+        'admin-login',
+        'admin-logout',
+        'guest',
+        'messages',
+        'rsvp',
+    ])
 
     if (!allowed.has(endpoint)) return false
 
@@ -68,7 +86,13 @@ async function handleApi(request, response, url) {
     const body = request.method === 'GET' ? {} : await readBody(request)
     const query = Object.fromEntries(url.searchParams.entries())
 
-    await handler({ method: request.method, body, query }, createResponseAdapter(response))
+    await handler({
+        method: request.method,
+        body,
+        query,
+        headers: request.headers,
+        socket: request.socket,
+    }, createResponseAdapter(response))
     return true
 }
 
@@ -99,5 +123,4 @@ const server = createHttpServer(async (request, response) => {
 server.listen(port, () => {
     console.log(`Convite da Duda local: http://localhost:${port}`)
     console.log(`Admin local: http://localhost:${port}/admin`)
-    console.log('Senha local padrao: duda16')
 })

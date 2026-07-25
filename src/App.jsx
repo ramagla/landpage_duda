@@ -6,12 +6,115 @@ import {
 } from '../shared/rsvp-deadline.js'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
-const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Rua%20Corumbatai%20100%20Vila%20Virginia%20Itaquaquecetuba'
+const EVENT_ADDRESS = 'Rua Corumbataí, 100 - Vila Virgínia, Itaquaquecetuba - SP'
+const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(EVENT_ADDRESS)}`
+const WAZE_URL = `https://waze.com/ul?q=${encodeURIComponent(EVENT_ADDRESS)}&navigate=yes`
 const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
+
+const CALENDAR_FILENAME = 'duda-16-anos.ics'
+
+function escapeIcsText(value) {
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\r?\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+}
+
+function downloadCalendarEvent() {
+    if (typeof window === 'undefined') return
+
+    const now = new Date()
+
+    const stamp = now
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\.\d{3}Z$/, 'Z')
+
+    const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        'UID:duda-16-20261114@convite',
+        `DTSTAMP:${stamp}`,
+        'DTSTART;TZID=America/Sao_Paulo:20261114T170000',
+        `SUMMARY:${escapeIcsText('16 anos da Duda')}`,
+        `LOCATION:${escapeIcsText(EVENT_ADDRESS)}`,
+        `DESCRIPTION:${escapeIcsText('Aniversário de 16 anos da Duda no Quintal do Ibiza.')}`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ]
+
+    const blob = new Blob(
+        [lines.join('\r\n')],
+        {
+            type: 'text/calendar;charset=utf-8',
+        },
+    )
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = CALENDAR_FILENAME
+
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    window.setTimeout(
+        () => URL.revokeObjectURL(url),
+        1000,
+    )
+}
+
+async function copyTextToClipboard(value) {
+    const textValue = String(value || '').trim()
+
+    if (!textValue) {
+        throw new Error('Não há conteúdo para copiar.')
+    }
+
+    if (
+        navigator.clipboard
+        && window.isSecureContext
+    ) {
+        await navigator.clipboard.writeText(textValue)
+        return
+    }
+
+    const textarea = document.createElement('textarea')
+
+    textarea.value = textValue
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+
+    document.body.appendChild(textarea)
+
+    textarea.select()
+    textarea.setSelectionRange(
+        0,
+        textarea.value.length,
+    )
+
+    const copied = document.execCommand('copy')
+
+    textarea.remove()
+
+    if (!copied) {
+        throw new Error(
+            'Não foi possível copiar automaticamente.'
+        )
+    }
+}
 
 function scrollToSection(id) {
     if (typeof window === 'undefined') return
@@ -209,20 +312,68 @@ function Countdown() {
     )
 }
 
-function MusicPlayer({ enabled }) {
-    if (!enabled) return null
 
-    const embedUrl = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
+function MusicPlayer({ enabled }) {
+    const iframeRef = useRef(null)
+    const [playing, setPlaying] = useState(Boolean(enabled))
+
+    function sendCommand(command) {
+        iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({
+                event: 'command',
+                func: command,
+                args: [],
+            }),
+            '*',
+        )
+    }
+
+    function toggleMusic() {
+        if (playing) {
+            sendCommand('pauseVideo')
+            setPlaying(false)
+            return
+        }
+
+        sendCommand('playVideo')
+        setPlaying(true)
+    }
+
+    function handlePlayerLoad() {
+        if (!enabled) return
+
+        sendCommand('playVideo')
+        setPlaying(true)
+    }
 
     return (
-        <iframe
-            className="youtube-audio-frame"
-            src={embedUrl}
-            title="Musica do convite da Duda"
-            allow="autoplay; encrypted-media"
-            tabIndex="-1"
-            aria-hidden="true"
-        />
+        <div className="music-player">
+            <iframe
+                ref={iframeRef}
+                className="music-player__frame"
+                title="Música do convite da Duda"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=${enabled ? 1 : 0}&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&playsinline=1&enablejsapi=1&rel=0`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                onLoad={handlePlayerLoad}
+            />
+
+            <button
+                className={`music-player__control${playing ? ' music-player__control--playing' : ''}`}
+                type="button"
+                onClick={toggleMusic}
+                aria-pressed={playing}
+                aria-label={playing ? 'Pausar música' : 'Tocar música'}
+                title={playing ? 'Pausar música' : 'Tocar música'}
+            >
+                <span aria-hidden="true">
+                    {playing ? '❚❚' : '♪'}
+                </span>
+
+                <small>
+                    {playing ? 'Pausar' : 'Música'}
+                </small>
+            </button>
+        </div>
     )
 }
 
@@ -537,53 +688,187 @@ function RsvpForm({
     )
 }
 
+
 function GiftPanel() {
+    const [copyStatus, setCopyStatus] = useState('')
+
+    async function handleCopyPixKey() {
+        try {
+            await copyTextToClipboard(PIX_KEY)
+            setCopyStatus('Chave Pix copiada.')
+        } catch (error) {
+            setCopyStatus(error.message)
+        }
+    }
+
+    async function handleCopyPixCode() {
+        try {
+            const response = await fetch(
+                '/pix-duda-brcode.txt',
+                {
+                    cache: 'force-cache',
+                },
+            )
+
+            if (!response.ok) {
+                throw new Error(
+                    'Não foi possível carregar o Pix copia e cola.'
+                )
+            }
+
+            const pixCode = await response.text()
+
+            await copyTextToClipboard(pixCode)
+
+            setCopyStatus(
+                'Pix copia e cola copiado.'
+            )
+        } catch (error) {
+            setCopyStatus(error.message)
+        }
+    }
+
     return (
-        <section id="presentes" className="confirm-panel gift-panel" aria-labelledby="gift-title">
-            <p className="panel-kicker">Sugestao de presente</p>
-            <h2 id="gift-title">Um carinho para a Duda</h2>
-            <p>Sugestoes: perfume, acessorios femininos, cremes e maquiagem. Quem preferir, tambem pode enviar um Pix para a Duda escolher algo especial.</p>
+        <section
+            id="presentes"
+            className="confirm-panel gift-panel"
+            aria-labelledby="gift-title"
+        >
+            <p className="panel-kicker">
+                Sugestão de presente
+            </p>
+
+            <h2 id="gift-title">
+                Um carinho para a Duda
+            </h2>
+
+            <p>
+                Sugestões: perfume, acessórios femininos,
+                cremes e maquiagem. Quem preferir também pode
+                enviar um Pix para a Duda escolher algo especial.
+            </p>
 
             <div className="pix-card">
-                <img src="/pix-duda.svg" alt="QR Code Pix para presente da Duda" />
+                <img
+                    src="/pix-duda.svg"
+                    alt="QR Code Pix para presente da Duda"
+                />
+
                 <div>
                     <span>Chave Pix</span>
+
                     <strong>{PIX_KEY}</strong>
-                    <small>Antes de fazer o Pix, confirme se o nome aparece como <b>{PIX_NAME}</b>.</small>
+
+                    <small>
+                        Antes de fazer o Pix, confirme se o nome
+                        aparece como <b>{PIX_NAME}</b>.
+                    </small>
+
+                    <div className="pix-actions">
+                        <button
+                            type="button"
+                            className="utility-button"
+                            onClick={handleCopyPixKey}
+                        >
+                            Copiar chave Pix
+                        </button>
+
+                        <button
+                            type="button"
+                            className="utility-button"
+                            onClick={handleCopyPixCode}
+                        >
+                            Copiar Pix copia e cola
+                        </button>
+                    </div>
+
+                    {copyStatus ? (
+                        <p
+                            className="copy-feedback"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {copyStatus}
+                        </p>
+                    ) : null}
                 </div>
             </div>
         </section>
     )
 }
 
-function BirthdayMessageForm() {
+function BirthdayMessageForm({
+    guest,
+    invitationCode,
+}) {
     const [status, setStatus] = useState('idle')
     const [feedback, setFeedback] = useState('')
 
+    const guestName = String(
+        guest?.name || '',
+    ).trim()
+
+    const canSend = Boolean(
+        guestName
+        && invitationCode
+    )
+
     async function handleSubmit(event) {
         event.preventDefault()
+
         const formElement = event.currentTarget
+
         setStatus('loading')
         setFeedback('')
 
-        const form = new FormData(formElement)
-        const payload = {
-            name: String(form.get('name') || '').trim(),
-            message: String(form.get('message') || '').trim(),
-        }
+        const form = new FormData(
+            formElement,
+        )
+
+        const message = String(
+            form.get('message') || '',
+        ).trim()
 
         try {
-            const response = await fetch('/api/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            })
-            const data = await readApiJson(response)
+            if (!canSend) {
+                throw new Error(
+                    'Não foi possível identificar o convidado.'
+                )
+            }
 
-            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel salvar a mensagem agora.')
+            const response = await fetch(
+                '/api/messages',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+
+                    body: JSON.stringify({
+                        invitationCode,
+                        message,
+                    }),
+                },
+            )
+
+            const data = await readApiJson(
+                response,
+            )
+
+            if (!response.ok) {
+                throw new Error(
+                    data?.error
+                    || 'Não foi possível salvar a mensagem agora.'
+                )
+            }
 
             setStatus('success')
-            setFeedback(data.message || 'Mensagem guardada para a Duda.')
+
+            setFeedback(
+                data.message
+                || 'Mensagem guardada para a Duda.',
+            )
+
             formElement.reset()
         } catch (error) {
             setStatus('error')
@@ -592,30 +877,138 @@ function BirthdayMessageForm() {
     }
 
     return (
-        <form className="message-form" onSubmit={handleSubmit}>
+        <form
+            className="message-form"
+            onSubmit={handleSubmit}
+        >
+            <div className="message-sender">
+                <span>Enviando como</span>
+
+                <strong>
+                    {guestName || 'Convidado'}
+                </strong>
+            </div>
+
             <label>
-                <span>Seu nome</span>
-                <input name="name" type="text" placeholder="Quem esta mandando carinho?" required />
+                <span>Mensagem de parabéns</span>
+
+                <textarea
+                    name="message"
+                    placeholder="Escreva uma mensagem para a Duda"
+                    maxLength="500"
+                    minLength="5"
+                    required
+                />
             </label>
-            <label>
-                <span>Mensagem de parabens</span>
-                <textarea name="message" placeholder="Escreva uma mensagem para a Duda" maxLength="500" required />
-            </label>
-            <button disabled={status === 'loading'} type="submit">
-                {status === 'loading' ? 'Salvando...' : 'Enviar mensagem'}
+
+            <button
+                type="submit"
+                disabled={
+                    status === 'loading'
+                    || !canSend
+                }
+            >
+                {status === 'loading'
+                    ? 'Salvando...'
+                    : 'Enviar mensagem'}
             </button>
-            {feedback ? <p className={`form-message form-message--${status}`}>{feedback}</p> : null}
+
+            {feedback ? (
+                <p
+                    className={`form-message form-message--${status}`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    {feedback}
+                </p>
+            ) : null}
         </form>
     )
 }
 
+
+function formatAdminAccessDate(value) {
+    if (!value) return ''
+
+    const normalized = value.includes('T')
+        ? value
+        : `${value.replace(' ', 'T')}Z`
+
+    const date = new Date(normalized)
+
+    if (Number.isNaN(date.getTime())) {
+        return value
+    }
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date)
+}
+
+
 function AdminPage() {
-    const [password, setPassword] = useState(() => window.localStorage.getItem('dudaAdminPassword') || '')
+    const [password, setPassword] = useState('')
     const [status, setStatus] = useState('idle')
     const [message, setMessage] = useState('')
     const [data, setData] = useState(null)
     const [editing, setEditing] = useState(null)
     const [adminCompanionCount, setAdminCompanionCount] = useState(0)
+    const [messageSearch, setMessageSearch] = useState('')
+    const [guestSearch, setGuestSearch] = useState('')
+    const [guestStatusFilter, setGuestStatusFilter] = useState('todos')
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function restoreAdminSession() {
+            try {
+                const response = await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({}),
+                })
+
+                if (cancelled) return
+
+                if (response.status === 401) {
+                    setData(null)
+                    setStatus('idle')
+                    return
+                }
+
+                const body = await readApiJson(response)
+
+                if (!response.ok) {
+                    throw new Error(
+                        body?.error
+                        || 'Nao foi possivel restaurar a sessao.'
+                    )
+                }
+
+                setData(body)
+                setStatus('success')
+            } catch (error) {
+                if (cancelled) return
+
+                setData(null)
+                setStatus('error')
+                setMessage(error.message)
+            }
+        }
+
+        restoreAdminSession()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
 
     async function callAdmin(payload = {}) {
         setStatus('loading')
@@ -624,23 +1017,96 @@ function AdminPage() {
         const response = await fetch('/api/admin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, ...payload }),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
         })
+
         const body = await readApiJson(response)
 
-        if (!response.ok) throw new Error(body?.error || 'Nao foi possivel abrir o painel.')
+        if (response.status === 401) {
+            setData(null)
+            throw new Error(
+                body?.error
+                || 'Sua sessao expirou. Entre novamente.'
+            )
+        }
 
-        window.localStorage.setItem('dudaAdminPassword', password)
+        if (!response.ok) {
+            throw new Error(
+                body?.error
+                || 'Nao foi possivel abrir o painel.'
+            )
+        }
+
         setData(body)
         setStatus('success')
+
         return body
     }
 
     async function handleLogin(event) {
         event.preventDefault()
 
+        setStatus('loading')
+        setMessage('')
+
         try {
+            const response = await fetch('/api/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ password }),
+            })
+
+            const body = await readApiJson(response)
+
+            if (!response.ok) {
+                throw new Error(
+                    body?.error
+                    || 'Senha invalida.'
+                )
+            }
+
+            setPassword('')
+
             await callAdmin()
+
+            setMessage(
+                body?.message
+                || 'Acesso autorizado.'
+            )
+        } catch (error) {
+            setData(null)
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    async function handleLogout() {
+        setStatus('loading')
+        setMessage('')
+
+        try {
+            const response = await fetch('/api/admin-logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+            })
+
+            const body = await readApiJson(response)
+
+            if (!response.ok) {
+                throw new Error(
+                    body?.error
+                    || 'Nao foi possivel encerrar a sessao.'
+                )
+            }
+
+            setData(null)
+            setEditing(null)
+            setAdminCompanionCount(0)
+            setPassword('')
+            setStatus('idle')
+            setMessage('Sessao encerrada.')
         } catch (error) {
             setStatus('error')
             setMessage(error.message)
@@ -700,7 +1166,422 @@ function AdminPage() {
         }
     }
 
-    const baseUrl = typeof window === 'undefined' ? '' : window.location.origin
+    async function handleDeleteMessage(messageItem) {
+        const confirmed = window.confirm(
+            `Excluir a mensagem de ${messageItem.name}?`
+        )
+
+        if (!confirmed) return
+
+        try {
+            const result = await callAdmin({
+                action: 'deleteMessage',
+                id: messageItem.id,
+            })
+
+            setMessage(
+                result.message
+                || 'Mensagem excluída.'
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    const normalizedMessageSearch = messageSearch
+        .trim()
+        .toLocaleLowerCase('pt-BR')
+
+    const filteredMessages = (
+        data?.messages
+        || []
+    ).filter((item) => {
+        if (!normalizedMessageSearch) {
+            return true
+        }
+
+        const searchable = `${item.name || ''} ${item.message || ''}`
+            .toLocaleLowerCase('pt-BR')
+
+        return searchable.includes(
+            normalizedMessageSearch
+        )
+    })
+
+    function handleExportMessages() {
+        if (filteredMessages.length === 0) {
+            setMessage(
+                'Não existem mensagens para exportar com o filtro atual.'
+            )
+            return
+        }
+
+        const escapeCsv = (value) => (
+            `"${String(value ?? '').replaceAll('"', '""')}"`
+        )
+
+        const rows = [
+            [
+                'Convidado',
+                'Mensagem',
+                'Data/Hora',
+            ],
+
+            ...filteredMessages.map((item) => [
+                item.name,
+                item.message,
+                formatAdminAccessDate(
+                    item.createdAt,
+                ),
+            ]),
+        ]
+
+        const csv = '\uFEFF' + rows
+            .map(
+                (row) => row
+                    .map(escapeCsv)
+                    .join(';')
+            )
+            .join('\r\n')
+
+        const blob = new Blob(
+            [csv],
+            {
+                type:
+                    'text/csv;charset=utf-8',
+            },
+        )
+
+        const url = URL.createObjectURL(
+            blob,
+        )
+
+        const link = document.createElement(
+            'a',
+        )
+
+        link.href = url
+        link.download = 'mensagens-duda.csv'
+
+        document.body.appendChild(
+            link,
+        )
+
+        link.click()
+        link.remove()
+
+        URL.revokeObjectURL(
+            url,
+        )
+    }
+
+    const baseUrl = typeof window === 'undefined'
+        ? ''
+        : window.location.origin
+
+    function normalizeAdminSearch(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLocaleLowerCase('pt-BR')
+            .trim()
+    }
+
+    function getGuestStatusLabel(statusValue) {
+        if (statusValue === 'sim') {
+            return 'Confirmou'
+        }
+
+        if (statusValue === 'nao') {
+            return 'Não vai'
+        }
+
+        if (statusValue === 'visualizou') {
+            return 'Visualizou'
+        }
+
+        return 'Pendente'
+    }
+
+    function getGuestInviteUrl(guestItem) {
+        if (!guestItem?.inviteToken) {
+            return ''
+        }
+
+        return `${baseUrl}/?convite=${guestItem.inviteToken}`
+    }
+
+    async function copyAdminText(value) {
+        if (!value) {
+            throw new Error(
+                'Não existe conteúdo para copiar.'
+            )
+        }
+
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(
+                    value,
+                )
+
+                return
+            } catch {
+                // Usa fallback abaixo.
+            }
+        }
+
+        const textarea = document.createElement(
+            'textarea',
+        )
+
+        textarea.value = value
+        textarea.setAttribute(
+            'readonly',
+            '',
+        )
+
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        textarea.style.pointerEvents = 'none'
+
+        document.body.appendChild(
+            textarea,
+        )
+
+        textarea.select()
+
+        const copied = document.execCommand(
+            'copy',
+        )
+
+        textarea.remove()
+
+        if (!copied) {
+            throw new Error(
+                'Não foi possível copiar automaticamente.'
+            )
+        }
+    }
+
+    async function handleCopyGuestLink(guestItem) {
+        const inviteUrl = getGuestInviteUrl(
+            guestItem,
+        )
+
+        if (!inviteUrl) {
+            setStatus('error')
+            setMessage(
+                'Este convidado ainda não possui link seguro.'
+            )
+            return
+        }
+
+        try {
+            await copyAdminText(
+                inviteUrl,
+            )
+
+            setStatus('success')
+
+            setMessage(
+                `Link de ${guestItem.name} copiado.`
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    function handleOpenGuestWhatsapp(guestItem) {
+        const phone = digitsOnly(
+            guestItem.whatsapp || '',
+        )
+
+        if (!phone) {
+            setStatus('error')
+
+            setMessage(
+                `Cadastre o WhatsApp de ${guestItem.name} primeiro.`
+            )
+
+            return
+        }
+
+        const inviteUrl = getGuestInviteUrl(
+            guestItem,
+        )
+
+        if (!inviteUrl) {
+            setStatus('error')
+
+            setMessage(
+                'Este convidado ainda não possui link seguro.'
+            )
+
+            return
+        }
+
+        const brazilPhone = phone.startsWith('55')
+            && phone.length >= 12
+            ? phone
+            : `55${phone}`
+
+        const whatsappMessage = [
+            `Olá, ${guestItem.name}! 💚`,
+            '',
+            'Este é o seu convite para os 16 anos da Duda.',
+            '',
+            'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
+            inviteUrl,
+            '',
+            'Esperamos você! ✨',
+        ].join('\n')
+
+        const whatsappUrl = (
+            `https://wa.me/${brazilPhone}`
+            + `?text=${encodeURIComponent(whatsappMessage)}`
+        )
+
+        window.open(
+            whatsappUrl,
+            '_blank',
+            'noopener,noreferrer',
+        )
+    }
+
+    const normalizedGuestSearch = normalizeAdminSearch(
+        guestSearch,
+    )
+
+    const filteredGuests = (
+        data?.guests
+        || []
+    ).filter((guestItem) => {
+        const matchesStatus = (
+            guestStatusFilter === 'todos'
+            || guestItem.status === guestStatusFilter
+        )
+
+        if (!matchesStatus) {
+            return false
+        }
+
+        if (!normalizedGuestSearch) {
+            return true
+        }
+
+        const companionNames = [
+            ...(guestItem.companions || []),
+            ...(guestItem.presetCompanions || []),
+        ]
+            .map((item) => item.name || '')
+            .join(' ')
+
+        const searchable = normalizeAdminSearch(
+            [
+                guestItem.name,
+                guestItem.whatsapp,
+                companionNames,
+            ].join(' ')
+        )
+
+        return searchable.includes(
+            normalizedGuestSearch
+        )
+    })
+
+    function handleExportGuests() {
+        if (filteredGuests.length === 0) {
+            setStatus('error')
+
+            setMessage(
+                'Não existem convidados para exportar com o filtro atual.'
+            )
+
+            return
+        }
+
+        const escapeCsv = (value) => (
+            `"${String(value ?? '').replaceAll('"', '""')}"`
+        )
+
+        const rows = [
+            [
+                'Nome',
+                'Status',
+                'WhatsApp',
+                'Acompanhantes confirmados',
+                'Acompanhantes liberados',
+                'Buffet',
+                'Último acesso',
+                'Link do convite',
+            ],
+
+            ...filteredGuests.map((guestItem) => [
+                guestItem.name,
+                getGuestStatusLabel(
+                    guestItem.status,
+                ),
+                formatWhatsapp(
+                    guestItem.whatsapp,
+                ),
+                guestItem.companionsCount,
+                guestItem.maxCompanions,
+                guestItem.buffetCount,
+                formatAdminAccessDate(
+                    guestItem.lastAccessAt,
+                ),
+                getGuestInviteUrl(
+                    guestItem,
+                ),
+            ]),
+        ]
+
+        const csv = '\uFEFF' + rows
+            .map(
+                (row) => row
+                    .map(escapeCsv)
+                    .join(';')
+            )
+            .join('\r\n')
+
+        const blob = new Blob(
+            [csv],
+            {
+                type:
+                    'text/csv;charset=utf-8',
+            },
+        )
+
+        const url = URL.createObjectURL(
+            blob,
+        )
+
+        const link = document.createElement(
+            'a',
+        )
+
+        link.href = url
+        link.download = 'convidados-duda.csv'
+
+        document.body.appendChild(
+            link,
+        )
+
+        link.click()
+        link.remove()
+
+        URL.revokeObjectURL(
+            url,
+        )
+
+        setStatus('success')
+
+        setMessage(
+            `${filteredGuests.length} convidado${filteredGuests.length === 1 ? '' : 's'} exportado${filteredGuests.length === 1 ? '' : 's'}.`
+        )
+    }
 
     return (
         <main className="admin-shell">
@@ -708,11 +1589,43 @@ function AdminPage() {
                 <p className="panel-kicker">Area reservada</p>
                 <h2 id="admin-title">Lista da Duda</h2>
                 <form className="lookup-form" onSubmit={handleLogin}>
-                    <label>
-                        <span>Senha</span>
-                        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha do painel" required />
-                    </label>
-                    <button type="submit" disabled={status === 'loading'}>{status === 'loading' ? 'Abrindo...' : 'Entrar'}</button>
+                    {data ? (
+                        <button
+                            className="admin-logout-button"
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={status === 'loading'}
+                        >
+                            <span aria-hidden="true">↪</span>
+
+                            {status === 'loading'
+                                ? 'Saindo...'
+                                : 'Sair do painel'}
+                        </button>
+                    ) : (
+                        <>
+                            <label>
+                                <span>Senha</span>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(event) => setPassword(event.target.value)}
+                                    placeholder="Senha do painel"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </label>
+
+                            <button
+                                type="submit"
+                                disabled={status === 'loading'}
+                            >
+                                {status === 'loading'
+                                    ? 'Abrindo...'
+                                    : 'Entrar'}
+                            </button>
+                        </>
+                    )}
                 </form>
                 {message ? <p className={`form-message form-message--${status === 'error' ? 'error' : 'success'}`}>{message}</p> : null}
             </section>
@@ -724,10 +1637,22 @@ function AdminPage() {
                         <div><span>Confirmados</span><strong>{data.totals.confirmed}</strong></div>
                         <div><span>Nao vao</span><strong>{data.totals.declined}</strong></div>
                         <div><span>Pendentes</span><strong>{data.totals.pending}</strong></div>
+                        <div className="admin-summary__viewed">
+                            <span>Acessaram sem responder</span>
+                            <strong>{data.totals.viewed || 0}</strong>
+                        </div>
                         <div><span>Buffet</span><strong>{data.totals.buffet}</strong></div>
+                        <div>
+                            <span>Mensagens</span>
+                            <strong>{data.messages?.length || 0}</strong>
+                        </div>
                     </section>
 
-                    <section className="confirm-panel admin-form-panel" aria-labelledby="guest-form-title">
+                    <section
+                        id="cadastro-convidado"
+                        className="confirm-panel admin-form-panel"
+                        aria-labelledby="guest-form-title"
+                    >
                         <p className="panel-kicker">Cadastro</p>
                         <h2 id="guest-form-title">Convidado</h2>
                         <form key={editing?.id || 'new-guest'} className="admin-guest-form" onSubmit={handleSaveGuest}>
@@ -792,9 +1717,109 @@ function AdminPage() {
                         </form>
                     </section>
 
-                    <section className="confirm-panel admin-table-panel" aria-labelledby="guest-list-title">
-                        <p className="panel-kicker">Confirmacoes</p>
-                        <h2 id="guest-list-title">Lista geral</h2>
+                    <section
+                        className="confirm-panel admin-table-panel admin-guests-panel"
+                        aria-labelledby="guest-list-title"
+                    >
+                        <div className="admin-guests-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Confirmações
+                                </p>
+
+                                <h2 id="guest-list-title">
+                                    Lista geral
+                                </h2>
+
+                                <p className="admin-guests-subtitle">
+                                    Gerencie convidados, acessos e links individuais.
+                                </p>
+                            </div>
+
+                            <span className="admin-guests-count">
+                                {filteredGuests.length}
+                                {' / '}
+                                {data.guests.length}
+                            </span>
+                        </div>
+
+                        <div className="admin-guests-toolbar">
+                            <label className="admin-guest-search">
+                                <span>Buscar convidado</span>
+
+                                <input
+                                    type="search"
+                                    value={guestSearch}
+                                    onChange={(event) => (
+                                        setGuestSearch(
+                                            event.target.value
+                                        )
+                                    )}
+                                    placeholder="Nome, WhatsApp ou acompanhante"
+                                />
+                            </label>
+
+                            <label className="admin-guest-status-filter">
+                                <span>Status</span>
+
+                                <select
+                                    value={guestStatusFilter}
+                                    onChange={(event) => (
+                                        setGuestStatusFilter(
+                                            event.target.value
+                                        )
+                                    )}
+                                >
+                                    <option value="todos">
+                                        Todos
+                                    </option>
+
+                                    <option value="sim">
+                                        Confirmou
+                                    </option>
+
+                                    <option value="nao">
+                                        Não vai
+                                    </option>
+
+                                    <option value="visualizou">
+                                        Visualizou
+                                    </option>
+
+                                    <option value="pendente">
+                                        Pendente
+                                    </option>
+                                </select>
+                            </label>
+
+                            <button
+                                className="admin-export-guests"
+                                type="button"
+                                onClick={handleExportGuests}
+                                disabled={
+                                    filteredGuests.length === 0
+                                }
+                            >
+                                Exportar CSV
+                            </button>
+                        </div>
+
+                        <p className="admin-guests-filter-result">
+                            Exibindo
+                            {' '}
+                            <strong>
+                                {filteredGuests.length}
+                            </strong>
+                            {' '}
+                            de
+                            {' '}
+                            <strong>
+                                {data.guests.length}
+                            </strong>
+                            {' '}
+                            convidados
+                        </p>
+
                         <div className="admin-table-wrap">
                             <table className="admin-table">
                                 <thead>
@@ -804,48 +1829,369 @@ function AdminPage() {
                                         <th>Acomp.</th>
                                         <th>Buffet</th>
                                         <th>WhatsApp</th>
-                                        <th>Link</th>
-                                        <th></th>
+                                        <th>Convite</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
-                                    {data.guests.map((guestItem) => (
-                                        <tr key={guestItem.id}>
-                                            <td>
-                                                <strong>{guestItem.name}</strong>
-                                                {guestItem.companions.length > 0 ? <small>{guestItem.companions.map((item) => `${item.name} (${item.age})${item.attending === 'nao' ? ' - nao vai' : ''}`).join(', ')}</small> : null}
-                                                {guestItem.companions.length === 0 && guestItem.presetCompanions?.length > 0 ? <small>Pre-cadastrados: {guestItem.presetCompanions.map((item) => `${item.name}${item.age !== '' ? ' (' + item.age + ')' : ''}`).join(', ')}</small> : null}
-                                                {guestItem.declineReason ? <small>Motivo: {guestItem.declineReason}</small> : null}
-                                            </td>
-                                            <td><span className={`status-pill status-pill--${guestItem.status}`}>{guestItem.status === 'sim' ? 'Confirmou' : guestItem.status === 'nao' ? 'Nao vai' : 'Pendente'}</span></td>
-                                            <td>{guestItem.companionsCount}/{guestItem.maxCompanions}</td>
-                                            <td>{guestItem.buffetCount}</td>
-                                            <td>{formatWhatsapp(guestItem.whatsapp)}</td>
-                                            <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
-                                            <td>
-                                                <div className="admin-row-actions">
-                                                    <button className="secondary-button" type="button" onClick={() => { setEditing(guestItem); setAdminCompanionCount(Number(guestItem.maxCompanions || 0)) }}>Editar</button>
-                                                    <button className="danger-button" type="button" onClick={() => handleDeleteGuest(guestItem)}>Excluir</button>
-                                                </div>
+                                    {filteredGuests.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                className="admin-guests-empty"
+                                                colSpan="7"
+                                            >
+                                                Nenhum convidado encontrado com os filtros atuais.
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        filteredGuests.map((guestItem) => (
+                                            <tr key={guestItem.id}>
+                                                <td>
+                                                    <strong>
+                                                        {guestItem.name}
+                                                    </strong>
+
+                                                    {guestItem.companions.length > 0 ? (
+                                                        <small>
+                                                            {guestItem.companions
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name} (${item.age})${item.attending === 'nao' ? ' - não vai' : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </small>
+                                                    ) : null}
+
+                                                    {guestItem.companions.length === 0
+                                                        && guestItem.presetCompanions?.length > 0 ? (
+                                                        <small>
+                                                            Pré-cadastrados:
+                                                            {' '}
+                                                            {guestItem.presetCompanions
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name}${item.age !== '' ? ` (${item.age})` : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </small>
+                                                    ) : null}
+
+                                                    {guestItem.declineReason ? (
+                                                        <small>
+                                                            Motivo:
+                                                            {' '}
+                                                            {guestItem.declineReason}
+                                                        </small>
+                                                    ) : null}
+                                                </td>
+
+                                                <td className="admin-status-cell">
+                                                    <span
+                                                        className={`status-pill status-pill--${guestItem.status}`}
+                                                    >
+                                                        {getGuestStatusLabel(
+                                                            guestItem.status
+                                                        )}
+                                                    </span>
+
+                                                    {guestItem.lastAccessAt ? (
+                                                        <small>
+                                                            Último acesso:
+                                                            {' '}
+                                                            {formatAdminAccessDate(
+                                                                guestItem.lastAccessAt
+                                                            )}
+                                                        </small>
+                                                    ) : (
+                                                        <small>
+                                                            Ainda não acessou
+                                                        </small>
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                    {guestItem.companionsCount}
+                                                    /
+                                                    {guestItem.maxCompanions}
+                                                </td>
+
+                                                <td>
+                                                    {guestItem.buffetCount}
+                                                </td>
+
+                                                <td className="admin-whatsapp-cell">
+                                                    {guestItem.whatsapp ? (
+                                                        <>
+                                                            <strong>
+                                                                {formatWhatsapp(
+                                                                    guestItem.whatsapp
+                                                                )}
+                                                            </strong>
+
+                                                            <small>
+                                                                Cadastrado
+                                                            </small>
+                                                        </>
+                                                    ) : (
+                                                        <span className="admin-no-phone">
+                                                            Não informado
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                    <div className="admin-invite-actions">
+                                                        <button
+                                                            className="admin-invite-button admin-invite-button--copy"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleCopyGuestLink(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                            disabled={
+                                                                !guestItem.inviteToken
+                                                            }
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ⧉
+                                                            </span>
+
+                                                            Copiar link
+                                                        </button>
+
+                                                        <button
+                                                            className="admin-invite-button admin-invite-button--whatsapp"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleOpenGuestWhatsapp(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                            disabled={
+                                                                !guestItem.whatsapp
+                                                                || !guestItem.inviteToken
+                                                            }
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ◉
+                                                            </span>
+
+                                                            WhatsApp
+                                                        </button>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <div className="admin-row-actions">
+                                                        <button
+                                                            className="admin-action-button admin-action-button--edit"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditing(
+                                                                    guestItem
+                                                                )
+
+                                                                setAdminCompanionCount(
+                                                                    Number(
+                                                                        guestItem.maxCompanions
+                                                                        || 0
+                                                                    )
+                                                                )
+
+                                                                window.requestAnimationFrame(
+                                                                    () => {
+                                                                        document
+                                                                            .getElementById(
+                                                                                'cadastro-convidado'
+                                                                            )
+                                                                            ?.scrollIntoView({
+                                                                                behavior: 'smooth',
+                                                                                block: 'start',
+                                                                            })
+                                                                    }
+                                                                )
+                                                            }}
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ✎
+                                                            </span>
+
+                                                            Editar
+                                                        </button>
+
+                                                        <button
+                                                            className="admin-action-button admin-action-button--delete"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleDeleteGuest(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ×
+                                                            </span>
+
+                                                            Excluir
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </section>
 
-                    <section className="confirm-panel admin-table-panel" aria-labelledby="message-list-title">
-                        <p className="panel-kicker">Mensagens</p>
-                        <h2 id="message-list-title">Parabens enviados</h2>
-                        <div className="message-list">
-                            {data.messages.length === 0 ? <p>Nenhuma mensagem ainda.</p> : data.messages.map((item) => (
-                                <article key={item.id}>
-                                    <strong>{item.name}</strong>
-                                    <p>{item.message}</p>
-                                    <small>{item.createdAt}</small>
-                                </article>
-                            ))}
+                    <section
+                        className="confirm-panel admin-messages-panel"
+                        aria-labelledby="message-list-title"
+                    >
+                        <div className="admin-messages-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Carinho para guardar
+                                </p>
+
+                                <h2 id="message-list-title">
+                                    Mensagens para a Duda
+                                </h2>
+
+                                <p className="admin-messages-subtitle">
+                                    {data.messages?.length || 0}
+                                    {' '}
+                                    {(data.messages?.length || 0) === 1
+                                        ? 'mensagem recebida'
+                                        : 'mensagens recebidas'}
+                                </p>
+                            </div>
+
+                            <span
+                                className="admin-message-count"
+                                aria-label={`${data.messages?.length || 0} mensagens`}
+                            >
+                                💌
+                                {' '}
+                                {data.messages?.length || 0}
+                            </span>
+                        </div>
+
+                        <div className="admin-messages-toolbar">
+                            <label className="admin-message-search">
+                                <span>Buscar mensagem</span>
+
+                                <input
+                                    type="search"
+                                    value={messageSearch}
+                                    onChange={(event) => (
+                                        setMessageSearch(
+                                            event.target.value
+                                        )
+                                    )}
+                                    placeholder="Nome ou texto da mensagem"
+                                />
+                            </label>
+
+                            <button
+                                className="admin-export-messages"
+                                type="button"
+                                onClick={handleExportMessages}
+                                disabled={
+                                    filteredMessages.length === 0
+                                }
+                            >
+                                Exportar CSV
+                            </button>
+                        </div>
+
+                        {messageSearch ? (
+                            <p className="admin-message-filter-result">
+                                {filteredMessages.length}
+                                {' '}
+                                {filteredMessages.length === 1
+                                    ? 'resultado encontrado'
+                                    : 'resultados encontrados'}
+                            </p>
+                        ) : null}
+
+                        <div className="admin-message-list">
+                            {filteredMessages.length === 0 ? (
+                                <div className="admin-message-empty">
+                                    <span aria-hidden="true">
+                                        💌
+                                    </span>
+
+                                    <strong>
+                                        {data.messages?.length
+                                            ? 'Nenhuma mensagem encontrada'
+                                            : 'Nenhuma mensagem ainda'}
+                                    </strong>
+
+                                    <p>
+                                        {data.messages?.length
+                                            ? 'Tente buscar por outro nome ou trecho.'
+                                            : 'As mensagens enviadas pelos convidados aparecerão aqui.'}
+                                    </p>
+                                </div>
+                            ) : (
+                                filteredMessages.map((item) => (
+                                    <article
+                                        className="admin-message-card"
+                                        key={item.id}
+                                    >
+                                        <div className="admin-message-card__top">
+                                            <div>
+                                                <span className="admin-message-card__label">
+                                                    Enviado por
+                                                </span>
+
+                                                <strong>
+                                                    {item.name}
+                                                </strong>
+                                            </div>
+
+                                            <time>
+                                                {formatAdminAccessDate(
+                                                    item.createdAt
+                                                )}
+                                            </time>
+                                        </div>
+
+                                        <p>
+                                            {item.message}
+                                        </p>
+
+                                        <div className="admin-message-card__footer">
+                                            {item.invitedGuestId ? (
+                                                <small>
+                                                    ✓ Vinculada ao convite
+                                                </small>
+                                            ) : (
+                                                <small>
+                                                    Mensagem antiga
+                                                </small>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                className="admin-message-delete"
+                                                onClick={() => (
+                                                    handleDeleteMessage(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                Excluir
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))
+                            )}
                         </div>
                     </section>
                 </>
@@ -857,20 +2203,47 @@ function AdminPage() {
 function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const inputRef = useRef(null)
+    const openingTimerRef = useRef(null)
     const [stage, setStage] = useState('intro')
     const [whatsappValue, setWhatsappValue] = useState('')
     const [message, setMessage] = useState('')
     const [validatedData, setValidatedData] = useState(null)
 
     useEffect(() => {
-        const cardTimer = window.setTimeout(() => setStage('card-visible'), 7600)
-        const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 7600)
-
         return () => {
-            window.clearTimeout(cardTimer)
-            window.clearTimeout(focusTimer)
+            if (openingTimerRef.current) {
+                window.clearTimeout(
+                    openingTimerRef.current,
+                )
+            }
         }
     }, [])
+
+    function startOpening() {
+        if (stage !== 'intro') return
+
+        setStage('opening')
+
+        const reducedMotion = window
+            .matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches
+
+        const revealDelay = reducedMotion
+            ? 120
+            : 4200
+
+        openingTimerRef.current = window.setTimeout(
+            () => {
+                setStage('card-visible')
+
+                window.setTimeout(
+                    () => inputRef.current?.focus(),
+                    reducedMotion ? 0 : 120,
+                )
+            },
+            revealDelay,
+        )
+    }
 
     async function handleSubmit(event) {
         event.preventDefault()
@@ -916,6 +2289,10 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const isChecking = stage === 'checking'
     const isUnlocked = stage === 'unlocked'
     const isCompleted = stage === 'completed'
+    const isAccessReady = (
+        stage !== 'intro'
+        && stage !== 'opening'
+    )
 
     return (
         <main className={`opening-gate opening-gate--${stage}`} aria-label="Abertura do convite da Duda">
@@ -956,14 +2333,14 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                             onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
                             autoComplete="tel"
                             maxLength="15"
-                            disabled={isChecking || isUnlocked || isCompleted}
+                            disabled={!isAccessReady || isChecking || isUnlocked || isCompleted}
                             required
                         />
                     </label>
                     <button
                         type={isUnlocked ? 'button' : 'submit'}
                         onClick={isUnlocked ? enterInvitation : undefined}
-                        disabled={isChecking || isCompleted}
+                        disabled={!isAccessReady || isChecking || isCompleted}
                     >
                         {isChecking ? 'Consultando...' : isUnlocked ? 'Convite liberado' : 'Abrir meu convite'}
                     </button>
@@ -972,14 +2349,20 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     </form>
                 </div>
 
-                <div className="envelope" aria-hidden="true">
+                <div className="envelope">
                     <div className="envelope__back" />
                     <div className="envelope__letter-shadow" />
                     <div className="envelope__flap" />
                     <div className="envelope__pocket envelope__pocket--left" />
                     <div className="envelope__pocket envelope__pocket--right" />
                     <div className="envelope__front" />
-                    <div className="envelope__seal" aria-hidden="true">
+                    <button
+                        className="envelope__seal envelope__seal-trigger"
+                        type="button"
+                        onClick={startOpening}
+                        disabled={stage !== 'intro'}
+                        aria-label="Romper o selo e abrir o convite"
+                    >
                         <img
                             className="envelope__seal-img envelope__seal-img--intact"
                             src="/selo.png"
@@ -990,12 +2373,30 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                             src="/selo-rompido.png"
                             alt=""
                         />
-                    </div>
+
+                        <span
+                            className="envelope__seal-hint"
+                            aria-hidden="true"
+                        >
+                            <strong>TOQUE NO SELO</strong>
+                            <small>para abrir seu convite</small>
+                            <b>↓</b>
+                        </span>
+                    </button>
                     <span>Feito especialmente para voce</span>
                 </div>
             </div>
 
-            <p className="opening-gate__footer">O envelope abre e revela o acesso ao convite</p>
+            <p
+                className="opening-gate__footer"
+                aria-live="polite"
+            >
+                {stage === 'intro'
+                    ? 'Toque no selo para abrir seu convite'
+                    : stage === 'opening'
+                        ? 'Abrindo seu convite...'
+                        : 'O acesso ao convite está liberado'}
+            </p>
         </main>
     )
 }
@@ -1064,14 +2465,60 @@ function LandingPage() {
                     <InvitationQuickActions />
                 <MusicPlayer enabled={musicStarted} />
 
-                <div id="local-evento" className="event-details" aria-label="Informacoes do aniversario">
-                    <p>14 Novembro 2026</p>
+                <div
+                    id="local-evento"
+                    className="event-details"
+                    aria-label="Informações do aniversário"
+                >
+                    <p>14 de novembro de 2026</p>
                     <p>17h</p>
-                    <a href={MAP_URL} target="_blank" rel="noreferrer">Quintal do Ibiza</a>
+
+                    <a
+                        href={MAP_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        Quintal do Ibiza
+                    </a>
                 </div>
 
-                <p className="address">Rua Corumbatai, 100 - Vila Virginia, Itaquaquecetuba</p>
-                <a className="map-link" href={MAP_URL} target="_blank" rel="noreferrer">Abrir no Google Maps</a>
+                <p className="address">
+                    {EVENT_ADDRESS}
+                </p>
+
+                <div
+                    className="event-action-grid"
+                    aria-label="Como chegar e salvar o evento"
+                >
+                    <a
+                        className="event-action-button"
+                        href={MAP_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <span aria-hidden="true">⌖</span>
+                        Google Maps
+                    </a>
+
+                    <a
+                        className="event-action-button"
+                        href={WAZE_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <span aria-hidden="true">➤</span>
+                        Waze
+                    </a>
+
+                    <button
+                        className="event-action-button"
+                        type="button"
+                        onClick={downloadCalendarEvent}
+                    >
+                        <span aria-hidden="true">＋</span>
+                        Adicionar à agenda
+                    </button>
+                </div>
 
                 <div className="venue-card">
                     <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
@@ -1085,7 +2532,7 @@ function LandingPage() {
                     <img src="/duda-photo.png" alt="Foto da Duda" />
                 </div>
 
-                <p className="invite-text">{activeGuest.name}, a Duda quer voce por perto para transformar esse dia em uma lembranca linda.</p>
+                <p className="invite-text">{activeGuest.name}, a Duda quer você por perto para transformar esse dia em uma lembranca linda.</p>
 
                 <div className="duda-instagram-card">
                     <span>D</span>
@@ -1095,7 +2542,7 @@ function LandingPage() {
                     </div>
                 </div>
 
-                <div className="dress-code"><strong>Dress code</strong><span>Nao vir de verde nem azul.</span></div>
+                <div className="dress-code"><strong>Dress code</strong><span>Não vir de verde nem azul.</span></div>
             </section>
 
             <div className="side-stack">
@@ -1104,7 +2551,7 @@ function LandingPage() {
                         ? 'Prazo de confirmação encerrado'
                         : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
                     <h2 id="confirm-title">Oi, {activeGuest.name}</h2>
-                    <p>Confira os nomes liberados e confirme a presenca deste convite.</p>
+                    <p>Confira os nomes liberados e confirme a presença deste convite.</p>
                     <RsvpForm
                         initialGuest={activeGuest}
                         initialWhatsapp={openingData.whatsapp}
@@ -1120,8 +2567,11 @@ function LandingPage() {
                 <section id="mensagem-duda" className="confirm-panel message-panel" aria-labelledby="message-title">
                     <p className="panel-kicker">Carinho para guardar</p>
                     <h2 id="message-title">Deixe sua mensagem</h2>
-                    <p>Escreva uma mensagem de parabens para a Duda receber junto com as confirmacoes.</p>
-                    <BirthdayMessageForm />
+                    <p>Escreva uma mensagem de parabéns para a Duda receber junto com as confirmações.</p>
+                    <BirthdayMessageForm
+                        guest={activeGuest}
+                        invitationCode={getInvitationCode()}
+                    />
                 </section>
             </div>
         </main>
