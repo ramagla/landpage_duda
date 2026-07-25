@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 :root {
     color: #17211f;
@@ -1856,4 +1856,45 @@ button[type='submit']:hover,
 
 .danger-button:hover {
     background: #ffe7df;
+}
+
+/* Refined Duda name typography */
+.name-script,
+.opening-gate__brand span {
+    font-family: "Allura", "Great Vibes", cursive;
+    font-weight: 400;
+    color: #06796f;
+    -webkit-text-stroke: 0.35px rgba(255, 255, 255, 0.76);
+    text-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7),
+        0 8px 18px rgba(6, 87, 79, 0.24),
+        0 0 18px rgba(201, 255, 240, 0.6);
+}
+
+.name-script {
+    margin-top: clamp(102px, 15vw, 136px);
+    font-size: clamp(5.2rem, 11vw, 7.4rem);
+    line-height: 0.78;
+    transform: rotate(-1deg);
+}
+
+.opening-gate__brand span {
+    margin-top: 2px;
+    font-size: clamp(4.6rem, 12vw, 7.2rem);
+    line-height: 0.78;
+    transform: rotate(-1deg);
+}
+
+@media (max-width: 920px) {
+    .name-script {
+        margin-top: 112px;
+        font-size: clamp(5rem, 18vw, 6.4rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .name-script {
+        margin-top: 104px;
+        font-size: clamp(4.5rem, 19vw, 5.8rem);
+    }
 }
