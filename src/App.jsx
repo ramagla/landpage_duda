@@ -2000,8 +2000,8 @@ function AdminPage() {
                                 <input name="guestName" defaultValue={editing?.name || ''} placeholder="Nome do convidado" required />
                             </label>
                             <label>
-                                <span>Codigo do link</span>
-                                <input name="inviteCode" defaultValue={editing?.inviteCode || ''} placeholder="ex: glaucia" />
+                                <span>Identificador interno</span>
+                                <input name="inviteCode" defaultValue={editing?.inviteCode || ''} placeholder="Opcional" />
                             </label>
                             <label>
                                 <span>Idade</span>

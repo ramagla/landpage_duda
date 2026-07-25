@@ -82,7 +82,7 @@ Para pre-cadastrar nomes de acompanhantes conhecidos, use a tabela `guest_compan
 INSERT INTO guest_companions (invited_guest_id, slot_number, companion_name, age)
 SELECT id, 1, 'Nome do acompanhante', 18
 FROM invited_guests
-WHERE invite_code = 'glaucia'
+WHERE invite_code = 'convidado-exemplo'
 ON CONFLICT(invited_guest_id, slot_number) DO UPDATE SET
   companion_name = excluded.companion_name,
   age = excluded.age;
