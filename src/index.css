@@ -1898,3 +1898,92 @@ button[type='submit']:hover,
         font-size: clamp(4.5rem, 19vw, 5.8rem);
     }
 }
+
+/* Mobile hero stability fixes */
+@media (max-width: 520px) {
+    .page-shell {
+        width: min(100% - 14px, 430px);
+        padding-top: 8px;
+    }
+
+    .invite-card {
+        padding: 16px 12px 18px;
+    }
+
+    .invite-card::before {
+        inset: 9px;
+    }
+
+    .disco-cluster {
+        top: -12px;
+        left: 12px;
+        opacity: 0.42;
+    }
+
+    .disco-image--small {
+        width: 42px;
+        height: 42px;
+    }
+
+    .disco-image--medium {
+        width: 58px;
+        height: 58px;
+        margin-top: 16px;
+    }
+
+    .disco-image--hero {
+        top: -12px;
+        right: -12px;
+        width: 94px;
+        height: 94px;
+        opacity: 0.64;
+    }
+
+    .hero-copy {
+        margin-top: 68px;
+    }
+
+    h1#invite-title {
+        min-height: 246px;
+        overflow: visible;
+    }
+
+    .balloon-age {
+        width: min(61vw, 206px);
+        top: 0;
+    }
+
+    .name-script {
+        margin-top: 134px;
+        font-size: clamp(4.35rem, 17vw, 5.25rem);
+        line-height: 0.78;
+    }
+
+    .tagline {
+        position: relative;
+        z-index: 5;
+        max-width: 280px;
+        margin-top: -4px;
+        font-size: 0.92rem;
+        line-height: 1.38;
+    }
+
+    .countdown {
+        margin-top: 14px;
+    }
+}
+
+@media (max-width: 380px) {
+    h1#invite-title {
+        min-height: 232px;
+    }
+
+    .balloon-age {
+        width: min(60vw, 190px);
+    }
+
+    .name-script {
+        margin-top: 126px;
+        font-size: clamp(4rem, 17vw, 4.8rem);
+    }
+}
