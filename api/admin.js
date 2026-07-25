@@ -91,6 +91,9 @@ async function getSummary() {
             g.age,
             g.whatsapp_digits,
             g.max_companions,
+            g.first_access_at,
+            g.last_access_at,
+            g.access_count,
             r.id AS rsvp_id,
             r.attending,
             r.decline_reason,
@@ -157,7 +160,14 @@ async function getSummary() {
             age: row.age ?? '',
             whatsapp: isGuestPhonePlaceholder(row.whatsapp_digits) ? '' : row.whatsapp_digits || '',
             maxCompanions: Number(row.max_companions || 0),
-            status: row.rsvp_id ? row.attending : 'pendente',
+            status: row.rsvp_id
+                ? row.attending
+                : row.last_access_at
+                    ? 'visualizou'
+                    : 'pendente',
+            firstAccessAt: row.first_access_at || '',
+            lastAccessAt: row.last_access_at || '',
+            accessCount: Number(row.access_count || 0),
             declineReason: row.decline_reason || '',
             companionsCount: Number(row.companions_count || 0),
             buffetCount: Number(row.buffet_count || 0),
@@ -175,6 +185,11 @@ async function getSummary() {
         const pendingCompanions = Math.max(maxCompanions - companionAnswers.length, 0)
 
         summary.invited += 1 + maxCompanions
+
+        if (guest.status === 'visualizou') {
+            summary.viewed += 1
+        }
+
         if (guest.status === 'sim') {
             summary.confirmed += 1 + confirmedCompanions
             summary.declined += declinedCompanions
@@ -186,7 +201,14 @@ async function getSummary() {
             summary.pending += 1 + maxCompanions
         }
         return summary
-    }, { invited: 0, confirmed: 0, declined: 0, pending: 0, buffet: 0 })
+    }, {
+        invited: 0,
+        confirmed: 0,
+        declined: 0,
+        pending: 0,
+        viewed: 0,
+        buffet: 0,
+    })
 
     return {
         totals,

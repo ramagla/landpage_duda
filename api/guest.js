@@ -94,6 +94,22 @@ export default async function handler(request, response) {
         if (lookup.error) return response.status(403).json({ error: lookup.error })
         if (!lookup.guest) return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
 
+        /*
+         * O acesso é registrado somente depois de o convidado
+         * validar corretamente celular/link.
+         */
+        await getClient().execute({
+            sql: `
+                UPDATE invited_guests
+                SET
+                    first_access_at = COALESCE(first_access_at, datetime('now')),
+                    last_access_at = datetime('now'),
+                    access_count = COALESCE(access_count, 0) + 1
+                WHERE id = ?
+            `,
+            args: [lookup.guest.id],
+        })
+
         const rsvp = await getClient().execute({
             sql: 'SELECT id, attending, decline_reason, created_at FROM rsvps WHERE invited_guest_id = ? OR whatsapp_digits = ? LIMIT 1',
             args: [lookup.guest.id, whatsappDigits],

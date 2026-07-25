@@ -181,6 +181,9 @@ export async function ensureSchema() {
             await db.execute('ALTER TABLE invited_guests ADD COLUMN age INTEGER').catch(ignoreDuplicateColumn)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN whatsapp_digits TEXT').catch(ignoreDuplicateColumn)
             await db.execute('ALTER TABLE invited_guests ADD COLUMN max_companions INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN first_access_at TEXT').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN last_access_at TEXT').catch(ignoreDuplicateColumn)
+            await db.execute('ALTER TABLE invited_guests ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0').catch(ignoreDuplicateColumn)
             await db.execute(`
                 CREATE UNIQUE INDEX IF NOT EXISTS invited_guests_whatsapp_unique
                 ON invited_guests (whatsapp_digits)
@@ -258,7 +261,15 @@ export async function ensureSchema() {
                 )
             `)
 
-            await seedInvitedGuests(db)
+            /*
+             * A lista inicial antiga NÃO deve ser recriada
+             * automaticamente em produção.
+             *
+             * O seed só roda quando solicitado explicitamente.
+             */
+            if (process.env.SEED_INVITED_GUESTS === '1') {
+                await seedInvitedGuests(db)
+            }
         })()
     }
 

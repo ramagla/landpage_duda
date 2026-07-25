@@ -609,6 +609,30 @@ function BirthdayMessageForm() {
     )
 }
 
+function formatAdminAccessDate(value) {
+    if (!value) return ''
+
+    const normalized = value.includes('T')
+        ? value
+        : `${value.replace(' ', 'T')}Z`
+
+    const date = new Date(normalized)
+
+    if (Number.isNaN(date.getTime())) {
+        return value
+    }
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date)
+}
+
+
 function AdminPage() {
     const [password, setPassword] = useState(() => window.localStorage.getItem('dudaAdminPassword') || '')
     const [status, setStatus] = useState('idle')
@@ -724,10 +748,18 @@ function AdminPage() {
                         <div><span>Confirmados</span><strong>{data.totals.confirmed}</strong></div>
                         <div><span>Nao vao</span><strong>{data.totals.declined}</strong></div>
                         <div><span>Pendentes</span><strong>{data.totals.pending}</strong></div>
+                        <div className="admin-summary__viewed">
+                            <span>Acessaram sem responder</span>
+                            <strong>{data.totals.viewed || 0}</strong>
+                        </div>
                         <div><span>Buffet</span><strong>{data.totals.buffet}</strong></div>
                     </section>
 
-                    <section className="confirm-panel admin-form-panel" aria-labelledby="guest-form-title">
+                    <section
+                        id="cadastro-convidado"
+                        className="confirm-panel admin-form-panel"
+                        aria-labelledby="guest-form-title"
+                    >
                         <p className="panel-kicker">Cadastro</p>
                         <h2 id="guest-form-title">Convidado</h2>
                         <form key={editing?.id || 'new-guest'} className="admin-guest-form" onSubmit={handleSaveGuest}>
@@ -817,15 +849,59 @@ function AdminPage() {
                                                 {guestItem.companions.length === 0 && guestItem.presetCompanions?.length > 0 ? <small>Pre-cadastrados: {guestItem.presetCompanions.map((item) => `${item.name}${item.age !== '' ? ' (' + item.age + ')' : ''}`).join(', ')}</small> : null}
                                                 {guestItem.declineReason ? <small>Motivo: {guestItem.declineReason}</small> : null}
                                             </td>
-                                            <td><span className={`status-pill status-pill--${guestItem.status}`}>{guestItem.status === 'sim' ? 'Confirmou' : guestItem.status === 'nao' ? 'Nao vai' : 'Pendente'}</span></td>
+                                            <td className="admin-status-cell">
+                                                <span className={`status-pill status-pill--${guestItem.status}`}>
+                                                    {guestItem.status === 'sim'
+                                                        ? 'Confirmou'
+                                                        : guestItem.status === 'nao'
+                                                            ? 'Não vai'
+                                                            : guestItem.status === 'visualizou'
+                                                                ? 'Visualizou'
+                                                                : 'Pendente'}
+                                                </span>
+
+                                                {guestItem.lastAccessAt ? (
+                                                    <small>
+                                                        Último acesso: {formatAdminAccessDate(guestItem.lastAccessAt)}
+                                                    </small>
+                                                ) : (
+                                                    <small>Ainda não acessou</small>
+                                                )}
+                                            </td>
                                             <td>{guestItem.companionsCount}/{guestItem.maxCompanions}</td>
                                             <td>{guestItem.buffetCount}</td>
                                             <td>{formatWhatsapp(guestItem.whatsapp)}</td>
                                             <td><code>{guestItem.inviteCode ? `${baseUrl}/?convite=${guestItem.inviteCode}` : '-'}</code></td>
                                             <td>
                                                 <div className="admin-row-actions">
-                                                    <button className="secondary-button" type="button" onClick={() => { setEditing(guestItem); setAdminCompanionCount(Number(guestItem.maxCompanions || 0)) }}>Editar</button>
-                                                    <button className="danger-button" type="button" onClick={() => handleDeleteGuest(guestItem)}>Excluir</button>
+                                                    <button
+                                                        className="admin-action-button admin-action-button--edit"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditing(guestItem)
+                                                            setAdminCompanionCount(Number(guestItem.maxCompanions || 0))
+
+                                                            window.requestAnimationFrame(() => {
+                                                                document
+                                                                    .getElementById('cadastro-convidado')
+                                                                    ?.scrollIntoView({
+                                                                        behavior: 'smooth',
+                                                                        block: 'start',
+                                                                    })
+                                                            })
+                                                        }}
+                                                    >
+                                                        <span aria-hidden="true">✎</span>
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        className="admin-action-button admin-action-button--delete"
+                                                        type="button"
+                                                        onClick={() => handleDeleteGuest(guestItem)}
+                                                    >
+                                                        <span aria-hidden="true">×</span>
+                                                        Excluir
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

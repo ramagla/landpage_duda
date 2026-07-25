@@ -7,3 +7,5 @@ dist
 duda-local.db
 duda-local.db-*
 *.db-journal
+duda-local.backup-*.db
+*.backup.db

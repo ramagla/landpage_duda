@@ -4118,3 +4118,195 @@ html {
 }
 
 /* === MELHORIAS ENTRADA CONVITE - END === */
+
+/* === ADMIN ACESSOS E ACOES - START === */
+
+
+/* ==========================================================
+   STATUS DE ACESSO
+   ========================================================== */
+
+.status-pill--visualizou {
+    border: 1px solid rgba(166, 119, 29, .16);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 246, 207, .98),
+            rgba(248, 232, 174, .76)
+        );
+
+    color: #775811;
+}
+
+
+.admin-status-cell {
+    min-width: 150px;
+}
+
+
+.admin-status-cell small {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #70807d;
+
+    font-size: .72rem;
+    line-height: 1.25;
+
+    white-space: nowrap;
+}
+
+
+.admin-summary__viewed {
+    border-color: rgba(177, 135, 42, .18) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 249, 222, .86),
+            rgba(255, 255, 255, .82)
+        ) !important;
+}
+
+
+.admin-summary__viewed strong {
+    color: #775811;
+}
+
+
+/* ==========================================================
+   AÇÕES DA TABELA
+   ========================================================== */
+
+.admin-row-actions {
+    display: flex;
+
+    flex-wrap: nowrap;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 7px;
+}
+
+
+.admin-table .admin-action-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    min-width: 82px;
+    min-height: 36px;
+
+    padding: 7px 11px;
+
+    border-radius: 10px;
+
+    font-size: .82rem;
+    font-weight: 800;
+    line-height: 1;
+
+    box-shadow: none;
+
+    cursor: pointer;
+
+    transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        background .15s ease;
+}
+
+
+.admin-table .admin-action-button:hover {
+    transform: translateY(-1px);
+}
+
+
+.admin-table .admin-action-button--edit {
+    border:
+        1px solid
+        rgba(8, 120, 111, .20);
+
+    background:
+        linear-gradient(
+            135deg,
+            #edfffb,
+            #d9f7f0
+        );
+
+    color: #06685f;
+
+    box-shadow:
+        0 5px 12px
+        rgba(8, 120, 111, .08);
+}
+
+
+.admin-table .admin-action-button--edit:hover {
+    background:
+        linear-gradient(
+            135deg,
+            #dffff7,
+            #c8f1e8
+        );
+
+    color: #04574f;
+}
+
+
+.admin-table .admin-action-button--delete {
+    border:
+        1px solid
+        rgba(170, 56, 56, .18);
+
+    background:
+        linear-gradient(
+            135deg,
+            #fffafa,
+            #fff0ee
+        );
+
+    color: #a03c3c;
+
+    box-shadow:
+        0 5px 12px
+        rgba(160, 60, 60, .06);
+}
+
+
+.admin-table .admin-action-button--delete:hover {
+    border-color:
+        rgba(170, 56, 56, .28);
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff4f2,
+            #ffe5e1
+        );
+
+    color: #8d2e2e;
+}
+
+
+.admin-table .admin-action-button span {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+
+/* === ADMIN ACESSOS E ACOES - END === */
+
+
+/* === SCROLL CADASTRO ADMIN - START === */
+
+#cadastro-convidado {
+    scroll-margin-top: 22px;
+}
+
+/* === SCROLL CADASTRO ADMIN - END === */
