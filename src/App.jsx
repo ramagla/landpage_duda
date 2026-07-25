@@ -1724,36 +1724,119 @@ function AdminPage() {
             `"${String(value ?? '').replaceAll('"', '""')}"`
         )
 
+        function formatCompanionForCsv(
+            companion,
+            answered,
+        ) {
+            const name = String(
+                companion?.name || ''
+            ).trim()
+
+            const age = (
+                companion?.age === ''
+                || companion?.age === null
+                || companion?.age === undefined
+            )
+                ? 'idade não informada'
+                : `${companion.age} anos`
+
+            if (!answered) {
+                return [
+                    name,
+                    age,
+                    'pré-cadastrado',
+                ]
+                    .filter(Boolean)
+                    .join(' - ')
+            }
+
+            return [
+                name,
+                age,
+                companion.attending === 'nao'
+                    ? 'não vai'
+                    : 'vai',
+                companion.countsBuffet
+                    ? 'buffet: sim'
+                    : 'buffet: não',
+            ]
+                .filter(Boolean)
+                .join(' - ')
+        }
+
         const rows = [
             [
                 'Nome',
+                'Idade',
                 'Status',
+                'Motivo da ausência',
                 'WhatsApp',
                 'Acompanhantes confirmados',
                 'Acompanhantes liberados',
                 'Buffet',
+                'Primeiro acesso',
                 'Último acesso',
+                'Quantidade de acessos',
+                'Primeira resposta',
+                'Detalhes dos acompanhantes',
                 'Link do convite',
             ],
 
-            ...filteredGuests.map((guestItem) => [
-                guestItem.name,
-                getGuestStatusLabel(
-                    guestItem.status,
-                ),
-                formatWhatsapp(
-                    guestItem.whatsapp,
-                ),
-                guestItem.companionsCount,
-                guestItem.maxCompanions,
-                guestItem.buffetCount,
-                formatAdminAccessDate(
-                    guestItem.lastAccessAt,
-                ),
-                getGuestInviteUrl(
-                    guestItem,
-                ),
-            ]),
+            ...filteredGuests.map((guestItem) => {
+                const answeredCompanions = (
+                    guestItem.companions
+                    || []
+                )
+
+                const companionDetails = (
+                    answeredCompanions.length > 0
+                        ? answeredCompanions
+                            .map((item) => (
+                                formatCompanionForCsv(
+                                    item,
+                                    true,
+                                )
+                            ))
+                        : (
+                            guestItem.presetCompanions
+                            || []
+                        ).map((item) => (
+                            formatCompanionForCsv(
+                                item,
+                                false,
+                            )
+                        ))
+                ).join(' | ')
+
+                return [
+                    guestItem.name,
+                    guestItem.age,
+                    getGuestStatusLabel(
+                        guestItem.status,
+                    ),
+                    guestItem.declineReason || '',
+                    formatWhatsapp(
+                        guestItem.whatsapp,
+                    ),
+                    guestItem.companionsCount,
+                    guestItem.maxCompanions,
+                    guestItem.buffetCount,
+                    formatAdminAccessDate(
+                        guestItem.firstAccessAt,
+                    ),
+                    formatAdminAccessDate(
+                        guestItem.lastAccessAt,
+                    ),
+                    guestItem.accessCount || 0,
+                    formatAdminAccessDate(
+                        guestItem.confirmedAt,
+                    ),
+                    companionDetails,
+                    getGuestInviteUrl(
+                        guestItem,
+                    ),
+                ]
+            }),
         ]
 
         const csv = '\uFEFF' + rows
