@@ -1,6 +1,6 @@
 # Landing page - 16 anos da Duda
 
-Projeto separado da landing do Romeu.
+Projeto independente de convite digital.
 
 ## Evento
 
@@ -50,9 +50,9 @@ A API cria/migra automaticamente as tabelas `invited_guests`, `guest_companions`
 
 - A pessoa abre a landing page e digita o celular.
 - Se o celular ja estiver cadastrado, o convite dela abre direto.
-- Se voce enviar um link individual, como `https://landpage-duda-ccpi.vercel.app/?convite=glaucia`, a pessoa digita o celular e esse numero fica vinculado ao convite da Glaucia ao confirmar.
+- Os convites individuais usam um token aleatorio e seguro, por exemplo `https://www.dudanoibiza.com.br/?convite=<TOKEN_DO_CONVITE>`. A pessoa informa o celular para validar o convite correspondente.
 - Se nao houver celular cadastrado nem link individual valido, aparece: `Sinto muito, mas voce nao esta na lista de convidados.`
-- Cada convidado so pode confirmar uma vez.
+- A resposta pode ser alterada ate o prazo de confirmacao.
 - O limite de acompanhantes vem do cadastro.
 - Criancas menores de 6 anos nao contam no buffet.
 
@@ -82,7 +82,7 @@ Para pre-cadastrar nomes de acompanhantes conhecidos, use a tabela `guest_compan
 INSERT INTO guest_companions (invited_guest_id, slot_number, companion_name, age)
 SELECT id, 1, 'Nome do acompanhante', 18
 FROM invited_guests
-WHERE invite_code = 'glaucia'
+WHERE invite_code = 'convidado-exemplo'
 ON CONFLICT(invited_guest_id, slot_number) DO UPDATE SET
   companion_name = excluded.companion_name,
   age = excluded.age;

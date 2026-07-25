@@ -2,6 +2,7 @@ import {
     cleanText,
     ensureSchema,
     getClient,
+    normalizePhone,
     parseBody,
 } from './_db.js'
 
@@ -10,59 +11,124 @@ import {
 } from './_rate-limit.js'
 
 
+function validPhoneDigits(value) {
+    return /^\d{10,13}$/.test(
+        String(value || '')
+    )
+}
+
+
 function validatePayload(body) {
     const invitationCode = cleanText(
         body.invitationCode,
+    )
+
+    const whatsappDigits = normalizePhone(
+        body.whatsapp,
     )
 
     const message = cleanText(
         body.message,
     )
 
+    const hasInvitationCode = Boolean(
+        invitationCode
+    )
+
     /*
-     * O token individual possui 256 bits e 64 caracteres hexadecimais.
-     * O usuario nunca precisa digitar esse token:
-     * ele vem automaticamente da URL do convite.
+     * Quando existe token, ele continua sendo
+     * a forma preferencial de identificar o convite.
      */
-    if (!/^[a-f0-9]{64}$/i.test(invitationCode)) {
+    if (
+        hasInvitationCode
+        && !/^[a-f0-9]{64}$/i.test(
+            invitationCode
+        )
+    ) {
         return {
-            error: 'Não foi possível identificar este convite.',
+            error:
+                'Não foi possível identificar este convite.',
+        }
+    }
+
+    /*
+     * Quem entrou pelo endereco principal pode ter
+     * sido identificado somente pelo WhatsApp.
+     */
+    if (
+        !hasInvitationCode
+        && !validPhoneDigits(
+            whatsappDigits
+        )
+    ) {
+        return {
+            error:
+                'Não foi possível identificar este convite.',
         }
     }
 
     if (message.length < 5) {
         return {
-            error: 'Escreva uma mensagem um pouquinho maior.',
+            error:
+                'Escreva uma mensagem um pouquinho maior.',
         }
     }
 
     if (message.length > 500) {
         return {
-            error: 'A mensagem pode ter no máximo 500 caracteres.',
+            error:
+                'A mensagem pode ter no máximo 500 caracteres.',
         }
     }
 
     return {
         data: {
             invitationCode,
+            whatsappDigits,
             message,
+            lookupMode:
+                hasInvitationCode
+                    ? 'token'
+                    : 'phone',
         },
     }
 }
 
 
-async function findGuestByToken(invitationCode) {
+async function findGuestForMessage({
+    invitationCode,
+    whatsappDigits,
+    lookupMode,
+}) {
+    if (lookupMode === 'token') {
+        const result = await getClient().execute({
+            sql: `
+                SELECT
+                    id,
+                    guest_name
+                FROM invited_guests
+                WHERE invite_token = ?
+                LIMIT 1
+            `,
+            args: [
+                invitationCode,
+            ],
+        })
+
+        return result.rows[0] || null
+    }
+
     const result = await getClient().execute({
         sql: `
             SELECT
                 id,
                 guest_name
             FROM invited_guests
-            WHERE invite_token = ?
+            WHERE whatsapp_digits = ?
             LIMIT 1
         `,
         args: [
-            invitationCode,
+            whatsappDigits,
         ],
     })
 
@@ -74,6 +140,11 @@ export default async function handler(
     request,
     response,
 ) {
+    response.setHeader(
+        'Cache-Control',
+        'no-store'
+    )
+
     if (request.method !== 'POST') {
         response.setHeader(
             'Allow',
@@ -116,9 +187,14 @@ export default async function handler(
 
         await ensureSchema()
 
-        const guest = await findGuestByToken(
-            validation.data.invitationCode,
-        )
+        const guest = await findGuestForMessage({
+            invitationCode:
+                validation.data.invitationCode,
+            whatsappDigits:
+                validation.data.whatsappDigits,
+            lookupMode:
+                validation.data.lookupMode,
+        })
 
         if (!guest) {
             return response
