@@ -200,6 +200,39 @@ async function readApiJson(response) {
     }
 }
 
+async function fetchGuestInvitation({
+    whatsapp,
+    invitationCode,
+}) {
+    const response = await fetch(
+        '/api/guest',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
+            body: JSON.stringify({
+                whatsapp,
+                invitationCode,
+            }),
+        }
+    )
+
+    const data = await readApiJson(
+        response
+    )
+
+    if (!response.ok) {
+        throw new Error(
+            data?.error
+            || 'Não foi possível consultar seu convite.'
+        )
+    }
+
+    return data
+}
+
 function getInvitationCode() {
     if (typeof window === 'undefined') return ''
     return new URLSearchParams(window.location.search).get('convite') || ''
@@ -208,14 +241,56 @@ function getInvitationCode() {
 
 const OPENING_SESSION_KEY = 'dudaInvitationUnlocked'
 
+function clearOpeningSession() {
+    if (typeof window === 'undefined') return
+
+    window.sessionStorage.removeItem(
+        OPENING_SESSION_KEY
+    )
+}
+
 function readOpeningSession() {
     if (typeof window === 'undefined') return null
 
     try {
-        const stored = JSON.parse(window.sessionStorage.getItem(OPENING_SESSION_KEY) || 'null')
-        if (!stored?.guest?.name || digitsOnly(stored.whatsapp).length < 10) return null
+        const stored = JSON.parse(
+            window.sessionStorage.getItem(
+                OPENING_SESSION_KEY
+            ) || 'null'
+        )
+
+        if (
+            !stored?.guest?.name
+            || digitsOnly(stored.whatsapp).length < 10
+        ) {
+            clearOpeningSession()
+            return null
+        }
+
+        const currentInvitationCode = getInvitationCode()
+        const storedInvitationCode = String(
+            stored.invitationCode || ''
+        )
+
+        /*
+         * Uma sessao aberta por um convite individual nunca pode
+         * ser reutilizada quando o navegador recebe outro token.
+         *
+         * Isso evita, por exemplo:
+         * convite da Andreia -> abre convite do Rafael
+         * e a sessao antiga continuar aparecendo.
+         */
+        if (
+            storedInvitationCode
+            !== currentInvitationCode
+        ) {
+            clearOpeningSession()
+            return null
+        }
+
         return stored
     } catch {
+        clearOpeningSession()
         return null
     }
 }
@@ -223,12 +298,18 @@ function readOpeningSession() {
 function saveOpeningSession(data) {
     if (typeof window === 'undefined') return
 
-    window.sessionStorage.setItem(OPENING_SESSION_KEY, JSON.stringify({
-        guest: data.guest,
-        whatsapp: data.whatsapp,
-        alreadyConfirmed: Boolean(data.alreadyConfirmed),
-        rsvp: data.rsvp || null,
-    }))
+    window.sessionStorage.setItem(
+        OPENING_SESSION_KEY,
+        JSON.stringify({
+            invitationCode: getInvitationCode(),
+            guest: data.guest,
+            whatsapp: data.whatsapp,
+            alreadyConfirmed: Boolean(
+                data.alreadyConfirmed
+            ),
+            rsvp: data.rsvp || null,
+        })
+    )
 }
 
 function InvitationQuickActions() {
@@ -441,13 +522,10 @@ function RsvpForm({
                 throw new Error('Digite um WhatsApp válido com DDD.')
             }
 
-            const params = new URLSearchParams({ whatsapp: whatsappValue })
-            if (invitationCode) params.set('code', invitationCode)
-
-            const response = await fetch(`/api/guest?${params.toString()}`)
-            const data = await readApiJson(response)
-
-            if (!response.ok) throw new Error(data?.error || 'Não foi possível consultar seu convite.')
+            const data = await fetchGuestInvitation({
+                whatsapp: whatsappValue,
+                invitationCode,
+            })
 
             setGuest(data.guest)
             onGuestResolved?.(data.guest)
@@ -2255,13 +2333,10 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
             }
 
             setStage('checking')
-            const params = new URLSearchParams({ whatsapp: whatsappValue })
-            if (invitationCode) params.set('code', invitationCode)
-
-            const response = await fetch(`/api/guest?${params.toString()}`)
-            const data = await readApiJson(response)
-
-            if (!response.ok) throw new Error(data?.error || 'Não foi possível consultar seu convite.')
+            const data = await fetchGuestInvitation({
+                whatsapp: whatsappValue,
+                invitationCode,
+            })
 
             const openingData = {
                 guest: data.guest,

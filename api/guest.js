@@ -5,6 +5,7 @@ import {
     getGuestCompanionSlots,
     isGuestPhonePlaceholder,
     normalizePhone,
+    parseBody,
     publicGuest,
 } from './_db.js'
 
@@ -79,8 +80,8 @@ async function findGuest(whatsappDigits, invitationCode) {
         }
 
         /*
-         * Valores como seed-giovana-2 sao placeholders internos,
-         * nao numeros de telefone.
+         * Valores internos usados como placeholder
+         * nao representam numeros de telefone.
          */
         const registeredPhone = isGuestPhonePlaceholder(guest.whatsapp_digits)
             ? ''
@@ -145,14 +146,36 @@ async function getCompanionsForGuest(guestId, maxCompanions, rsvpId) {
     })
 }
 export default async function handler(request, response) {
-    if (request.method !== 'GET') {
-        response.setHeader('Allow', 'GET')
-        return response.status(405).json({ error: 'Metodo nao permitido.' })
+    response.setHeader(
+        'Cache-Control',
+        'no-store'
+    )
+
+    if (request.method !== 'POST') {
+        response.setHeader(
+            'Allow',
+            'POST'
+        )
+
+        return response
+            .status(405)
+            .json({
+                error: 'Metodo nao permitido.',
+            })
     }
 
     try {
-        const whatsappDigits = normalizePhone(request.query?.whatsapp)
-        const invitationCode = request.query?.code || ''
+        const body = parseBody(
+            request.body
+        )
+
+        const whatsappDigits = normalizePhone(
+            body.whatsapp
+        )
+
+        const invitationCode = cleanText(
+            body.invitationCode
+        )
 
         if (!validPhoneDigits(whatsappDigits)) {
             return response.status(400).json({ error: 'Digite um WhatsApp valido com DDD.' })
