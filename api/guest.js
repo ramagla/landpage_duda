@@ -192,8 +192,30 @@ export default async function handler(request, response) {
         })
 
         const rsvp = await getClient().execute({
-            sql: 'SELECT id, attending, decline_reason, created_at FROM rsvps WHERE invited_guest_id = ? OR whatsapp_digits = ? LIMIT 1',
-            args: [lookup.guest.id, whatsappDigits],
+            sql: `
+                SELECT
+                    id,
+                    attending,
+                    decline_reason,
+                    created_at
+                FROM rsvps
+                WHERE invited_guest_id = ?
+                   OR (
+                        invited_guest_id IS NULL
+                        AND whatsapp_digits = ?
+                   )
+                ORDER BY
+                    CASE
+                        WHEN invited_guest_id = ? THEN 0
+                        ELSE 1
+                    END
+                LIMIT 1
+            `,
+            args: [
+                lookup.guest.id,
+                whatsappDigits,
+                lookup.guest.id,
+            ],
         })
         const companions = await getCompanionsForGuest(lookup.guest.id, lookup.guest.max_companions, rsvp.rows[0]?.id)
 

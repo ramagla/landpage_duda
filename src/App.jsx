@@ -1428,14 +1428,14 @@ function AdminPage() {
             : `55${phone}`
 
         const whatsappMessage = [
-            `Olá, ${guestItem.name}! 💚`,
+            `Olá, ${guestItem.name}!`,
             '',
             'Este é o seu convite para os 16 anos da Duda.',
             '',
             'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
             inviteUrl,
             '',
-            'Esperamos você! ✨',
+            'Esperamos você!',
         ].join('\n')
 
         const whatsappUrl = (

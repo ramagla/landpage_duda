@@ -188,12 +188,28 @@ async function bindPhoneIfNeeded(guestId, whatsappDigits, canBindPhone) {
 async function findExistingRsvp(invitedGuestId, whatsappDigits) {
     const result = await getClient().execute({
         sql: `
-            SELECT id, attending
+            SELECT
+                id,
+                attending,
+                invited_guest_id
             FROM rsvps
-            WHERE invited_guest_id = ? OR whatsapp_digits = ?
+            WHERE invited_guest_id = ?
+               OR (
+                    invited_guest_id IS NULL
+                    AND whatsapp_digits = ?
+               )
+            ORDER BY
+                CASE
+                    WHEN invited_guest_id = ? THEN 0
+                    ELSE 1
+                END
             LIMIT 1
         `,
-        args: [invitedGuestId, whatsappDigits],
+        args: [
+            invitedGuestId,
+            whatsappDigits,
+            invitedGuestId,
+        ],
     })
 
     return result.rows[0] || null
@@ -286,6 +302,7 @@ export default async function handler(request, response) {
                 sql: `
                     UPDATE rsvps
                     SET
+                        invited_guest_id = ?,
                         full_name = ?,
                         whatsapp = ?,
                         whatsapp_digits = ?,
@@ -296,6 +313,7 @@ export default async function handler(request, response) {
                     WHERE id = ?
                 `,
                 args: [
+                    lookup.guest.id,
                     lookup.guest.guest_name,
                     body.whatsapp,
                     whatsappDigits,
