@@ -118,6 +118,93 @@ export async function ensureSchema() {
                 ON invited_guests (invite_code)
             `)
             await db.execute('CREATE INDEX IF NOT EXISTS invited_guests_name_index ON invited_guests (guest_name)')
+
+            /*
+             * SCHEMA PRINCIPAL COMPLETO
+             *
+             * Todas as tabelas abaixo precisam existir quando a
+             * aplicacao inicia com um banco totalmente vazio.
+             *
+             * O schema e idempotente: CREATE TABLE/INDEX IF NOT EXISTS
+             * nao altera os dados de bancos que ja estao funcionando.
+             */
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS invited_guests_invite_token_unique
+                ON invited_guests (invite_token)
+                WHERE invite_token IS NOT NULL
+                  AND invite_token <> ''
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS guest_companions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER NOT NULL,
+                    slot_number INTEGER NOT NULL,
+                    companion_name TEXT,
+                    age INTEGER,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(invited_guest_id, slot_number)
+                )
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS rsvps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER,
+                    full_name TEXT NOT NULL,
+                    whatsapp TEXT,
+                    whatsapp_digits TEXT,
+                    attending TEXT NOT NULL
+                        CHECK (attending IN ('sim', 'nao')),
+                    decline_reason TEXT,
+                    companions_count INTEGER NOT NULL DEFAULT 0,
+                    buffet_count INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS rsvps_invited_guest_unique
+                ON rsvps (invited_guest_id)
+                WHERE invited_guest_id IS NOT NULL
+            `)
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS rsvps_whatsapp_digits_unique
+                ON rsvps (whatsapp_digits)
+                WHERE whatsapp_digits IS NOT NULL
+                  AND whatsapp_digits <> ''
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS rsvp_companions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rsvp_id INTEGER NOT NULL,
+                    companion_slot INTEGER,
+                    companion_name TEXT NOT NULL,
+                    age INTEGER NOT NULL,
+                    counts_buffet INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    attending TEXT NOT NULL DEFAULT 'sim'
+                )
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS birthday_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    invited_guest_id INTEGER
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS birthday_messages_invited_guest_index
+                ON birthday_messages (invited_guest_id)
+                WHERE invited_guest_id IS NOT NULL
+            `)
         })()
     }
 
