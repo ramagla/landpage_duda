@@ -959,6 +959,8 @@ function AdminPage() {
     const [editing, setEditing] = useState(null)
     const [adminCompanionCount, setAdminCompanionCount] = useState(0)
     const [messageSearch, setMessageSearch] = useState('')
+    const [guestSearch, setGuestSearch] = useState('')
+    const [guestStatusFilter, setGuestStatusFilter] = useState('todos')
 
     useEffect(() => {
         let cancelled = false
@@ -1274,7 +1276,312 @@ function AdminPage() {
         )
     }
 
-    const baseUrl = typeof window === 'undefined' ? '' : window.location.origin
+    const baseUrl = typeof window === 'undefined'
+        ? ''
+        : window.location.origin
+
+    function normalizeAdminSearch(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLocaleLowerCase('pt-BR')
+            .trim()
+    }
+
+    function getGuestStatusLabel(statusValue) {
+        if (statusValue === 'sim') {
+            return 'Confirmou'
+        }
+
+        if (statusValue === 'nao') {
+            return 'Não vai'
+        }
+
+        if (statusValue === 'visualizou') {
+            return 'Visualizou'
+        }
+
+        return 'Pendente'
+    }
+
+    function getGuestInviteUrl(guestItem) {
+        if (!guestItem?.inviteToken) {
+            return ''
+        }
+
+        return `${baseUrl}/?convite=${guestItem.inviteToken}`
+    }
+
+    async function copyAdminText(value) {
+        if (!value) {
+            throw new Error(
+                'Não existe conteúdo para copiar.'
+            )
+        }
+
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(
+                    value,
+                )
+
+                return
+            } catch {
+                // Usa fallback abaixo.
+            }
+        }
+
+        const textarea = document.createElement(
+            'textarea',
+        )
+
+        textarea.value = value
+        textarea.setAttribute(
+            'readonly',
+            '',
+        )
+
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        textarea.style.pointerEvents = 'none'
+
+        document.body.appendChild(
+            textarea,
+        )
+
+        textarea.select()
+
+        const copied = document.execCommand(
+            'copy',
+        )
+
+        textarea.remove()
+
+        if (!copied) {
+            throw new Error(
+                'Não foi possível copiar automaticamente.'
+            )
+        }
+    }
+
+    async function handleCopyGuestLink(guestItem) {
+        const inviteUrl = getGuestInviteUrl(
+            guestItem,
+        )
+
+        if (!inviteUrl) {
+            setStatus('error')
+            setMessage(
+                'Este convidado ainda não possui link seguro.'
+            )
+            return
+        }
+
+        try {
+            await copyAdminText(
+                inviteUrl,
+            )
+
+            setStatus('success')
+
+            setMessage(
+                `Link de ${guestItem.name} copiado.`
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    function handleOpenGuestWhatsapp(guestItem) {
+        const phone = digitsOnly(
+            guestItem.whatsapp || '',
+        )
+
+        if (!phone) {
+            setStatus('error')
+
+            setMessage(
+                `Cadastre o WhatsApp de ${guestItem.name} primeiro.`
+            )
+
+            return
+        }
+
+        const inviteUrl = getGuestInviteUrl(
+            guestItem,
+        )
+
+        if (!inviteUrl) {
+            setStatus('error')
+
+            setMessage(
+                'Este convidado ainda não possui link seguro.'
+            )
+
+            return
+        }
+
+        const brazilPhone = phone.startsWith('55')
+            && phone.length >= 12
+            ? phone
+            : `55${phone}`
+
+        const whatsappMessage = [
+            `Olá, ${guestItem.name}! 💚`,
+            '',
+            'Este é o seu convite para os 16 anos da Duda.',
+            '',
+            'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
+            inviteUrl,
+            '',
+            'Esperamos você! ✨',
+        ].join('\n')
+
+        const whatsappUrl = (
+            `https://wa.me/${brazilPhone}`
+            + `?text=${encodeURIComponent(whatsappMessage)}`
+        )
+
+        window.open(
+            whatsappUrl,
+            '_blank',
+            'noopener,noreferrer',
+        )
+    }
+
+    const normalizedGuestSearch = normalizeAdminSearch(
+        guestSearch,
+    )
+
+    const filteredGuests = (
+        data?.guests
+        || []
+    ).filter((guestItem) => {
+        const matchesStatus = (
+            guestStatusFilter === 'todos'
+            || guestItem.status === guestStatusFilter
+        )
+
+        if (!matchesStatus) {
+            return false
+        }
+
+        if (!normalizedGuestSearch) {
+            return true
+        }
+
+        const companionNames = [
+            ...(guestItem.companions || []),
+            ...(guestItem.presetCompanions || []),
+        ]
+            .map((item) => item.name || '')
+            .join(' ')
+
+        const searchable = normalizeAdminSearch(
+            [
+                guestItem.name,
+                guestItem.whatsapp,
+                companionNames,
+            ].join(' ')
+        )
+
+        return searchable.includes(
+            normalizedGuestSearch
+        )
+    })
+
+    function handleExportGuests() {
+        if (filteredGuests.length === 0) {
+            setStatus('error')
+
+            setMessage(
+                'Não existem convidados para exportar com o filtro atual.'
+            )
+
+            return
+        }
+
+        const escapeCsv = (value) => (
+            `"${String(value ?? '').replaceAll('"', '""')}"`
+        )
+
+        const rows = [
+            [
+                'Nome',
+                'Status',
+                'WhatsApp',
+                'Acompanhantes confirmados',
+                'Acompanhantes liberados',
+                'Buffet',
+                'Último acesso',
+                'Link do convite',
+            ],
+
+            ...filteredGuests.map((guestItem) => [
+                guestItem.name,
+                getGuestStatusLabel(
+                    guestItem.status,
+                ),
+                formatWhatsapp(
+                    guestItem.whatsapp,
+                ),
+                guestItem.companionsCount,
+                guestItem.maxCompanions,
+                guestItem.buffetCount,
+                formatAdminAccessDate(
+                    guestItem.lastAccessAt,
+                ),
+                getGuestInviteUrl(
+                    guestItem,
+                ),
+            ]),
+        ]
+
+        const csv = '\uFEFF' + rows
+            .map(
+                (row) => row
+                    .map(escapeCsv)
+                    .join(';')
+            )
+            .join('\r\n')
+
+        const blob = new Blob(
+            [csv],
+            {
+                type:
+                    'text/csv;charset=utf-8',
+            },
+        )
+
+        const url = URL.createObjectURL(
+            blob,
+        )
+
+        const link = document.createElement(
+            'a',
+        )
+
+        link.href = url
+        link.download = 'convidados-duda.csv'
+
+        document.body.appendChild(
+            link,
+        )
+
+        link.click()
+        link.remove()
+
+        URL.revokeObjectURL(
+            url,
+        )
+
+        setStatus('success')
+
+        setMessage(
+            `${filteredGuests.length} convidado${filteredGuests.length === 1 ? '' : 's'} exportado${filteredGuests.length === 1 ? '' : 's'}.`
+        )
+    }
 
     return (
         <main className="admin-shell">
@@ -1410,9 +1717,109 @@ function AdminPage() {
                         </form>
                     </section>
 
-                    <section className="confirm-panel admin-table-panel" aria-labelledby="guest-list-title">
-                        <p className="panel-kicker">Confirmacoes</p>
-                        <h2 id="guest-list-title">Lista geral</h2>
+                    <section
+                        className="confirm-panel admin-table-panel admin-guests-panel"
+                        aria-labelledby="guest-list-title"
+                    >
+                        <div className="admin-guests-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Confirmações
+                                </p>
+
+                                <h2 id="guest-list-title">
+                                    Lista geral
+                                </h2>
+
+                                <p className="admin-guests-subtitle">
+                                    Gerencie convidados, acessos e links individuais.
+                                </p>
+                            </div>
+
+                            <span className="admin-guests-count">
+                                {filteredGuests.length}
+                                {' / '}
+                                {data.guests.length}
+                            </span>
+                        </div>
+
+                        <div className="admin-guests-toolbar">
+                            <label className="admin-guest-search">
+                                <span>Buscar convidado</span>
+
+                                <input
+                                    type="search"
+                                    value={guestSearch}
+                                    onChange={(event) => (
+                                        setGuestSearch(
+                                            event.target.value
+                                        )
+                                    )}
+                                    placeholder="Nome, WhatsApp ou acompanhante"
+                                />
+                            </label>
+
+                            <label className="admin-guest-status-filter">
+                                <span>Status</span>
+
+                                <select
+                                    value={guestStatusFilter}
+                                    onChange={(event) => (
+                                        setGuestStatusFilter(
+                                            event.target.value
+                                        )
+                                    )}
+                                >
+                                    <option value="todos">
+                                        Todos
+                                    </option>
+
+                                    <option value="sim">
+                                        Confirmou
+                                    </option>
+
+                                    <option value="nao">
+                                        Não vai
+                                    </option>
+
+                                    <option value="visualizou">
+                                        Visualizou
+                                    </option>
+
+                                    <option value="pendente">
+                                        Pendente
+                                    </option>
+                                </select>
+                            </label>
+
+                            <button
+                                className="admin-export-guests"
+                                type="button"
+                                onClick={handleExportGuests}
+                                disabled={
+                                    filteredGuests.length === 0
+                                }
+                            >
+                                Exportar CSV
+                            </button>
+                        </div>
+
+                        <p className="admin-guests-filter-result">
+                            Exibindo
+                            {' '}
+                            <strong>
+                                {filteredGuests.length}
+                            </strong>
+                            {' '}
+                            de
+                            {' '}
+                            <strong>
+                                {data.guests.length}
+                            </strong>
+                            {' '}
+                            convidados
+                        </p>
+
                         <div className="admin-table-wrap">
                             <table className="admin-table">
                                 <thead>
@@ -1422,76 +1829,220 @@ function AdminPage() {
                                         <th>Acomp.</th>
                                         <th>Buffet</th>
                                         <th>WhatsApp</th>
-                                        <th>Link</th>
-                                        <th></th>
+                                        <th>Convite</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
-                                    {data.guests.map((guestItem) => (
-                                        <tr key={guestItem.id}>
-                                            <td>
-                                                <strong>{guestItem.name}</strong>
-                                                {guestItem.companions.length > 0 ? <small>{guestItem.companions.map((item) => `${item.name} (${item.age})${item.attending === 'nao' ? ' - nao vai' : ''}`).join(', ')}</small> : null}
-                                                {guestItem.companions.length === 0 && guestItem.presetCompanions?.length > 0 ? <small>Pre-cadastrados: {guestItem.presetCompanions.map((item) => `${item.name}${item.age !== '' ? ' (' + item.age + ')' : ''}`).join(', ')}</small> : null}
-                                                {guestItem.declineReason ? <small>Motivo: {guestItem.declineReason}</small> : null}
-                                            </td>
-                                            <td className="admin-status-cell">
-                                                <span className={`status-pill status-pill--${guestItem.status}`}>
-                                                    {guestItem.status === 'sim'
-                                                        ? 'Confirmou'
-                                                        : guestItem.status === 'nao'
-                                                            ? 'Não vai'
-                                                            : guestItem.status === 'visualizou'
-                                                                ? 'Visualizou'
-                                                                : 'Pendente'}
-                                                </span>
-
-                                                {guestItem.lastAccessAt ? (
-                                                    <small>
-                                                        Último acesso: {formatAdminAccessDate(guestItem.lastAccessAt)}
-                                                    </small>
-                                                ) : (
-                                                    <small>Ainda não acessou</small>
-                                                )}
-                                            </td>
-                                            <td>{guestItem.companionsCount}/{guestItem.maxCompanions}</td>
-                                            <td>{guestItem.buffetCount}</td>
-                                            <td>{formatWhatsapp(guestItem.whatsapp)}</td>
-                                            <td><code>{guestItem.inviteToken ? `${baseUrl}/?convite=${guestItem.inviteToken}` : '-'}</code></td>
-                                            <td>
-                                                <div className="admin-row-actions">
-                                                    <button
-                                                        className="admin-action-button admin-action-button--edit"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setEditing(guestItem)
-                                                            setAdminCompanionCount(Number(guestItem.maxCompanions || 0))
-
-                                                            window.requestAnimationFrame(() => {
-                                                                document
-                                                                    .getElementById('cadastro-convidado')
-                                                                    ?.scrollIntoView({
-                                                                        behavior: 'smooth',
-                                                                        block: 'start',
-                                                                    })
-                                                            })
-                                                        }}
-                                                    >
-                                                        <span aria-hidden="true">✎</span>
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        className="admin-action-button admin-action-button--delete"
-                                                        type="button"
-                                                        onClick={() => handleDeleteGuest(guestItem)}
-                                                    >
-                                                        <span aria-hidden="true">×</span>
-                                                        Excluir
-                                                    </button>
-                                                </div>
+                                    {filteredGuests.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                className="admin-guests-empty"
+                                                colSpan="7"
+                                            >
+                                                Nenhum convidado encontrado com os filtros atuais.
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        filteredGuests.map((guestItem) => (
+                                            <tr key={guestItem.id}>
+                                                <td>
+                                                    <strong>
+                                                        {guestItem.name}
+                                                    </strong>
+
+                                                    {guestItem.companions.length > 0 ? (
+                                                        <small>
+                                                            {guestItem.companions
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name} (${item.age})${item.attending === 'nao' ? ' - não vai' : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </small>
+                                                    ) : null}
+
+                                                    {guestItem.companions.length === 0
+                                                        && guestItem.presetCompanions?.length > 0 ? (
+                                                        <small>
+                                                            Pré-cadastrados:
+                                                            {' '}
+                                                            {guestItem.presetCompanions
+                                                                .map(
+                                                                    (item) => (
+                                                                        `${item.name}${item.age !== '' ? ` (${item.age})` : ''}`
+                                                                    )
+                                                                )
+                                                                .join(', ')}
+                                                        </small>
+                                                    ) : null}
+
+                                                    {guestItem.declineReason ? (
+                                                        <small>
+                                                            Motivo:
+                                                            {' '}
+                                                            {guestItem.declineReason}
+                                                        </small>
+                                                    ) : null}
+                                                </td>
+
+                                                <td className="admin-status-cell">
+                                                    <span
+                                                        className={`status-pill status-pill--${guestItem.status}`}
+                                                    >
+                                                        {getGuestStatusLabel(
+                                                            guestItem.status
+                                                        )}
+                                                    </span>
+
+                                                    {guestItem.lastAccessAt ? (
+                                                        <small>
+                                                            Último acesso:
+                                                            {' '}
+                                                            {formatAdminAccessDate(
+                                                                guestItem.lastAccessAt
+                                                            )}
+                                                        </small>
+                                                    ) : (
+                                                        <small>
+                                                            Ainda não acessou
+                                                        </small>
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                    {guestItem.companionsCount}
+                                                    /
+                                                    {guestItem.maxCompanions}
+                                                </td>
+
+                                                <td>
+                                                    {guestItem.buffetCount}
+                                                </td>
+
+                                                <td className="admin-whatsapp-cell">
+                                                    {guestItem.whatsapp ? (
+                                                        <>
+                                                            <strong>
+                                                                {formatWhatsapp(
+                                                                    guestItem.whatsapp
+                                                                )}
+                                                            </strong>
+
+                                                            <small>
+                                                                Cadastrado
+                                                            </small>
+                                                        </>
+                                                    ) : (
+                                                        <span className="admin-no-phone">
+                                                            Não informado
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                    <div className="admin-invite-actions">
+                                                        <button
+                                                            className="admin-invite-button admin-invite-button--copy"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleCopyGuestLink(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                            disabled={
+                                                                !guestItem.inviteToken
+                                                            }
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ⧉
+                                                            </span>
+
+                                                            Copiar link
+                                                        </button>
+
+                                                        <button
+                                                            className="admin-invite-button admin-invite-button--whatsapp"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleOpenGuestWhatsapp(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                            disabled={
+                                                                !guestItem.whatsapp
+                                                                || !guestItem.inviteToken
+                                                            }
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ◉
+                                                            </span>
+
+                                                            WhatsApp
+                                                        </button>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <div className="admin-row-actions">
+                                                        <button
+                                                            className="admin-action-button admin-action-button--edit"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditing(
+                                                                    guestItem
+                                                                )
+
+                                                                setAdminCompanionCount(
+                                                                    Number(
+                                                                        guestItem.maxCompanions
+                                                                        || 0
+                                                                    )
+                                                                )
+
+                                                                window.requestAnimationFrame(
+                                                                    () => {
+                                                                        document
+                                                                            .getElementById(
+                                                                                'cadastro-convidado'
+                                                                            )
+                                                                            ?.scrollIntoView({
+                                                                                behavior: 'smooth',
+                                                                                block: 'start',
+                                                                            })
+                                                                    }
+                                                                )
+                                                            }}
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ✎
+                                                            </span>
+
+                                                            Editar
+                                                        </button>
+
+                                                        <button
+                                                            className="admin-action-button admin-action-button--delete"
+                                                            type="button"
+                                                            onClick={() => (
+                                                                handleDeleteGuest(
+                                                                    guestItem
+                                                                )
+                                                            )}
+                                                        >
+                                                            <span aria-hidden="true">
+                                                                ×
+                                                            </span>
+
+                                                            Excluir
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>

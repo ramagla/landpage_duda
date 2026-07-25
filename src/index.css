@@ -5425,3 +5425,303 @@ html {
 }
 
 /* === ADMIN BOTAO SAIR - END === */
+
+
+/* ======================================================================
+   ADMIN - LISTA GERAL / BUSCA / FILTROS / CONVITES
+   ====================================================================== */
+
+.admin-guests-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.admin-guests-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.admin-guests-heading h2 {
+    margin-bottom: 4px;
+}
+
+.admin-guests-subtitle {
+    margin: 0;
+
+    color: #557570;
+
+    font-size: 0.9rem;
+}
+
+.admin-guests-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 76px;
+    min-height: 42px;
+
+    padding: 7px 13px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, 0.17);
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(201, 255, 240, 0.85),
+            rgba(244, 231, 188, 0.42)
+        );
+
+    color: #075e57;
+
+    font-size: 0.85rem;
+    font-weight: 900;
+}
+
+.admin-guests-toolbar {
+    display: grid;
+
+    grid-template-columns:
+        minmax(260px, 1fr)
+        minmax(160px, 220px)
+        auto;
+
+    gap: 12px;
+
+    align-items: end;
+}
+
+.admin-guest-search,
+.admin-guest-status-filter {
+    display: grid;
+    gap: 6px;
+}
+
+.admin-guest-search > span,
+.admin-guest-status-filter > span {
+    color: #315f59;
+
+    font-size: 0.72rem;
+    font-weight: 900;
+
+    letter-spacing: 0.07em;
+
+    text-transform: uppercase;
+}
+
+.admin-guest-search input,
+.admin-guest-status-filter select {
+    width: 100%;
+    min-height: 46px;
+}
+
+.admin-guest-status-filter select {
+    padding:
+        0
+        38px
+        0
+        12px;
+
+    border:
+        1px solid
+        rgba(49, 95, 81, 0.22);
+
+    border-radius: 8px;
+
+    background-color:
+        rgba(255, 255, 255, 0.94);
+
+    color: #213936;
+
+    font: inherit;
+}
+
+.admin-export-guests {
+    min-height: 46px;
+
+    padding-inline: 18px;
+}
+
+.admin-guests-filter-result {
+    margin: -5px 0 0;
+
+    color: #617c77;
+
+    font-size: 0.78rem;
+}
+
+.admin-guests-filter-result strong {
+    color: #20544e;
+}
+
+.admin-guests-panel .admin-table {
+    min-width: 1120px;
+}
+
+.admin-whatsapp-cell {
+    min-width: 135px;
+}
+
+.admin-whatsapp-cell > strong {
+    color: #174f49;
+
+    font-size: 0.84rem;
+}
+
+.admin-whatsapp-cell > small {
+    color: #70807d;
+}
+
+.admin-no-phone {
+    color: #879692;
+
+    font-size: 0.78rem;
+}
+
+.admin-invite-actions {
+    display: grid;
+    gap: 6px;
+
+    min-width: 118px;
+}
+
+.admin-table .admin-invite-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    min-height: 34px;
+
+    padding:
+        6px
+        10px;
+
+    border-radius: 9px;
+
+    font-size: 0.75rem;
+    font-weight: 850;
+
+    line-height: 1;
+
+    box-shadow: none;
+
+    cursor: pointer;
+
+    transition:
+        transform 150ms ease,
+        background 150ms ease,
+        box-shadow 150ms ease;
+}
+
+.admin-table .admin-invite-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.admin-table .admin-invite-button--copy {
+    border:
+        1px solid
+        rgba(8, 120, 111, 0.20);
+
+    background:
+        linear-gradient(
+            135deg,
+            #f4fffc,
+            #e0faf4
+        );
+
+    color: #06685f;
+}
+
+.admin-table .admin-invite-button--copy:hover:not(:disabled) {
+    background:
+        linear-gradient(
+            135deg,
+            #e9fff9,
+            #d1f6ed
+        );
+
+    box-shadow:
+        0 5px 12px
+        rgba(8, 120, 111, 0.08);
+}
+
+.admin-table .admin-invite-button--whatsapp {
+    border:
+        1px solid
+        rgba(31, 150, 92, 0.20);
+
+    background:
+        linear-gradient(
+            135deg,
+            #f3fff7,
+            #e0f8e8
+        );
+
+    color: #147744;
+}
+
+.admin-table .admin-invite-button--whatsapp:hover:not(:disabled) {
+    background:
+        linear-gradient(
+            135deg,
+            #eafff1,
+            #d3f3df
+        );
+}
+
+.admin-table .admin-invite-button:disabled {
+    opacity: 0.42;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+.admin-guests-empty {
+    padding: 36px 20px !important;
+
+    color: #69827d;
+
+    text-align: center !important;
+}
+
+
+@media (max-width: 920px) {
+    .admin-guests-toolbar {
+        grid-template-columns:
+            1fr
+            1fr;
+    }
+
+    .admin-export-guests {
+        grid-column: 1 / -1;
+    }
+}
+
+
+@media (max-width: 600px) {
+    .admin-guests-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-export-guests {
+        grid-column: auto;
+
+        width: 100%;
+    }
+
+    .admin-guests-heading {
+        align-items: center;
+    }
+}
+
+/* === ADMIN LISTA GERAL - END === */
