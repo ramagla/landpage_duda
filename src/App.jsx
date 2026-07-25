@@ -886,9 +886,40 @@ function BirthdayMessageForm({
         guest?.name || '',
     ).trim()
 
+    /*
+     * O convite pode ter sido aberto de duas formas:
+     *
+     * 1. pelo link individual com token;
+     * 2. pelo endereco principal, validando o WhatsApp.
+     *
+     * A sessao de abertura guarda o WhatsApp ja validado.
+     */
+    const sessionWhatsapp = (() => {
+        if (typeof window === 'undefined') {
+            return ''
+        }
+
+        try {
+            const stored = JSON.parse(
+                window.sessionStorage.getItem(
+                    OPENING_SESSION_KEY
+                ) || 'null'
+            )
+
+            return digitsOnly(
+                stored?.whatsapp || ''
+            )
+        } catch {
+            return ''
+        }
+    })()
+
     const canSend = Boolean(
         guestName
-        && invitationCode
+        && (
+            invitationCode
+            || sessionWhatsapp.length >= 10
+        )
     )
 
     async function handleSubmit(event) {
@@ -924,6 +955,7 @@ function BirthdayMessageForm({
 
                     body: JSON.stringify({
                         invitationCode,
+                        whatsapp: sessionWhatsapp,
                         message,
                     }),
                 },
