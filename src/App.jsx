@@ -634,12 +634,60 @@ function formatAdminAccessDate(value) {
 
 
 function AdminPage() {
-    const [password, setPassword] = useState(() => window.localStorage.getItem('dudaAdminPassword') || '')
+    const [password, setPassword] = useState('')
     const [status, setStatus] = useState('idle')
     const [message, setMessage] = useState('')
     const [data, setData] = useState(null)
     const [editing, setEditing] = useState(null)
     const [adminCompanionCount, setAdminCompanionCount] = useState(0)
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function restoreAdminSession() {
+            try {
+                const response = await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({}),
+                })
+
+                if (cancelled) return
+
+                if (response.status === 401) {
+                    setData(null)
+                    setStatus('idle')
+                    return
+                }
+
+                const body = await readApiJson(response)
+
+                if (!response.ok) {
+                    throw new Error(
+                        body?.error
+                        || 'Nao foi possivel restaurar a sessao.'
+                    )
+                }
+
+                setData(body)
+                setStatus('success')
+            } catch (error) {
+                if (cancelled) return
+
+                setData(null)
+                setStatus('error')
+                setMessage(error.message)
+            }
+        }
+
+        restoreAdminSession()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
 
     async function callAdmin(payload = {}) {
         setStatus('loading')
@@ -648,23 +696,96 @@ function AdminPage() {
         const response = await fetch('/api/admin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, ...payload }),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
         })
+
         const body = await readApiJson(response)
 
-        if (!response.ok) throw new Error(body?.error || 'Nao foi possivel abrir o painel.')
+        if (response.status === 401) {
+            setData(null)
+            throw new Error(
+                body?.error
+                || 'Sua sessao expirou. Entre novamente.'
+            )
+        }
 
-        window.localStorage.setItem('dudaAdminPassword', password)
+        if (!response.ok) {
+            throw new Error(
+                body?.error
+                || 'Nao foi possivel abrir o painel.'
+            )
+        }
+
         setData(body)
         setStatus('success')
+
         return body
     }
 
     async function handleLogin(event) {
         event.preventDefault()
 
+        setStatus('loading')
+        setMessage('')
+
         try {
+            const response = await fetch('/api/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ password }),
+            })
+
+            const body = await readApiJson(response)
+
+            if (!response.ok) {
+                throw new Error(
+                    body?.error
+                    || 'Senha invalida.'
+                )
+            }
+
+            setPassword('')
+
             await callAdmin()
+
+            setMessage(
+                body?.message
+                || 'Acesso autorizado.'
+            )
+        } catch (error) {
+            setData(null)
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
+    async function handleLogout() {
+        setStatus('loading')
+        setMessage('')
+
+        try {
+            const response = await fetch('/api/admin-logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+            })
+
+            const body = await readApiJson(response)
+
+            if (!response.ok) {
+                throw new Error(
+                    body?.error
+                    || 'Nao foi possivel encerrar a sessao.'
+                )
+            }
+
+            setData(null)
+            setEditing(null)
+            setAdminCompanionCount(0)
+            setPassword('')
+            setStatus('idle')
+            setMessage('Sessao encerrada.')
         } catch (error) {
             setStatus('error')
             setMessage(error.message)
@@ -732,11 +853,40 @@ function AdminPage() {
                 <p className="panel-kicker">Area reservada</p>
                 <h2 id="admin-title">Lista da Duda</h2>
                 <form className="lookup-form" onSubmit={handleLogin}>
-                    <label>
-                        <span>Senha</span>
-                        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha do painel" required />
-                    </label>
-                    <button type="submit" disabled={status === 'loading'}>{status === 'loading' ? 'Abrindo...' : 'Entrar'}</button>
+                    {data ? (
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={status === 'loading'}
+                        >
+                            {status === 'loading'
+                                ? 'Saindo...'
+                                : 'Sair do painel'}
+                        </button>
+                    ) : (
+                        <>
+                            <label>
+                                <span>Senha</span>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(event) => setPassword(event.target.value)}
+                                    placeholder="Senha do painel"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </label>
+
+                            <button
+                                type="submit"
+                                disabled={status === 'loading'}
+                            >
+                                {status === 'loading'
+                                    ? 'Abrindo...'
+                                    : 'Entrar'}
+                            </button>
+                        </>
+                    )}
                 </form>
                 {message ? <p className={`form-message form-message--${status === 'error' ? 'error' : 'success'}`}>{message}</p> : null}
             </section>

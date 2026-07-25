@@ -1,19 +1,5 @@
+import { verifyAdminRequest } from './_admin-session.js'
 import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
-
-function getAdminPassword() {
-    return process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'duda16')
-}
-
-function authorize(body) {
-    const password = String(body.password || '')
-    const expected = getAdminPassword()
-
-    if (!expected) return { error: 'ADMIN_PASSWORD nao configurado na Vercel.' }
-    if (password !== expected) return { error: 'Senha invalida.' }
-
-    return {}
-}
-
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -379,15 +365,23 @@ async function saveGuest(body) {
 }
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store')
+
     if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST')
         return response.status(405).json({ error: 'Metodo nao permitido.' })
     }
 
     try {
+        const auth = verifyAdminRequest(request)
+
+        if (!auth.ok) {
+            return response
+                .status(auth.configError ? 500 : 401)
+                .json({ error: auth.error })
+        }
+
         const body = parseBody(request.body)
-        const auth = authorize(body)
-        if (auth.error) return response.status(auth.error.includes('configurado') ? 500 : 401).json({ error: auth.error })
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()
