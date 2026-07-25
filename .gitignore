@@ -9,3 +9,4 @@ duda-local.db-*
 *.db-journal
 duda-local.backup-*.db
 *.backup.db
+.env.*.local
