@@ -1987,3 +1987,2134 @@ button[type='submit']:hover,
         font-size: clamp(4rem, 17vw, 4.8rem);
     }
 }
+
+/* === AJUSTES FINAIS DUDA 2026 - START === */
+
+
+/* ----------------------------------------------------------
+   TELA "ABRA SEU CONVITE"
+   Remove o espaço criado pelo min-height do h1 global.
+   ---------------------------------------------------------- */
+
+.access-card {
+    gap: 10px;
+    align-content: start;
+}
+
+.access-card h1 {
+    min-height: 0;
+    margin: 0 0 4px;
+}
+
+.access-card > .panel-kicker {
+    margin: 0;
+    text-align: center;
+}
+
+.access-card > p:not(.panel-kicker):not(.form-message) {
+    margin: 0 0 4px;
+}
+
+
+/* ----------------------------------------------------------
+   PRAZO ENCERRADO
+   ---------------------------------------------------------- */
+
+.deadline-closed {
+    display: grid;
+    gap: 6px;
+
+    padding: 12px 14px;
+
+    border: 1px solid rgba(148, 50, 50, 0.18);
+    border-radius: 8px;
+
+    background: rgba(255, 244, 240, 0.94);
+
+    text-align: center;
+}
+
+.deadline-closed strong {
+    color: #7a2f2f;
+    font-size: 0.92rem;
+}
+
+.deadline-closed span {
+    color: #6b4b47;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+
+/* ----------------------------------------------------------
+   HERO 16 + DUDA
+   ---------------------------------------------------------- */
+
+.name-script,
+.opening-gate__brand span {
+    font-family: "Great Vibes", cursive;
+    font-weight: 400;
+
+    color: #063f3a;
+
+    -webkit-text-stroke: 0;
+
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.92),
+        0 5px 12px rgba(6, 63, 58, 0.22);
+}
+
+
+/*
+Reserva espaço próprio para:
+16
+Duda
+frase
+
+evitando que a frase fique atrás do balão.
+*/
+
+h1#invite-title {
+    position: relative;
+    display: block;
+
+    min-height: 278px;
+
+    overflow: visible;
+}
+
+h1#invite-title .balloon-age {
+    top: 0;
+    z-index: 1;
+
+    width: min(58%, 210px);
+}
+
+h1#invite-title .name-script {
+    position: absolute;
+
+    z-index: 5;
+
+    left: 50%;
+    bottom: 4px;
+
+    margin: 0;
+
+    color: #063f3a;
+
+    font-size: clamp(4.45rem, 9vw, 5.7rem);
+    line-height: 0.88;
+
+    white-space: nowrap;
+
+    transform: translateX(-50%);
+}
+
+.hero-copy .tagline {
+    position: relative;
+    z-index: 6;
+
+    max-width: 340px;
+
+    margin: 12px auto 0;
+    padding: 0 8px;
+
+    color: #294f49;
+
+    line-height: 1.45;
+}
+
+
+/* ----------------------------------------------------------
+   MOBILE
+   ---------------------------------------------------------- */
+
+@media (max-width: 520px) {
+
+    .access-card {
+        gap: 9px;
+        padding-top: 20px;
+    }
+
+    .access-card h1 {
+        min-height: 0;
+
+        font-size: clamp(2rem, 9vw, 2.55rem);
+        line-height: 1.05;
+    }
+
+    h1#invite-title {
+        min-height: 258px;
+    }
+
+    h1#invite-title .balloon-age {
+        width: min(54vw, 194px);
+    }
+
+    h1#invite-title .name-script {
+        bottom: 4px;
+
+        font-size: clamp(4rem, 16vw, 4.85rem);
+    }
+
+    .hero-copy .tagline {
+        max-width: 304px;
+
+        margin-top: 10px;
+
+        font-size: 0.94rem;
+        line-height: 1.45;
+    }
+}
+
+
+@media (max-width: 380px) {
+
+    h1#invite-title {
+        min-height: 246px;
+    }
+
+    h1#invite-title .balloon-age {
+        width: min(55vw, 182px);
+    }
+
+    h1#invite-title .name-script {
+        font-size: clamp(3.8rem, 16vw, 4.4rem);
+    }
+}
+
+
+/* === AJUSTES FINAIS DUDA 2026 - END === */
+
+/* === ENVELOPE V3 REALISTA - START === */
+
+
+/* ==========================================================
+   NÃO ALTERAR A COR DO ENVELOPE
+   ========================================================== */
+
+.envelope__back {
+    background: linear-gradient(135deg, #72ead4, #1fc2aa) !important;
+}
+
+.envelope__flap {
+    background: linear-gradient(
+        180deg,
+        #c3fff1,
+        #46d8c1 68%,
+        #20bfa9
+    ) !important;
+
+    transform-origin: top center;
+
+    animation:
+        envelopeRealFlapOpen
+        1250ms
+        3050ms
+        cubic-bezier(.22,.78,.18,1)
+        both !important;
+}
+
+.envelope__pocket--left {
+    background: linear-gradient(
+        135deg,
+        #67e4d0,
+        #10aa97
+    ) !important;
+}
+
+.envelope__pocket--right {
+    background: linear-gradient(
+        225deg,
+        #70ead6,
+        #0f9d8c
+    ) !important;
+}
+
+.envelope__front {
+    background: linear-gradient(
+        180deg,
+        #b7fff1,
+        #34ceb7 72%,
+        #0fa28f
+    ) !important;
+}
+
+
+/* ==========================================================
+   SELO DE CERA ANTIGO
+   ========================================================== */
+
+.envelope__seal {
+    position: absolute;
+
+    left: 50%;
+    top: 46%;
+
+    z-index: 30;
+
+    width: 86px;
+    height: 86px;
+
+    transform: translate(-50%, -50%);
+
+    background: none !important;
+    box-shadow: none !important;
+
+    border-radius: 0;
+
+    animation: none !important;
+
+    pointer-events: none;
+}
+
+
+/* Remove os pseudo-elementos das versões antigas */
+.envelope__seal::before,
+.envelope__seal::after {
+    content: none !important;
+}
+
+
+.envelope__seal-half {
+    position: absolute;
+
+    inset: 0;
+
+    display: block;
+
+    background-image: none;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+
+    filter:
+        drop-shadow(0 7px 7px rgba(75, 4, 9, .30));
+}
+
+
+.envelope__seal-half--left {
+    clip-path: polygon(
+        0 0,
+        54% 0,
+        48% 16%,
+        56% 29%,
+        47% 43%,
+        55% 57%,
+        46% 72%,
+        53% 100%,
+        0 100%
+    );
+
+    animation:
+        waxLeftBreak
+        720ms
+        2700ms
+        cubic-bezier(.2,.85,.25,1)
+        forwards;
+}
+
+
+.envelope__seal-half--right {
+    clip-path: polygon(
+        54% 0,
+        100% 0,
+        100% 100%,
+        53% 100%,
+        46% 72%,
+        55% 57%,
+        47% 43%,
+        56% 29%,
+        48% 16%
+    );
+
+    animation:
+        waxRightBreak
+        720ms
+        2700ms
+        cubic-bezier(.2,.85,.25,1)
+        forwards;
+}
+
+
+.envelope__seal-ring {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 51px;
+    height: 51px;
+
+    border: 1px solid rgba(255, 210, 187, .22);
+    border-radius: 50%;
+
+    transform: translate(-50%, -50%);
+
+    box-shadow:
+        inset 0 1px 2px rgba(255,255,255,.14);
+
+    animation:
+        waxCenterDisappear
+        280ms
+        2680ms
+        forwards;
+}
+
+
+.envelope__seal-mark {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -52%);
+
+    color: rgba(255, 222, 202, .88);
+
+    font-family: "Great Vibes", cursive;
+
+    font-size: 2.45rem;
+    line-height: 1;
+
+    text-shadow:
+        0 1px 1px rgba(82, 4, 9, .8);
+
+    animation:
+        waxCenterDisappear
+        260ms
+        2680ms
+        forwards;
+}
+
+
+/*
+A rachadura aparece ANTES do selo se separar.
+*/
+
+.envelope__seal-crack {
+    position: absolute;
+
+    left: 48%;
+    top: 18%;
+
+    z-index: 40;
+
+    width: 3px;
+    height: 58px;
+
+    opacity: 0;
+
+    background:
+        linear-gradient(
+            to bottom,
+            transparent 0 4%,
+            #3d0307 5% 17%,
+            transparent 18% 25%,
+            #3d0307 26% 49%,
+            transparent 50% 58%,
+            #3d0307 59% 84%,
+            transparent 85%
+        );
+
+    transform:
+        rotate(7deg)
+        scaleY(.2);
+
+    transform-origin: top;
+
+    animation:
+        waxCrackAppear
+        390ms
+        2280ms
+        forwards;
+}
+
+
+/* ==========================================================
+   FOLHA DOBRADA
+   ========================================================== */
+
+.letter-sheet {
+    position: relative;
+
+    z-index: 10;
+
+    width: min(86vw, 390px);
+
+    /*
+    A altura vem do formulário que está dentro.
+    Mesmo invisível ele mantém o tamanho final.
+    */
+
+    transform-style: preserve-3d;
+
+    opacity: 0;
+
+    transform:
+        translateY(265px)
+        scale(.96);
+
+    animation:
+        foldedSheetRise
+        2100ms
+        3850ms
+        cubic-bezier(.18,.82,.18,1)
+        forwards;
+}
+
+
+/* ==========================================================
+   FORMULÁRIO REAL
+   Fica invisível enquanto a folha desdobra
+   ========================================================== */
+
+.letter-sheet .access-card {
+    position: relative;
+
+    z-index: 1;
+
+    width: 100%;
+
+    transform: none !important;
+
+    opacity: 0;
+
+    animation:
+        realLetterContentReveal
+        480ms
+        6250ms
+        ease
+        forwards !important;
+
+    /*
+    Papel branco levemente quente.
+    O ENVELOPE continua verde.
+    */
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,.985),
+            rgba(253,251,247,.985)
+        );
+
+    border-color: rgba(53, 94, 86, .16);
+
+    box-shadow:
+        0 22px 48px rgba(30, 78, 70, .16);
+}
+
+
+/* ==========================================================
+   TRÊS PARTES VISÍVEIS DA FOLHA
+   ========================================================== */
+
+.letter-sheet__folds {
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 5;
+
+    pointer-events: none;
+
+    perspective: 1500px;
+
+    animation:
+        foldedPaperDisappear
+        380ms
+        6220ms
+        forwards;
+}
+
+
+.letter-sheet__panel {
+    position: absolute;
+
+    left: 0;
+
+    width: 100%;
+    height: 33.334%;
+
+    display: block;
+
+    border-left: 1px solid rgba(74, 104, 97, .13);
+    border-right: 1px solid rgba(74, 104, 97, .13);
+
+    background:
+        linear-gradient(
+            180deg,
+            #fffefa 0%,
+            #fbf8f0 100%
+        );
+
+    box-shadow:
+        0 7px 12px rgba(43, 76, 68, .09);
+
+    backface-visibility: visible;
+
+    transform-style: preserve-3d;
+}
+
+
+.letter-sheet__panel--top {
+    top: 0;
+
+    transform-origin: bottom center;
+
+    transform:
+        rotateX(179deg)
+        translateZ(1px);
+
+    background:
+        linear-gradient(
+            0deg,
+            #f4efe4,
+            #fffdf8
+        );
+
+    animation:
+        paperTopUnfold
+        850ms
+        5000ms
+        cubic-bezier(.18,.76,.2,1)
+        forwards;
+}
+
+
+.letter-sheet__panel--middle {
+    top: 33.333%;
+
+    z-index: 3;
+
+    border-top: 1px solid rgba(70, 102, 94, .14);
+    border-bottom: 1px solid rgba(70, 102, 94, .16);
+
+    background:
+        linear-gradient(
+            180deg,
+            #fffefa,
+            #f9f6ee
+        );
+}
+
+
+.letter-sheet__panel--bottom {
+    top: 66.666%;
+
+    transform-origin: top center;
+
+    transform:
+        rotateX(-179deg)
+        translateZ(1px);
+
+    background:
+        linear-gradient(
+            180deg,
+            #fffdf7,
+            #f1ecdf
+        );
+
+    animation:
+        paperBottomUnfold
+        850ms
+        5550ms
+        cubic-bezier(.18,.76,.2,1)
+        forwards;
+}
+
+
+/*
+Linhas de dobra.
+*/
+
+.letter-sheet__panel--middle::before,
+.letter-sheet__panel--middle::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(100, 120, 115, .24),
+            transparent
+        );
+}
+
+.letter-sheet__panel--middle::before {
+    top: 0;
+}
+
+.letter-sheet__panel--middle::after {
+    bottom: 0;
+}
+
+
+/* ==========================================================
+   Quando chega no estado final
+   ========================================================== */
+
+.opening-gate--card-visible .letter-sheet,
+.opening-gate--checking .letter-sheet,
+.opening-gate--error .letter-sheet,
+.opening-gate--unlocked .letter-sheet {
+    animation: none !important;
+
+    opacity: 1;
+
+    transform:
+        translateY(-76px)
+        scale(1);
+}
+
+
+.opening-gate--card-visible .letter-sheet__folds,
+.opening-gate--checking .letter-sheet__folds,
+.opening-gate--error .letter-sheet__folds,
+.opening-gate--unlocked .letter-sheet__folds {
+    display: none;
+}
+
+
+.opening-gate--card-visible .letter-sheet .access-card,
+.opening-gate--checking .letter-sheet .access-card,
+.opening-gate--error .letter-sheet .access-card,
+.opening-gate--unlocked .letter-sheet .access-card {
+    animation: none !important;
+
+    opacity: 1 !important;
+
+    transform: none !important;
+}
+
+
+/*
+Neutraliza a posição antiga aplicada diretamente ao access-card.
+*/
+
+.opening-gate--card-visible .access-card,
+.opening-gate--checking .access-card,
+.opening-gate--error .access-card,
+.opening-gate--unlocked .access-card {
+    transform: none !important;
+}
+
+
+/* ==========================================================
+   ANIMAÇÕES DO SELO
+   ========================================================== */
+
+@keyframes waxCrackAppear {
+    0% {
+        opacity: 0;
+        transform:
+            rotate(7deg)
+            scaleY(.15);
+    }
+
+    35% {
+        opacity: .95;
+    }
+
+    100% {
+        opacity: .95;
+        transform:
+            rotate(7deg)
+            scaleY(1);
+    }
+}
+
+
+@keyframes waxLeftBreak {
+    0% {
+        opacity: 1;
+
+        transform:
+            translate(0,0)
+            rotate(0);
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+            translate(-32px,18px)
+            rotate(-24deg)
+            scale(.84);
+    }
+}
+
+
+@keyframes waxRightBreak {
+    0% {
+        opacity: 1;
+
+        transform:
+            translate(0,0)
+            rotate(0);
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+            translate(32px,16px)
+            rotate(26deg)
+            scale(.84);
+    }
+}
+
+
+@keyframes waxCenterDisappear {
+    to {
+        opacity: 0;
+    }
+}
+
+
+/* ==========================================================
+   ABERTURA DO ENVELOPE
+   ========================================================== */
+
+@keyframes envelopeRealFlapOpen {
+
+    0% {
+        transform:
+            rotateX(0deg);
+
+        opacity: 1;
+    }
+
+    100% {
+        transform:
+            rotateX(118deg)
+            translateY(-25px);
+
+        opacity: .18;
+    }
+}
+
+
+/* ==========================================================
+   FOLHA SUBINDO DE DENTRO DO ENVELOPE
+   ========================================================== */
+
+@keyframes foldedSheetRise {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            translateY(265px)
+            scale(.94);
+    }
+
+    12% {
+        opacity: 1;
+    }
+
+    45% {
+        opacity: 1;
+
+        transform:
+            translateY(170px)
+            scale(.96);
+    }
+
+    75% {
+        opacity: 1;
+
+        transform:
+            translateY(45px)
+            scale(.99);
+    }
+
+    100% {
+        opacity: 1;
+
+        transform:
+            translateY(-76px)
+            scale(1);
+    }
+}
+
+
+/* ==========================================================
+   DESDOBRAR PARTE SUPERIOR
+   ========================================================== */
+
+@keyframes paperTopUnfold {
+
+    0% {
+        transform:
+            rotateX(179deg)
+            translateZ(1px);
+
+        box-shadow:
+            0 -12px 20px rgba(48, 73, 68, .16);
+    }
+
+    55% {
+        transform:
+            rotateX(82deg)
+            translateZ(4px);
+    }
+
+    100% {
+        transform:
+            rotateX(0deg)
+            translateZ(0);
+
+        box-shadow: none;
+    }
+}
+
+
+/* ==========================================================
+   DESDOBRAR PARTE INFERIOR
+   ========================================================== */
+
+@keyframes paperBottomUnfold {
+
+    0% {
+        transform:
+            rotateX(-179deg)
+            translateZ(1px);
+
+        box-shadow:
+            0 12px 20px rgba(48, 73, 68, .16);
+    }
+
+    55% {
+        transform:
+            rotateX(-82deg)
+            translateZ(4px);
+    }
+
+    100% {
+        transform:
+            rotateX(0deg)
+            translateZ(0);
+
+        box-shadow: none;
+    }
+}
+
+
+/* ==========================================================
+   TROCAR FOLHA CENOGRÁFICA PELO FORMULÁRIO
+   ========================================================== */
+
+@keyframes foldedPaperDisappear {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+
+@keyframes realLetterContentReveal {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .envelope__seal {
+        width: 76px;
+        height: 76px;
+    }
+
+
+    .letter-sheet {
+        width: min(90vw, 382px);
+    }
+
+
+    .opening-gate--card-visible .letter-sheet,
+    .opening-gate--checking .letter-sheet,
+    .opening-gate--error .letter-sheet,
+    .opening-gate--unlocked .letter-sheet {
+        transform:
+            translateY(-66px)
+            scale(1);
+    }
+
+
+    @keyframes foldedSheetRise {
+
+        0% {
+            opacity: 0;
+
+            transform:
+                translateY(240px)
+                scale(.94);
+        }
+
+        12% {
+            opacity: 1;
+        }
+
+        45% {
+            transform:
+                translateY(155px)
+                scale(.96);
+        }
+
+        75% {
+            transform:
+                translateY(40px)
+                scale(.99);
+        }
+
+        100% {
+            opacity: 1;
+
+            transform:
+                translateY(-66px)
+                scale(1);
+        }
+    }
+}
+
+
+/* === ENVELOPE V3 REALISTA - END === */
+
+/* === PAPEL ENVELHECIDO DUDA - START === */
+
+
+/* ==========================================================
+   PAPEL ANTIGO / ENVELHECIDO - VERSÃO MAIS CLARA
+   ========================================================== */
+
+.letter-sheet__panel,
+.letter-sheet .access-card {
+    background:
+        radial-gradient(
+            circle at 18% 23%,
+            rgba(112, 75, 35, 0.05) 0 1px,
+            transparent 1.6px
+        ),
+
+        radial-gradient(
+            circle at 72% 16%,
+            rgba(121, 79, 37, 0.04) 0 1px,
+            transparent 1.8px
+        ),
+
+        radial-gradient(
+            circle at 86% 62%,
+            rgba(111, 72, 32, 0.045) 0 1.2px,
+            transparent 2px
+        ),
+
+        radial-gradient(
+            circle at 33% 79%,
+            rgba(126, 86, 43, 0.04) 0 1px,
+            transparent 1.7px
+        ),
+
+        radial-gradient(
+            ellipse at 7% 12%,
+            rgba(169, 118, 59, 0.075),
+            transparent 24%
+        ),
+
+        radial-gradient(
+            ellipse at 93% 88%,
+            rgba(157, 105, 50, 0.07),
+            transparent 27%
+        ),
+
+        radial-gradient(
+            ellipse at 82% 20%,
+            rgba(166, 117, 64, 0.045),
+            transparent 19%
+        ),
+
+        radial-gradient(
+            ellipse at center,
+            #fffefb 0%,
+            #fdfaf2 56%,
+            #f8f1e2 84%,
+            #f1e4c8 100%
+        ) !important;
+
+    background-blend-mode: multiply, multiply, multiply, multiply, normal, normal, normal, normal;
+
+    border-color: rgba(128, 94, 53, 0.18) !important;
+}
+
+.letter-sheet__panel {
+    box-shadow:
+        inset 0 0 14px rgba(133, 92, 47, 0.07),
+        inset 0 0 2px rgba(112, 77, 40, 0.11),
+        0 7px 14px rgba(52, 64, 57, 0.07);
+}
+
+.letter-sheet .access-card {
+    box-shadow:
+        inset 0 0 24px rgba(145, 99, 49, 0.05),
+        inset 0 0 3px rgba(105, 72, 37, 0.10),
+        0 24px 50px rgba(31, 67, 59, 0.15) !important;
+}
+
+.letter-sheet__panel::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    opacity: 0.16;
+
+    background:
+        repeating-linear-gradient(
+            7deg,
+            transparent 0,
+            transparent 5px,
+            rgba(104, 80, 49, 0.018) 6px,
+            transparent 7px
+        ),
+
+        repeating-linear-gradient(
+            94deg,
+            transparent 0,
+            transparent 12px,
+            rgba(116, 87, 48, 0.014) 13px,
+            transparent 14px
+        );
+}
+
+.letter-sheet__panel--middle::before,
+.letter-sheet__panel--middle::after {
+    height: 2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent 2%,
+            rgba(118, 86, 49, 0.05) 10%,
+            rgba(96, 70, 42, 0.14) 50%,
+            rgba(118, 86, 49, 0.05) 90%,
+            transparent 98%
+        ) !important;
+
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.letter-sheet__panel--top {
+    background:
+        linear-gradient(
+            0deg,
+            rgba(207, 184, 140, 0.15),
+            transparent 32%
+        ),
+
+        radial-gradient(
+            ellipse at center,
+            #fffefb 0%,
+            #fbf5e8 72%,
+            #f0e1bf 100%
+        ) !important;
+}
+
+.letter-sheet__panel--bottom {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(207, 184, 140, 0.14),
+            transparent 30%
+        ),
+
+        radial-gradient(
+            ellipse at center,
+            #fffefb 0%,
+            #fbf5e8 72%,
+            #f0e1bf 100%
+        ) !important;
+}
+
+.letter-sheet .access-card,
+.letter-sheet__panel {
+    outline: 1px solid rgba(255, 252, 240, 0.52);
+    outline-offset: -3px;
+}
+
+.letter-sheet .access-card h1 {
+    color: #173c36;
+}
+
+.letter-sheet .access-card > p {
+    color: #526b64;
+}
+
+.letter-sheet .access-card > .panel-kicker {
+    color: #35665d;
+}
+
+@media (max-width: 520px) {
+
+    .letter-sheet__panel,
+    .letter-sheet .access-card {
+        background:
+            radial-gradient(
+                circle at 16% 20%,
+                rgba(112, 75, 35, 0.045) 0 1px,
+                transparent 1.5px
+            ),
+
+            radial-gradient(
+                circle at 84% 72%,
+                rgba(121, 79, 37, 0.038) 0 1px,
+                transparent 1.7px
+            ),
+
+            radial-gradient(
+                ellipse at 5% 10%,
+                rgba(169, 118, 59, 0.065),
+                transparent 23%
+            ),
+
+            radial-gradient(
+                ellipse at 95% 90%,
+                rgba(157, 105, 50, 0.06),
+                transparent 25%
+            ),
+
+            radial-gradient(
+                ellipse at center,
+                #fffefb 0%,
+                #fcf8ee 64%,
+                #f2e5c9 100%
+            ) !important;
+    }
+
+}
+
+
+/* === PAPEL ENVELHECIDO DUDA - END === */
+
+
+
+/* === SELO FOTOREALISTA DUDA - START === */
+
+
+/* ==========================================================
+   CONTAINER DO SELO
+   ========================================================== */
+
+.envelope__seal {
+    position: absolute !important;
+
+    left: 50% !important;
+    top: 46% !important;
+
+    z-index: 40 !important;
+
+    width: 98px !important;
+    height: 98px !important;
+
+    display: block !important;
+
+    transform:
+        translate(-50%, -50%) !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    background: none !important;
+
+    box-shadow: none !important;
+
+    animation: none !important;
+
+    pointer-events: none;
+}
+
+
+/*
+Desativa definitivamente todos os desenhos CSS
+das versões anteriores.
+*/
+
+.envelope__seal::before,
+.envelope__seal::after {
+    content: none !important;
+
+    display: none !important;
+}
+
+
+.envelope__seal-half,
+.envelope__seal-ring,
+.envelope__seal-mark,
+.envelope__seal-crack {
+    display: none !important;
+}
+
+
+/* ==========================================================
+   IMAGENS
+   ========================================================== */
+
+.envelope__seal-img {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    display: block;
+
+    max-width: none;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    transform-origin: center center;
+}
+
+
+/* ==========================================================
+   SELO INTACTO
+   ========================================================== */
+
+/*
+A imagem possui bastante transparência ao redor.
+Por isso usamos 142px para o selo visível ficar
+aproximadamente com 85px.
+*/
+
+.envelope__seal-img--intact {
+    z-index: 2;
+
+    width: 142px;
+    height: 142px;
+
+    object-fit: contain;
+
+    opacity: 1;
+
+    transform:
+        translate(-50%, -50%)
+        scale(.96);
+
+    filter:
+        drop-shadow(
+            0 8px 8px
+            rgba(70, 0, 5, .28)
+        );
+
+    animation:
+        dudaRealSealIntact
+        2900ms
+        0ms
+        forwards;
+}
+
+
+/* ==========================================================
+   SELO ROMPIDO
+   ========================================================== */
+
+/*
+O selo rompido ocupa mais área dentro do PNG,
+por isso usamos largura ligeiramente menor.
+
+Também subimos alguns pixels porque os fragmentos
+estendem o desenho para baixo.
+*/
+
+.envelope__seal-img--broken {
+    z-index: 3;
+
+    width: 118px;
+    height: 118px;
+
+    object-fit: contain;
+
+    opacity: 0;
+
+    transform:
+        translate(-50%, -50%)
+        translateY(-9px)
+        scale(.88);
+
+    filter:
+        drop-shadow(
+            0 8px 9px
+            rgba(70, 0, 5, .25)
+        );
+
+    animation:
+        dudaRealSealBroken
+        1050ms
+        2720ms
+        cubic-bezier(.2,.8,.2,1)
+        forwards;
+}
+
+
+/* ==========================================================
+   ANIMAÇÃO DO SELO INTACTO
+   ========================================================== */
+
+@keyframes dudaRealSealIntact {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            scale(.72);
+    }
+
+
+    18% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1.04);
+    }
+
+
+    28% {
+        transform:
+            translate(-50%, -50%)
+            scale(.98);
+    }
+
+
+    82% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(.98);
+    }
+
+
+    90% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1.025);
+    }
+
+
+    100% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            scale(.94);
+    }
+
+}
+
+
+/* ==========================================================
+   ANIMAÇÃO DO SELO ROMPIDO
+   ========================================================== */
+
+@keyframes dudaRealSealBroken {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-9px)
+            scale(.78);
+    }
+
+
+    12% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-9px)
+            scale(.96);
+    }
+
+
+    32% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-9px)
+            scale(1.04);
+    }
+
+
+    /*
+    Mantém o selo quebrado parado por alguns
+    frames para a pessoa conseguir perceber.
+    */
+
+    68% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-9px)
+            scale(1.04);
+    }
+
+
+    100% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(4px)
+            scale(1.17)
+            rotate(2deg);
+    }
+
+}
+
+
+/* ==========================================================
+   SINCRONIZAR A ABA COM O ROMPIMENTO
+   ========================================================== */
+
+/*
+Primeiro:
+selo intacto
+
+Depois:
+selo rompido
+
+Somente depois:
+aba abre
+*/
+
+.envelope__flap {
+    animation:
+        envelopeRealFlapOpen
+        1250ms
+        3550ms
+        cubic-bezier(.22,.78,.18,1)
+        both !important;
+}
+
+
+/* ==========================================================
+   PAPEL COMEÇA A SUBIR SÓ DEPOIS DA ABERTURA
+   ========================================================== */
+
+.letter-sheet {
+    animation:
+        foldedSheetRise
+        2100ms
+        4250ms
+        cubic-bezier(.18,.82,.18,1)
+        forwards !important;
+}
+
+
+/* primeira dobra */
+
+.letter-sheet__panel--top {
+    animation:
+        paperTopUnfold
+        850ms
+        5450ms
+        cubic-bezier(.18,.76,.2,1)
+        forwards !important;
+}
+
+
+/* segunda dobra */
+
+.letter-sheet__panel--bottom {
+    animation:
+        paperBottomUnfold
+        850ms
+        6000ms
+        cubic-bezier(.18,.76,.2,1)
+        forwards !important;
+}
+
+
+/* desaparece o papel cenográfico */
+
+.letter-sheet__folds {
+    animation:
+        foldedPaperDisappear
+        380ms
+        6650ms
+        forwards !important;
+}
+
+
+/* formulário real aparece ao final */
+
+.letter-sheet .access-card {
+    animation:
+        realLetterContentReveal
+        480ms
+        6660ms
+        ease
+        forwards !important;
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .envelope__seal {
+        width: 88px !important;
+        height: 88px !important;
+    }
+
+
+    .envelope__seal-img--intact {
+        width: 130px;
+        height: 130px;
+    }
+
+
+    .envelope__seal-img--broken {
+        width: 108px;
+        height: 108px;
+    }
+
+}
+
+
+/* === SELO FOTOREALISTA DUDA - END === */
+
+/* === AJUSTE MOBILE CURTO ENVELOPE - START === */
+
+/*
+iPhone SE e celulares com pouca altura.
+
+O CSS antigo transformava o bloco superior em position:relative
+em telas menores que 700px, fazendo o envelope ser empurrado
+para muito baixo.
+
+Aqui voltamos a tratar toda a abertura como uma cena.
+*/
+
+@media (max-width: 520px) and (max-height: 720px) {
+
+    .opening-gate {
+        position: relative;
+
+        display: block !important;
+
+        height: 100dvh;
+        min-height: 100dvh;
+
+        padding:
+            max(8px, env(safe-area-inset-top))
+            10px
+            max(8px, env(safe-area-inset-bottom));
+
+        overflow: hidden !important;
+    }
+
+
+    /* ------------------------------------------------------
+       HERO SUPERIOR
+       ------------------------------------------------------ */
+
+    .opening-gate__brand {
+        position: absolute !important;
+
+        top: 24px !important;
+        left: 0 !important;
+        right: 0 !important;
+
+        margin: 0 !important;
+
+        width: 100%;
+
+        z-index: 3;
+    }
+
+
+    .opening-gate__brand p {
+        margin-bottom: 5px;
+    }
+
+
+    .opening-gate__balloon {
+        width: 174px;
+
+        margin:
+            -4px
+            0
+            -48px;
+    }
+
+
+    .opening-gate__brand span {
+        font-size: 4.4rem;
+    }
+
+
+    .opening-gate__brand small {
+        width: min(290px, 82vw);
+
+        margin-top: 4px;
+
+        font-size: .83rem;
+        line-height: 1.3;
+    }
+
+
+    /* ------------------------------------------------------
+       CENA ENVELOPE + PAPEL
+
+       Sobe a cena inteira aproximadamente 65px.
+       ------------------------------------------------------ */
+
+    .envelope-stage {
+        position: absolute !important;
+
+        left: 50%;
+        top: 0;
+
+        width: min(96vw, 430px);
+
+        height: 100dvh;
+        min-height: 100dvh !important;
+
+        margin: 0 !important;
+
+        transform:
+            translateX(-50%)
+            translateY(-62px);
+
+        z-index: 5;
+    }
+
+
+    /*
+    Envelope também fica um pouco mais alto.
+    */
+
+    .envelope {
+        bottom: 18px !important;
+
+        width: min(88vw, 420px);
+    }
+
+
+    /* ------------------------------------------------------
+       PAPEL DOBRADO SUBINDO
+       ------------------------------------------------------ */
+
+    .letter-sheet {
+        width: min(88vw, 370px);
+
+        /*
+        Mantemos a animação original.
+        A subida física vem do envelope-stage.
+        */
+    }
+
+
+    /*
+    Quando termina de abrir, sobe mais alguns pixels,
+    deixando o formulário inteiro visível.
+    */
+
+    .opening-gate--card-visible .letter-sheet,
+    .opening-gate--checking .letter-sheet,
+    .opening-gate--error .letter-sheet,
+    .opening-gate--unlocked .letter-sheet {
+
+        transform:
+            translateY(-86px)
+            scale(1) !important;
+    }
+
+
+    /* ------------------------------------------------------
+       RODAPÉ
+       ------------------------------------------------------ */
+
+    .opening-gate__footer {
+        position: absolute !important;
+
+        bottom: 5px;
+
+        left: 50%;
+
+        width: 100%;
+
+        margin: 0;
+
+        transform: translateX(-50%);
+
+        font-size: .68rem;
+    }
+
+}
+
+
+/*
+iPhone SE especificamente: 375x667 e similares.
+*/
+
+@media (max-width: 390px) and (max-height: 680px) {
+
+    .opening-gate__brand {
+        top: 16px !important;
+    }
+
+
+    .opening-gate__balloon {
+        width: 164px;
+    }
+
+
+    .opening-gate__brand span {
+        font-size: 4.15rem;
+    }
+
+
+    .envelope-stage {
+        transform:
+            translateX(-50%)
+            translateY(-78px);
+    }
+
+
+    .envelope {
+        bottom: 12px !important;
+    }
+
+
+    .opening-gate--card-visible .letter-sheet,
+    .opening-gate--checking .letter-sheet,
+    .opening-gate--error .letter-sheet,
+    .opening-gate--unlocked .letter-sheet {
+
+        transform:
+            translateY(-94px)
+            scale(1) !important;
+    }
+
+}
+
+/* === AJUSTE MOBILE CURTO ENVELOPE - END === */
+
+/* === AJUSTE CONTRASTE NOME DUDA - START === */
+
+/*
+Objetivo:
+dar mais contraste do nome "Duda" com o balão prata.
+Não mexe em animação, envelope, papel ou layout.
+*/
+
+.opening-gate__brand span,
+h1#invite-title .name-script,
+.name-script {
+    color: #06302e !important;              /* verde petróleo mais escuro */
+    -webkit-text-stroke: 0.35px rgba(250, 248, 241, 0.88) !important;
+
+    text-shadow:
+        0 1px 0 rgba(255, 252, 245, 0.98),
+        0 0 1px rgba(255, 252, 245, 0.85),
+        0 3px 8px rgba(6, 48, 46, 0.28),
+        0 8px 18px rgba(6, 48, 46, 0.16) !important;
+}
+
+/*
+Se quiser ainda mais contraste no futuro, podemos testar:
+#052927
+ou
+#0a2d32
+*/
+
+@media (max-width: 520px) {
+    .opening-gate__brand span,
+    h1#invite-title .name-script,
+    .name-script {
+        -webkit-text-stroke: 0.45px rgba(250, 248, 241, 0.92) !important;
+
+        text-shadow:
+            0 1px 0 rgba(255, 252, 245, 0.99),
+            0 0 1px rgba(255, 252, 245, 0.88),
+            0 3px 9px rgba(6, 48, 46, 0.30),
+            0 8px 18px rgba(6, 48, 46, 0.18) !important;
+    }
+}
+
+/* === AJUSTE CONTRASTE NOME DUDA - END === */
+
+/* === MELHORIAS ENTRADA CONVITE - START === */
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+/* ==========================================================
+   HERO MAIS COMPACTO SOMENTE NA PÁGINA DO CONVITE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .page-shell--revealed h1#invite-title {
+        min-height: 205px !important;
+    }
+
+    .page-shell--revealed h1#invite-title .balloon-age {
+        width: min(44vw, 154px) !important;
+        top: 2px !important;
+    }
+
+    .page-shell--revealed h1#invite-title .name-script {
+        font-size: clamp(3.35rem, 12.5vw, 4rem) !important;
+        bottom: 2px !important;
+    }
+
+    .page-shell--revealed .hero-copy .tagline {
+        max-width: 292px !important;
+        margin-top: 6px !important;
+        font-size: .92rem !important;
+        line-height: 1.35 !important;
+    }
+
+}
+
+
+/* ==========================================================
+   CENTRAL DE AÇÕES
+   ========================================================== */
+
+.hero-quick-actions {
+    position: relative;
+    z-index: 5;
+
+    display: grid;
+    gap: 8px;
+
+    width: min(100%, 350px);
+
+    margin: 12px auto 10px;
+}
+
+
+.hero-quick-actions button {
+    font: inherit;
+    cursor: pointer;
+}
+
+
+.hero-quick-actions__primary {
+    min-height: 46px;
+
+    padding: 11px 16px;
+
+    border: 0;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #098c7e,
+            #05665d
+        );
+
+    color: #fff;
+
+    font-size: .90rem;
+    font-weight: 800;
+
+    box-shadow:
+        0 10px 20px
+        rgba(8, 120, 111, .18);
+}
+
+
+.hero-quick-actions__grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 6px;
+}
+
+
+.hero-quick-actions__secondary {
+    display: grid;
+
+    align-content: center;
+    justify-items: center;
+
+    gap: 3px;
+
+    min-height: 54px;
+
+    padding: 8px 4px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .14);
+
+    border-radius: 11px;
+
+    background:
+        rgba(255, 255, 255, .78);
+
+    color: #17443f;
+
+    box-shadow:
+        0 7px 15px
+        rgba(31, 76, 68, .07);
+}
+
+
+.hero-quick-actions__secondary span:first-child {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+
+.hero-quick-actions__secondary span:last-child {
+    font-size: .72rem;
+    font-weight: 750;
+    line-height: 1.1;
+}
+
+
+.hero-scroll-hint {
+    display: grid;
+
+    justify-items: center;
+
+    gap: 0;
+
+    padding: 2px 0;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #3c6761;
+}
+
+
+.hero-scroll-hint span {
+    font-size: .76rem;
+    font-weight: 600;
+}
+
+
+.hero-scroll-hint strong {
+    font-size: 1.35rem;
+    line-height: .85;
+
+    animation:
+        conviteScrollHintBounce
+        1.35s
+        ease-in-out
+        infinite;
+}
+
+
+@keyframes conviteScrollHintBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: .65;
+    }
+
+    50% {
+        transform: translateY(5px);
+        opacity: 1;
+    }
+
+}
+
+
+/* ==========================================================
+   DESTINOS
+   ========================================================== */
+
+#confirmar-presenca,
+#local-evento,
+#presentes,
+#mensagem-duda {
+    scroll-margin-top: 14px;
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .hero-quick-actions {
+        width: min(100%, 318px);
+
+        margin-top: 10px;
+    }
+
+
+    .hero-quick-actions__primary {
+        min-height: 43px;
+
+        font-size: .86rem;
+    }
+
+
+    .hero-quick-actions__secondary {
+        min-height: 50px;
+    }
+
+}
+
+
+@media (max-width: 380px) {
+
+    .hero-quick-actions {
+        width: min(100%, 300px);
+    }
+
+
+    .hero-quick-actions__secondary span:last-child {
+        font-size: .68rem;
+    }
+
+}
+
+/* === MELHORIAS ENTRADA CONVITE - END === */

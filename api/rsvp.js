@@ -9,7 +9,26 @@ import {
     parseBody,
     publicGuest,
 } from './_db.js'
+import {
+    RSVP_CLOSED_MESSAGE,
+    isRsvpClosedAt,
+} from '../shared/rsvp-deadline.js'
 
+function getRsvpNow() {
+    const testNow = process.env.NODE_ENV !== 'production'
+        ? String(process.env.RSVP_TEST_NOW || '').trim()
+        : ''
+
+    if (testNow) {
+        const parsed = new Date(testNow)
+
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed
+        }
+    }
+
+    return new Date()
+}
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -141,6 +160,12 @@ export default async function handler(request, response) {
         return response.status(405).json({ error: 'Metodo nao permitido.' })
     }
 
+    if (isRsvpClosedAt(getRsvpNow())) {
+        return response.status(403).json({
+            error: RSVP_CLOSED_MESSAGE,
+        })
+    }
+
     try {
         const body = parseBody(request.body)
         const whatsappDigits = normalizePhone(body.whatsapp)
@@ -160,11 +185,16 @@ export default async function handler(request, response) {
         const companionValidation = normalizeCompanions(body.companions, attending, maxCompanions)
         if (companionValidation.error) return response.status(400).json({ error: companionValidation.error })
 
-        if (await findExistingRsvp(lookup.guest.id, whatsappDigits)) {
-            return response.status(409).json({ error: 'Este convite ja teve a presenca confirmada.' })
-        }
+        const existingRsvp = await findExistingRsvp(
+            lookup.guest.id,
+            whatsappDigits
+        )
 
-        await bindPhoneIfNeeded(lookup.guest.id, whatsappDigits, lookup.canBindPhone)
+        await bindPhoneIfNeeded(
+            lookup.guest.id,
+            whatsappDigits,
+            lookup.canBindPhone
+        )
 
         const companions = companionValidation.companions
         const confirmedCompanionCount = companions.filter((companion) => companion.attending === 'sim').length
@@ -172,34 +202,114 @@ export default async function handler(request, response) {
             ? countMainGuestForBuffet(lookup.guest.age) + companions.reduce((total, companion) => total + companion.countsBuffet, 0)
             : 0
 
-        const result = await getClient().execute({
-            sql: `
-                INSERT INTO rsvps (invited_guest_id, full_name, whatsapp, whatsapp_digits, attending, decline_reason, companions_count, buffet_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-            args: [
-                lookup.guest.id,
-                lookup.guest.guest_name,
-                body.whatsapp,
-                whatsappDigits,
-                attending,
-                attending === 'nao' ? declineReason : '',
-                confirmedCompanionCount,
-                buffetCount,
-            ],
-        })
+        let rsvpId
+        let wasUpdated = false
 
-        const rsvpId = Number(result.lastInsertRowid)
+        if (existingRsvp) {
+            rsvpId = Number(existingRsvp.id)
+            wasUpdated = true
+
+            await getClient().execute({
+                sql: `
+                    UPDATE rsvps
+                    SET
+                        full_name = ?,
+                        whatsapp = ?,
+                        whatsapp_digits = ?,
+                        attending = ?,
+                        decline_reason = ?,
+                        companions_count = ?,
+                        buffet_count = ?
+                    WHERE id = ?
+                `,
+                args: [
+                    lookup.guest.guest_name,
+                    body.whatsapp,
+                    whatsappDigits,
+                    attending,
+                    attending === 'nao' ? declineReason : '',
+                    confirmedCompanionCount,
+                    buffetCount,
+                    rsvpId,
+                ],
+            })
+
+            /*
+             * Sempre removemos os acompanhantes da resposta anterior
+             * antes de salvar o novo estado.
+             *
+             * Assim:
+             * sim -> não = acompanhantes deixam de contar
+             * não -> sim = nova seleção é gravada
+             * sim -> sim = seleção atual substitui a anterior
+             */
+            await getClient().execute({
+                sql: 'DELETE FROM rsvp_companions WHERE rsvp_id = ?',
+                args: [rsvpId],
+            })
+        } else {
+            const result = await getClient().execute({
+                sql: `
+                    INSERT INTO rsvps (
+                        invited_guest_id,
+                        full_name,
+                        whatsapp,
+                        whatsapp_digits,
+                        attending,
+                        decline_reason,
+                        companions_count,
+                        buffet_count
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `,
+                args: [
+                    lookup.guest.id,
+                    lookup.guest.guest_name,
+                    body.whatsapp,
+                    whatsappDigits,
+                    attending,
+                    attending === 'nao' ? declineReason : '',
+                    confirmedCompanionCount,
+                    buffetCount,
+                ],
+            })
+
+            rsvpId = Number(result.lastInsertRowid)
+        }
+
         if (attending === 'sim' && companions.length > 0) {
             await saveCompanions(rsvpId, companions)
         }
 
-        const message = attending === 'sim'
-            ? `Presenca confirmada para ${lookup.guest.guest_name}. Acompanhantes confirmados: ${confirmedCompanionCount}. Pessoas para buffet: ${buffetCount}.`
-            : 'Resposta registrada. Obrigado por avisar com carinho.'
-        const slots = await getGuestCompanionSlots(lookup.guest.id, maxCompanions)
+        let message
 
-        return response.status(201).json({ message, guest: publicGuest(lookup.guest, slots) })
+        if (attending === 'sim') {
+            message = wasUpdated
+                ? `Presença atualizada para ${lookup.guest.guest_name}. Nos vemos na festa!`
+                : `Presença confirmada para ${lookup.guest.guest_name}. Nos vemos na festa!`
+        } else {
+            message = wasUpdated
+                ? 'Presença desconfirmada. Obrigado por nos avisar.'
+                : 'Resposta registrada. Obrigado por nos avisar.'
+        }
+
+        const slots = await getGuestCompanionSlots(
+            lookup.guest.id,
+            maxCompanions
+        )
+
+        return response.status(wasUpdated ? 200 : 201).json({
+            message,
+            guest: publicGuest(lookup.guest, slots),
+            alreadyConfirmed: true,
+            rsvp: {
+                id: rsvpId,
+                attending,
+                decline_reason: attending === 'nao'
+                    ? declineReason
+                    : '',
+            },
+        })
     } catch (error) {
         if (isUniqueConstraintError(error)) {
             return response.status(409).json({ error: 'Este convite ja teve a presenca confirmada ou este celular ja esta em uso.' })

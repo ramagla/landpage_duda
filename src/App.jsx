@@ -1,13 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+    RSVP_CLOSED_MESSAGE,
+    RSVP_DEADLINE_DISPLAY,
+    isRsvpClosedAt,
+} from '../shared/rsvp-deadline.js'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
-const RSVP_DEADLINE = '14/10/2026'
 const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Rua%20Corumbatai%20100%20Vila%20Virginia%20Itaquaquecetuba'
 const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
+
+function scrollToSection(id) {
+    if (typeof window === 'undefined') return
+
+    const element = document.getElementById(id)
+    if (!element) return
+
+    const top =
+        element.getBoundingClientRect().top
+        + window.scrollY
+        - 14
+
+    window.scrollTo({
+        top,
+        behavior: 'smooth',
+    })
+}
 
 function formatCountdown(targetDate) {
     const now = new Date()
@@ -40,6 +61,26 @@ function formatWhatsapp(value) {
 
 function digitsOnly(value) {
     return String(value || '').replace(/\D/g, '')
+}
+
+function getRsvpNow() {
+    const testNow = import.meta.env.DEV
+        ? String(import.meta.env.VITE_RSVP_TEST_NOW || '').trim()
+        : ''
+
+    if (testNow) {
+        const parsed = new Date(testNow)
+
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed
+        }
+    }
+
+    return new Date()
+}
+
+function isRsvpClosed() {
+    return isRsvpClosedAt(getRsvpNow())
 }
 
 async function readApiJson(response) {
@@ -86,6 +127,62 @@ function saveOpeningSession(data) {
         rsvp: data.rsvp || null,
     }))
 }
+
+function InvitationQuickActions() {
+    return (
+        <section
+            className="hero-quick-actions"
+            aria-label="Acessos rápidos do convite"
+        >
+            <button
+                className="hero-quick-actions__primary"
+                type="button"
+                onClick={() => scrollToSection('confirmar-presenca')}
+            >
+                ✓ Confirmar / alterar presença
+            </button>
+
+            <div className="hero-quick-actions__grid">
+                <button
+                    className="hero-quick-actions__secondary"
+                    type="button"
+                    onClick={() => scrollToSection('local-evento')}
+                >
+                    <span aria-hidden="true">⌖</span>
+                    <span>Local</span>
+                </button>
+
+                <button
+                    className="hero-quick-actions__secondary"
+                    type="button"
+                    onClick={() => scrollToSection('presentes')}
+                >
+                    <span aria-hidden="true">🎁</span>
+                    <span>Presente</span>
+                </button>
+
+                <button
+                    className="hero-quick-actions__secondary"
+                    type="button"
+                    onClick={() => scrollToSection('mensagem-duda')}
+                >
+                    <span aria-hidden="true">♡</span>
+                    <span>Mensagem</span>
+                </button>
+            </div>
+
+            <button
+                className="hero-scroll-hint"
+                type="button"
+                onClick={() => scrollToSection('confirmar-presenca')}
+            >
+                <span>Explore o convite</span>
+                <strong aria-hidden="true">⌄</strong>
+            </button>
+        </section>
+    )
+}
+
 function Countdown() {
     const targetDate = useMemo(() => new Date(EVENT_DATE_ISO), [])
     const [time, setTime] = useState(() => formatCountdown(targetDate))
@@ -139,22 +236,34 @@ function createCompanion(slot) {
     }
 }
 
-function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyConfirmed = false, onGuestResolved, onGuestCleared }) {
+function RsvpForm({
+    initialGuest = null,
+    initialWhatsapp = '',
+    initialAlreadyConfirmed = false,
+    initialRsvp = null,
+    onGuestResolved,
+    onGuestCleared,
+    onRsvpSaved,
+}) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const [lookupStatus, setLookupStatus] = useState(initialGuest ? 'success' : 'idle')
     const [submitStatus, setSubmitStatus] = useState('idle')
     const [message, setMessage] = useState('')
-    const [attending, setAttending] = useState('sim')
+    const [attending, setAttending] = useState(
+        () => initialRsvp?.attending === 'nao' ? 'nao' : 'sim'
+    )
     const [whatsappValue, setWhatsappValue] = useState(() => formatWhatsapp(initialWhatsapp))
     const [guest, setGuest] = useState(initialGuest)
     const [companions, setCompanions] = useState(() => (initialGuest?.companions || []).map(createCompanion))
     const [alreadyConfirmed, setAlreadyConfirmed] = useState(Boolean(initialAlreadyConfirmed))
-
+    const rsvpClosed = isRsvpClosed()
+    const formLocked = rsvpClosed
 
     function resetGuest() {
         setGuest(null)
         setCompanions([])
         setAlreadyConfirmed(false)
+        setAttending('sim')
         setSubmitStatus('idle')
         onGuestCleared?.()
     }
@@ -178,7 +287,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
 
         try {
             if (digitsOnly(whatsappValue).length < 10) {
-                throw new Error('Digite um WhatsApp valido com DDD.')
+                throw new Error('Digite um WhatsApp válido com DDD.')
             }
 
             const params = new URLSearchParams({ whatsapp: whatsappValue })
@@ -187,16 +296,23 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
             const response = await fetch(`/api/guest?${params.toString()}`)
             const data = await readApiJson(response)
 
-            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel consultar seu convite.')
+            if (!response.ok) throw new Error(data?.error || 'Não foi possível consultar seu convite.')
 
             setGuest(data.guest)
             onGuestResolved?.(data.guest)
             setCompanions((data.guest.companions || []).map(createCompanion))
             setAlreadyConfirmed(Boolean(data.alreadyConfirmed))
+            setAttending(
+                data.rsvp?.attending === 'nao'
+                    ? 'nao'
+                    : 'sim'
+            )
             setLookupStatus('success')
-            setMessage(data.alreadyConfirmed
-                ? 'Este convite ja foi respondido. Para alterar, fale com o Rafael.'
-                : `Convite encontrado para ${data.guest.name}.`)
+            setMessage(
+                data.alreadyConfirmed
+                    ? 'Sua resposta foi encontrada. Você pode alterá-la até 14/10/2026.'
+                    : `Convite encontrado para ${data.guest.name}.`
+            )
         } catch (error) {
             setLookupStatus('error')
             setMessage(error.message)
@@ -229,6 +345,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
         }
 
         try {
+            if (rsvpClosed) throw new Error(RSVP_CLOSED_MESSAGE)
             if (!guest) throw new Error('Consulte seu celular antes de confirmar.')
 
             const response = await fetch('/api/rsvp', {
@@ -238,12 +355,23 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
             })
             const data = await readApiJson(response)
 
-            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel confirmar agora.')
+            if (!response.ok) throw new Error(data?.error || 'Não foi possível confirmar agora.')
 
             setSubmitStatus('success')
-            if (data.guest) onGuestResolved?.(data.guest)
+
+            if (data.guest) {
+                onGuestResolved?.(data.guest)
+            }
+
+            if (data.rsvp) {
+                onRsvpSaved?.(data.rsvp)
+            }
+
             setAlreadyConfirmed(true)
-            setMessage(data.message || 'Confirmacao salva com carinho.')
+            setMessage(
+                data.message
+                || 'Resposta salva com carinho.'
+            )
         } catch (error) {
             setSubmitStatus('error')
             setMessage(error.message)
@@ -280,22 +408,47 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                         <small>{guest.maxCompanions === 0 ? 'Sem acompanhantes.' : `Ate ${guest.maxCompanions} acompanhante${guest.maxCompanions === 1 ? '' : 's'} neste convite.`}</small>
                     </div>
 
-                    <fieldset className="choice-group" disabled={alreadyConfirmed}>
-                        <legend>Voce vai?</legend>
+                    {rsvpClosed ? (
+                        <div className="deadline-closed" role="status">
+                            <strong>Prazo de confirmação encerrado</strong>
+                            <span>{RSVP_CLOSED_MESSAGE}</span>
+                        </div>
+                    ) : null}
+
+                    <fieldset className="choice-group" disabled={formLocked}>
+                        <legend>Você vai?</legend>
                         <label className="choice">
-                            <input defaultChecked name="attending" type="radio" value="sim" onChange={() => handleAttendingChange('sim')} />
+                            <input
+                                checked={attending === 'sim'}
+                                name="attending"
+                                type="radio"
+                                value="sim"
+                                onChange={() => handleAttendingChange('sim')}
+                            />
                             <span>Sim, vou comemorar</span>
                         </label>
                         <label className="choice">
-                            <input name="attending" type="radio" value="nao" onChange={() => handleAttendingChange('nao')} />
-                            <span>Nao vou</span>
+                            <input
+                                checked={attending === 'nao'}
+                                name="attending"
+                                type="radio"
+                                value="nao"
+                                onChange={() => handleAttendingChange('nao')}
+                            />
+                            <span>Não vou</span>
                         </label>
                     </fieldset>
 
                     {attending === 'nao' ? (
                         <label>
                             <span>Conta pra Duda o motivo</span>
-                            <textarea name="declineReason" placeholder="Uma justificativa curtinha e carinhosa" disabled={alreadyConfirmed} required />
+                            <textarea
+                                name="declineReason"
+                                placeholder="Uma justificativa curtinha e carinhosa"
+                                defaultValue={initialRsvp?.decline_reason || ''}
+                                disabled={formLocked}
+                                required
+                            />
                         </label>
                     ) : null}
 
@@ -304,14 +457,14 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                             <div className="companions-box__header">
                                 <div>
                                     <span>Acompanhantes liberados</span>
-                                    <p>Marque se cada acompanhante vai ou nao. Ate 6 anos nao conta no buffet.</p>
+                                    <p>Marque se cada acompanhante vai ou não. Até 6 anos não conta no buffet.</p>
                                 </div>
                             </div>
 
                             <div className="companions-list">
                                 {companions.map((companion, index) => (
                                     <div className="companion-row companion-row--fixed" key={companion.id}>
-                                        <fieldset className="companion-attendance" disabled={alreadyConfirmed}>
+                                        <fieldset className="companion-attendance" disabled={formLocked}>
                                             <legend>Acompanhante {index + 1}</legend>
                                             <label>
                                                 <input
@@ -331,7 +484,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                                                     value="nao"
                                                     onChange={() => updateCompanion(companion.id, 'attending', 'nao')}
                                                 />
-                                                <span>Nao vai</span>
+                                                <span>Não vai</span>
                                             </label>
                                         </fieldset>
                                         <label>
@@ -341,7 +494,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                                                 placeholder="Nome do acompanhante"
                                                 value={companion.name}
                                                 onChange={(event) => updateCompanion(companion.id, 'name', event.target.value)}
-                                                disabled={alreadyConfirmed || companion.attending === 'nao'}
+                                                disabled={formLocked || companion.attending === 'nao'}
                                                 required={companion.attending !== 'nao'}
                                             />
                                         </label>
@@ -355,7 +508,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                                                 placeholder="Idade"
                                                 value={companion.age}
                                                 onChange={(event) => updateCompanion(companion.id, 'age', event.target.value)}
-                                                disabled={alreadyConfirmed || companion.attending === 'nao'}
+                                                disabled={formLocked || companion.attending === 'nao'}
                                                 required={companion.attending !== 'nao'}
                                             />
                                         </label>
@@ -365,10 +518,16 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
                         </section>
                     ) : null}
 
-                    <p className="guest-check-note">Este convite e individual. Use o celular informado para abrir e confirmar somente os nomes deste convite.</p>
+                    <p className="guest-check-note">Este convite é individual. Use o celular informado para abrir e confirmar somente os nomes deste convite.</p>
 
-                    <button disabled={submitStatus === 'loading' || alreadyConfirmed} type="submit">
-                        {submitStatus === 'loading' ? 'Salvando...' : alreadyConfirmed ? 'Convite respondido' : 'Confirmar presenca'}
+                    <button disabled={submitStatus === 'loading' || formLocked} type="submit">
+                        {submitStatus === 'loading'
+                            ? 'Salvando...'
+                            : rsvpClosed
+                                ? 'Prazo encerrado'
+                                : alreadyConfirmed
+                                    ? 'Salvar alteração'
+                                    : 'Confirmar presença'}
                     </button>
                 </form>
             ) : null}
@@ -380,7 +539,7 @@ function RsvpForm({ initialGuest = null, initialWhatsapp = '', initialAlreadyCon
 
 function GiftPanel() {
     return (
-        <section className="confirm-panel gift-panel" aria-labelledby="gift-title">
+        <section id="presentes" className="confirm-panel gift-panel" aria-labelledby="gift-title">
             <p className="panel-kicker">Sugestao de presente</p>
             <h2 id="gift-title">Um carinho para a Duda</h2>
             <p>Sugestoes: perfume, acessorios femininos, cremes e maquiagem. Quem preferir, tambem pode enviar um Pix para a Duda escolher algo especial.</p>
@@ -704,8 +863,8 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const [validatedData, setValidatedData] = useState(null)
 
     useEffect(() => {
-        const cardTimer = window.setTimeout(() => setStage('card-visible'), 4300)
-        const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 4300)
+        const cardTimer = window.setTimeout(() => setStage('card-visible'), 7600)
+        const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 7600)
 
         return () => {
             window.clearTimeout(cardTimer)
@@ -719,7 +878,7 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
 
         try {
             if (digitsOnly(whatsappValue).length < 10) {
-                throw new Error('Digite um WhatsApp valido com DDD.')
+                throw new Error('Digite um WhatsApp válido com DDD.')
             }
 
             setStage('checking')
@@ -729,7 +888,7 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
             const response = await fetch(`/api/guest?${params.toString()}`)
             const data = await readApiJson(response)
 
-            if (!response.ok) throw new Error(data?.error || 'Nao foi possivel consultar seu convite.')
+            if (!response.ok) throw new Error(data?.error || 'Não foi possível consultar seu convite.')
 
             const openingData = {
                 guest: data.guest,
@@ -768,12 +927,21 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                 <p>Sweet birthday</p>
                 <img className="opening-gate__balloon" src="/balloon-16-transparent.png" alt="" />
                 <span>Duda</span>
-                <small>Uma tarde para brilhar, dancar e guardar na memoria.</small>
+                <small>Uma tarde para brilhar, dançar e guardar na memória.</small>
             </section>
 
             <div className="envelope-stage">
-                <form className="access-card" onSubmit={handleSubmit} aria-live="polite">
-                    <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
+                <div className="letter-sheet">
+                    <div className="letter-sheet__folds" aria-hidden="true">
+                        <span className="letter-sheet__panel letter-sheet__panel--top" />
+                        <span className="letter-sheet__panel letter-sheet__panel--middle" />
+                        <span className="letter-sheet__panel letter-sheet__panel--bottom" />
+                    </div>
+
+                    <form className="access-card" onSubmit={handleSubmit} aria-live="polite">
+                    <p className="panel-kicker">{isRsvpClosed()
+                        ? 'Prazo de confirmação encerrado'
+                        : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
                     <h1>Abra seu convite</h1>
                     <p>Digite o celular para localizar seu convite individual.</p>
                     <label>
@@ -799,9 +967,10 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     >
                         {isChecking ? 'Consultando...' : isUnlocked ? 'Convite liberado' : 'Abrir meu convite'}
                     </button>
-                    <small>{isUnlocked ? 'Toque para entrar no convite completo.' : 'O numero sera usado somente para localizar e confirmar este convite.'}</small>
+                    <small>{isUnlocked ? 'Toque para entrar no convite completo.' : 'O número será usado somente para localizar e confirmar este convite.'}</small>
                     {message ? <p className="form-message form-message--error">{message}</p> : null}
-                </form>
+                    </form>
+                </div>
 
                 <div className="envelope" aria-hidden="true">
                     <div className="envelope__back" />
@@ -810,7 +979,18 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     <div className="envelope__pocket envelope__pocket--left" />
                     <div className="envelope__pocket envelope__pocket--right" />
                     <div className="envelope__front" />
-                    <div className="envelope__seal">D</div>
+                    <div className="envelope__seal" aria-hidden="true">
+                        <img
+                            className="envelope__seal-img envelope__seal-img--intact"
+                            src="/selo.png"
+                            alt=""
+                        />
+                        <img
+                            className="envelope__seal-img envelope__seal-img--broken"
+                            src="/selo-rompido.png"
+                            alt=""
+                        />
+                    </div>
                     <span>Feito especialmente para voce</span>
                 </div>
             </div>
@@ -839,6 +1019,22 @@ function LandingPage() {
         })
     }
 
+    function handleRsvpSaved(rsvp) {
+        setOpeningData((current) => {
+            if (!current) return current
+
+            const next = {
+                ...current,
+                alreadyConfirmed: true,
+                rsvp,
+            }
+
+            saveOpeningSession(next)
+
+            return next
+        })
+    }
+
     if (!openingData) {
         return <OpeningInvitationGate onUnlocked={handleUnlocked} onMusicStart={() => setMusicStarted(true)} />
     }
@@ -861,13 +1057,14 @@ function LandingPage() {
                         <img className="balloon-age" src="/balloon-16-transparent.png" alt="16 anos" />
                         <span className="name-script">Duda</span>
                     </h1>
-                    <p className="tagline">Uma tarde para brilhar, dancar e guardar na memoria.</p>
+                    <p className="tagline">Uma tarde para brilhar, dançar e guardar na memória.</p>
                 </div>
 
                 <Countdown />
+                    <InvitationQuickActions />
                 <MusicPlayer enabled={musicStarted} />
 
-                <div className="event-details" aria-label="Informacoes do aniversario">
+                <div id="local-evento" className="event-details" aria-label="Informacoes do aniversario">
                     <p>14 Novembro 2026</p>
                     <p>17h</p>
                     <a href={MAP_URL} target="_blank" rel="noreferrer">Quintal do Ibiza</a>
@@ -902,21 +1099,25 @@ function LandingPage() {
             </section>
 
             <div className="side-stack">
-                <section className="confirm-panel" aria-labelledby="confirm-title">
-                    <p className="panel-kicker">RSVP ate {RSVP_DEADLINE}</p>
+                <section id="confirmar-presenca" className="confirm-panel" aria-labelledby="confirm-title">
+                    <p className="panel-kicker">{isRsvpClosed()
+                        ? 'Prazo de confirmação encerrado'
+                        : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
                     <h2 id="confirm-title">Oi, {activeGuest.name}</h2>
                     <p>Confira os nomes liberados e confirme a presenca deste convite.</p>
                     <RsvpForm
                         initialGuest={activeGuest}
                         initialWhatsapp={openingData.whatsapp}
                         initialAlreadyConfirmed={openingData.alreadyConfirmed}
+                        initialRsvp={openingData.rsvp}
                         onGuestResolved={handleGuestResolved}
+                        onRsvpSaved={handleRsvpSaved}
                     />
                 </section>
 
                 <GiftPanel />
 
-                <section className="confirm-panel message-panel" aria-labelledby="message-title">
+                <section id="mensagem-duda" className="confirm-panel message-panel" aria-labelledby="message-title">
                     <p className="panel-kicker">Carinho para guardar</p>
                     <h2 id="message-title">Deixe sua mensagem</h2>
                     <p>Escreva uma mensagem de parabens para a Duda receber junto com as confirmacoes.</p>

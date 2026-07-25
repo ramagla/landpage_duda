@@ -1,4 +1,4 @@
-﻿import { cleanText, ensureSchema, getClient, getGuestCompanionSlots, normalizePhone, publicGuest } from './_db.js'
+import { cleanText, ensureSchema, getClient, getGuestCompanionSlots, normalizePhone, publicGuest } from './_db.js'
 
 function validPhoneDigits(value) {
     return /^\d{10,11}$/.test(value)
@@ -95,7 +95,7 @@ export default async function handler(request, response) {
         if (!lookup.guest) return response.status(403).json({ error: 'Sinto muito, mas voce nao esta na lista de convidados.' })
 
         const rsvp = await getClient().execute({
-            sql: 'SELECT id, attending, created_at FROM rsvps WHERE invited_guest_id = ? OR whatsapp_digits = ? LIMIT 1',
+            sql: 'SELECT id, attending, decline_reason, created_at FROM rsvps WHERE invited_guest_id = ? OR whatsapp_digits = ? LIMIT 1',
             args: [lookup.guest.id, whatsappDigits],
         })
         const companions = await getCompanionsForGuest(lookup.guest.id, lookup.guest.max_companions, rsvp.rows[0]?.id)
