@@ -1,2 +1,14 @@
+# Permite que Meta/WhatsApp leiam somente para gerar preview do convite.
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Continua impedindo indexacao geral do convite.
 User-agent: *
 Disallow: /
