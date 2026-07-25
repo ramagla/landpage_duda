@@ -6,12 +6,115 @@ import {
 } from '../shared/rsvp-deadline.js'
 
 const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
-const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Rua%20Corumbatai%20100%20Vila%20Virginia%20Itaquaquecetuba'
+const EVENT_ADDRESS = 'Rua Corumbataí, 100 - Vila Virgínia, Itaquaquecetuba - SP'
+const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(EVENT_ADDRESS)}`
+const WAZE_URL = `https://waze.com/ul?q=${encodeURIComponent(EVENT_ADDRESS)}&navigate=yes`
 const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
+
+const CALENDAR_FILENAME = 'duda-16-anos.ics'
+
+function escapeIcsText(value) {
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\r?\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+}
+
+function downloadCalendarEvent() {
+    if (typeof window === 'undefined') return
+
+    const now = new Date()
+
+    const stamp = now
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\.\d{3}Z$/, 'Z')
+
+    const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        'UID:duda-16-20261114@convite',
+        `DTSTAMP:${stamp}`,
+        'DTSTART;TZID=America/Sao_Paulo:20261114T170000',
+        `SUMMARY:${escapeIcsText('16 anos da Duda')}`,
+        `LOCATION:${escapeIcsText(EVENT_ADDRESS)}`,
+        `DESCRIPTION:${escapeIcsText('Aniversário de 16 anos da Duda no Quintal do Ibiza.')}`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ]
+
+    const blob = new Blob(
+        [lines.join('\r\n')],
+        {
+            type: 'text/calendar;charset=utf-8',
+        },
+    )
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = CALENDAR_FILENAME
+
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    window.setTimeout(
+        () => URL.revokeObjectURL(url),
+        1000,
+    )
+}
+
+async function copyTextToClipboard(value) {
+    const textValue = String(value || '').trim()
+
+    if (!textValue) {
+        throw new Error('Não há conteúdo para copiar.')
+    }
+
+    if (
+        navigator.clipboard
+        && window.isSecureContext
+    ) {
+        await navigator.clipboard.writeText(textValue)
+        return
+    }
+
+    const textarea = document.createElement('textarea')
+
+    textarea.value = textValue
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+
+    document.body.appendChild(textarea)
+
+    textarea.select()
+    textarea.setSelectionRange(
+        0,
+        textarea.value.length,
+    )
+
+    const copied = document.execCommand('copy')
+
+    textarea.remove()
+
+    if (!copied) {
+        throw new Error(
+            'Não foi possível copiar automaticamente.'
+        )
+    }
+}
 
 function scrollToSection(id) {
     if (typeof window === 'undefined') return
@@ -209,20 +312,68 @@ function Countdown() {
     )
 }
 
-function MusicPlayer({ enabled }) {
-    if (!enabled) return null
 
-    const embedUrl = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
+function MusicPlayer({ enabled }) {
+    const iframeRef = useRef(null)
+    const [playing, setPlaying] = useState(Boolean(enabled))
+
+    function sendCommand(command) {
+        iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({
+                event: 'command',
+                func: command,
+                args: [],
+            }),
+            '*',
+        )
+    }
+
+    function toggleMusic() {
+        if (playing) {
+            sendCommand('pauseVideo')
+            setPlaying(false)
+            return
+        }
+
+        sendCommand('playVideo')
+        setPlaying(true)
+    }
+
+    function handlePlayerLoad() {
+        if (!enabled) return
+
+        sendCommand('playVideo')
+        setPlaying(true)
+    }
 
     return (
-        <iframe
-            className="youtube-audio-frame"
-            src={embedUrl}
-            title="Musica do convite da Duda"
-            allow="autoplay; encrypted-media"
-            tabIndex="-1"
-            aria-hidden="true"
-        />
+        <div className="music-player">
+            <iframe
+                ref={iframeRef}
+                className="music-player__frame"
+                title="Música do convite da Duda"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=${enabled ? 1 : 0}&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&playsinline=1&enablejsapi=1&rel=0`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                onLoad={handlePlayerLoad}
+            />
+
+            <button
+                className={`music-player__control${playing ? ' music-player__control--playing' : ''}`}
+                type="button"
+                onClick={toggleMusic}
+                aria-pressed={playing}
+                aria-label={playing ? 'Pausar música' : 'Tocar música'}
+                title={playing ? 'Pausar música' : 'Tocar música'}
+            >
+                <span aria-hidden="true">
+                    {playing ? '❚❚' : '♪'}
+                </span>
+
+                <small>
+                    {playing ? 'Pausar' : 'Música'}
+                </small>
+            </button>
+        </div>
     )
 }
 
@@ -537,19 +688,109 @@ function RsvpForm({
     )
 }
 
+
 function GiftPanel() {
+    const [copyStatus, setCopyStatus] = useState('')
+
+    async function handleCopyPixKey() {
+        try {
+            await copyTextToClipboard(PIX_KEY)
+            setCopyStatus('Chave Pix copiada.')
+        } catch (error) {
+            setCopyStatus(error.message)
+        }
+    }
+
+    async function handleCopyPixCode() {
+        try {
+            const response = await fetch(
+                '/pix-duda-brcode.txt',
+                {
+                    cache: 'force-cache',
+                },
+            )
+
+            if (!response.ok) {
+                throw new Error(
+                    'Não foi possível carregar o Pix copia e cola.'
+                )
+            }
+
+            const pixCode = await response.text()
+
+            await copyTextToClipboard(pixCode)
+
+            setCopyStatus(
+                'Pix copia e cola copiado.'
+            )
+        } catch (error) {
+            setCopyStatus(error.message)
+        }
+    }
+
     return (
-        <section id="presentes" className="confirm-panel gift-panel" aria-labelledby="gift-title">
-            <p className="panel-kicker">Sugestao de presente</p>
-            <h2 id="gift-title">Um carinho para a Duda</h2>
-            <p>Sugestoes: perfume, acessorios femininos, cremes e maquiagem. Quem preferir, tambem pode enviar um Pix para a Duda escolher algo especial.</p>
+        <section
+            id="presentes"
+            className="confirm-panel gift-panel"
+            aria-labelledby="gift-title"
+        >
+            <p className="panel-kicker">
+                Sugestão de presente
+            </p>
+
+            <h2 id="gift-title">
+                Um carinho para a Duda
+            </h2>
+
+            <p>
+                Sugestões: perfume, acessórios femininos,
+                cremes e maquiagem. Quem preferir também pode
+                enviar um Pix para a Duda escolher algo especial.
+            </p>
 
             <div className="pix-card">
-                <img src="/pix-duda.svg" alt="QR Code Pix para presente da Duda" />
+                <img
+                    src="/pix-duda.svg"
+                    alt="QR Code Pix para presente da Duda"
+                />
+
                 <div>
                     <span>Chave Pix</span>
+
                     <strong>{PIX_KEY}</strong>
-                    <small>Antes de fazer o Pix, confirme se o nome aparece como <b>{PIX_NAME}</b>.</small>
+
+                    <small>
+                        Antes de fazer o Pix, confirme se o nome
+                        aparece como <b>{PIX_NAME}</b>.
+                    </small>
+
+                    <div className="pix-actions">
+                        <button
+                            type="button"
+                            className="utility-button"
+                            onClick={handleCopyPixKey}
+                        >
+                            Copiar chave Pix
+                        </button>
+
+                        <button
+                            type="button"
+                            className="utility-button"
+                            onClick={handleCopyPixCode}
+                        >
+                            Copiar Pix copia e cola
+                        </button>
+                    </div>
+
+                    {copyStatus ? (
+                        <p
+                            className="copy-feedback"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {copyStatus}
+                        </p>
+                    ) : null}
                 </div>
             </div>
         </section>
@@ -1083,20 +1324,47 @@ function AdminPage() {
 function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const inputRef = useRef(null)
+    const openingTimerRef = useRef(null)
     const [stage, setStage] = useState('intro')
     const [whatsappValue, setWhatsappValue] = useState('')
     const [message, setMessage] = useState('')
     const [validatedData, setValidatedData] = useState(null)
 
     useEffect(() => {
-        const cardTimer = window.setTimeout(() => setStage('card-visible'), 7600)
-        const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 7600)
-
         return () => {
-            window.clearTimeout(cardTimer)
-            window.clearTimeout(focusTimer)
+            if (openingTimerRef.current) {
+                window.clearTimeout(
+                    openingTimerRef.current,
+                )
+            }
         }
     }, [])
+
+    function startOpening() {
+        if (stage !== 'intro') return
+
+        setStage('opening')
+
+        const reducedMotion = window
+            .matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches
+
+        const revealDelay = reducedMotion
+            ? 120
+            : 4200
+
+        openingTimerRef.current = window.setTimeout(
+            () => {
+                setStage('card-visible')
+
+                window.setTimeout(
+                    () => inputRef.current?.focus(),
+                    reducedMotion ? 0 : 120,
+                )
+            },
+            revealDelay,
+        )
+    }
 
     async function handleSubmit(event) {
         event.preventDefault()
@@ -1142,6 +1410,10 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const isChecking = stage === 'checking'
     const isUnlocked = stage === 'unlocked'
     const isCompleted = stage === 'completed'
+    const isAccessReady = (
+        stage !== 'intro'
+        && stage !== 'opening'
+    )
 
     return (
         <main className={`opening-gate opening-gate--${stage}`} aria-label="Abertura do convite da Duda">
@@ -1182,14 +1454,14 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                             onChange={(event) => setWhatsappValue(formatWhatsapp(event.target.value))}
                             autoComplete="tel"
                             maxLength="15"
-                            disabled={isChecking || isUnlocked || isCompleted}
+                            disabled={!isAccessReady || isChecking || isUnlocked || isCompleted}
                             required
                         />
                     </label>
                     <button
                         type={isUnlocked ? 'button' : 'submit'}
                         onClick={isUnlocked ? enterInvitation : undefined}
-                        disabled={isChecking || isCompleted}
+                        disabled={!isAccessReady || isChecking || isCompleted}
                     >
                         {isChecking ? 'Consultando...' : isUnlocked ? 'Convite liberado' : 'Abrir meu convite'}
                     </button>
@@ -1198,14 +1470,20 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     </form>
                 </div>
 
-                <div className="envelope" aria-hidden="true">
+                <div className="envelope">
                     <div className="envelope__back" />
                     <div className="envelope__letter-shadow" />
                     <div className="envelope__flap" />
                     <div className="envelope__pocket envelope__pocket--left" />
                     <div className="envelope__pocket envelope__pocket--right" />
                     <div className="envelope__front" />
-                    <div className="envelope__seal" aria-hidden="true">
+                    <button
+                        className="envelope__seal envelope__seal-trigger"
+                        type="button"
+                        onClick={startOpening}
+                        disabled={stage !== 'intro'}
+                        aria-label="Romper o selo e abrir o convite"
+                    >
                         <img
                             className="envelope__seal-img envelope__seal-img--intact"
                             src="/selo.png"
@@ -1216,12 +1494,30 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                             src="/selo-rompido.png"
                             alt=""
                         />
-                    </div>
+
+                        <span
+                            className="envelope__seal-hint"
+                            aria-hidden="true"
+                        >
+                            <strong>TOQUE NO SELO</strong>
+                            <small>para abrir seu convite</small>
+                            <b>↓</b>
+                        </span>
+                    </button>
                     <span>Feito especialmente para voce</span>
                 </div>
             </div>
 
-            <p className="opening-gate__footer">O envelope abre e revela o acesso ao convite</p>
+            <p
+                className="opening-gate__footer"
+                aria-live="polite"
+            >
+                {stage === 'intro'
+                    ? 'Toque no selo para abrir seu convite'
+                    : stage === 'opening'
+                        ? 'Abrindo seu convite...'
+                        : 'O acesso ao convite está liberado'}
+            </p>
         </main>
     )
 }
@@ -1290,14 +1586,60 @@ function LandingPage() {
                     <InvitationQuickActions />
                 <MusicPlayer enabled={musicStarted} />
 
-                <div id="local-evento" className="event-details" aria-label="Informacoes do aniversario">
-                    <p>14 Novembro 2026</p>
+                <div
+                    id="local-evento"
+                    className="event-details"
+                    aria-label="Informações do aniversário"
+                >
+                    <p>14 de novembro de 2026</p>
                     <p>17h</p>
-                    <a href={MAP_URL} target="_blank" rel="noreferrer">Quintal do Ibiza</a>
+
+                    <a
+                        href={MAP_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        Quintal do Ibiza
+                    </a>
                 </div>
 
-                <p className="address">Rua Corumbatai, 100 - Vila Virginia, Itaquaquecetuba</p>
-                <a className="map-link" href={MAP_URL} target="_blank" rel="noreferrer">Abrir no Google Maps</a>
+                <p className="address">
+                    {EVENT_ADDRESS}
+                </p>
+
+                <div
+                    className="event-action-grid"
+                    aria-label="Como chegar e salvar o evento"
+                >
+                    <a
+                        className="event-action-button"
+                        href={MAP_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <span aria-hidden="true">⌖</span>
+                        Google Maps
+                    </a>
+
+                    <a
+                        className="event-action-button"
+                        href={WAZE_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <span aria-hidden="true">➤</span>
+                        Waze
+                    </a>
+
+                    <button
+                        className="event-action-button"
+                        type="button"
+                        onClick={downloadCalendarEvent}
+                    >
+                        <span aria-hidden="true">＋</span>
+                        Adicionar à agenda
+                    </button>
+                </div>
 
                 <div className="venue-card">
                     <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
@@ -1311,7 +1653,7 @@ function LandingPage() {
                     <img src="/duda-photo.png" alt="Foto da Duda" />
                 </div>
 
-                <p className="invite-text">{activeGuest.name}, a Duda quer voce por perto para transformar esse dia em uma lembranca linda.</p>
+                <p className="invite-text">{activeGuest.name}, a Duda quer você por perto para transformar esse dia em uma lembranca linda.</p>
 
                 <div className="duda-instagram-card">
                     <span>D</span>
@@ -1321,7 +1663,7 @@ function LandingPage() {
                     </div>
                 </div>
 
-                <div className="dress-code"><strong>Dress code</strong><span>Nao vir de verde nem azul.</span></div>
+                <div className="dress-code"><strong>Dress code</strong><span>Não vir de verde nem azul.</span></div>
             </section>
 
             <div className="side-stack">
@@ -1330,7 +1672,7 @@ function LandingPage() {
                         ? 'Prazo de confirmação encerrado'
                         : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
                     <h2 id="confirm-title">Oi, {activeGuest.name}</h2>
-                    <p>Confira os nomes liberados e confirme a presenca deste convite.</p>
+                    <p>Confira os nomes liberados e confirme a presença deste convite.</p>
                     <RsvpForm
                         initialGuest={activeGuest}
                         initialWhatsapp={openingData.whatsapp}
