@@ -243,6 +243,44 @@ export async function ensureSchema() {
              * Valores monetarios sao armazenados em centavos.
              */
             await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_finance_settings (
+                    id INTEGER PRIMARY KEY
+                        CHECK (id = 1),
+                    budget_limit_cents INTEGER NOT NULL DEFAULT 0,
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                INSERT OR IGNORE INTO party_finance_settings (
+                    id,
+                    budget_limit_cents
+                )
+                VALUES (1, 0)
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_suppliers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    contact_name TEXT,
+                    whatsapp TEXT,
+                    instagram TEXT,
+                    email TEXT,
+                    document TEXT,
+                    service TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS party_suppliers_name_unique
+                ON party_suppliers (lower(name))
+            `)
+
+            await db.execute(`
                 CREATE TABLE IF NOT EXISTS party_expenses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     description TEXT NOT NULL,
@@ -254,6 +292,36 @@ export async function ensureSchema() {
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
                 )
+            `)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN budget_amount_cents INTEGER NOT NULL DEFAULT 0"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN supplier_id INTEGER"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN installment_count INTEGER NOT NULL DEFAULT 1"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_expense_installments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    expense_id INTEGER NOT NULL,
+                    installment_number INTEGER NOT NULL,
+                    description TEXT,
+                    amount_cents INTEGER NOT NULL,
+                    due_date TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(expense_id, installment_number)
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_expense_installments_expense_index
+                ON party_expense_installments (expense_id)
             `)
 
             await db.execute(`
@@ -268,9 +336,18 @@ export async function ensureSchema() {
                 )
             `)
 
+            await db.execute(
+                "ALTER TABLE party_expense_payments ADD COLUMN installment_id INTEGER"
+            ).catch(ignoreDuplicateColumn)
+
             await db.execute(`
                 CREATE INDEX IF NOT EXISTS party_expense_payments_expense_index
                 ON party_expense_payments (expense_id)
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_expense_payments_installment_index
+                ON party_expense_payments (installment_id)
             `)
         })()
     }

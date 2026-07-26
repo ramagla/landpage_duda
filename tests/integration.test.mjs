@@ -46,6 +46,12 @@ const TEST_ADMIN_PASSWORD =
 const TEST_ADMIN_SECRET =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
+const TEST_EXPENSES_PASSWORD =
+    'senha-financeira-de-teste'
+
+const TEST_EXPENSES_SECRET =
+    'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
+
 /*
  * Mantemos o RSVP aberto independentemente
  * da data em que npm test for executado.
@@ -65,6 +71,12 @@ process.env.ADMIN_PASSWORD =
 
 process.env.ADMIN_SESSION_SECRET =
     TEST_ADMIN_SECRET
+
+process.env.EXPENSES_PASSWORD =
+    TEST_EXPENSES_PASSWORD
+
+process.env.EXPENSES_SESSION_SECRET =
+    TEST_EXPENSES_SECRET
 
 process.env.ALLOW_LEGACY_INVITE_CODES =
     'false'
@@ -1146,6 +1158,295 @@ test(
                 assert.ok(
                     saved.rows[0]
                         ?.sent_at
+                )
+            },
+        )
+
+
+        await t.test(
+            'financeiro rejeita acesso sem sessao',
+            async () => {
+                const {
+                    response,
+                } = await requestJson(
+                    '/api/expenses',
+                    {
+                        ip:
+                            '10.0.0.50',
+
+                        body: {},
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    401,
+                )
+            },
+        )
+
+
+        let expensesCookie = ''
+
+        await t.test(
+            'financeiro cria sessao separada valida',
+            async () => {
+                const {
+                    response,
+                } = await requestJson(
+                    '/api/expenses-login',
+                    {
+                        ip:
+                            '10.0.0.51',
+
+                        body: {
+                            password:
+                                TEST_EXPENSES_PASSWORD,
+                        },
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    200,
+                )
+
+                const setCookie =
+                    response.headers.get(
+                        'set-cookie'
+                    ) || ''
+
+                assert.match(
+                    setCookie,
+                    /duda_expenses_session=/,
+                )
+
+                assert.match(
+                    setCookie,
+                    /HttpOnly/i,
+                )
+
+                expensesCookie =
+                    setCookie.split(';')[0]
+
+                assert.ok(
+                    expensesCookie
+                )
+            },
+        )
+
+
+        await t.test(
+            'financeiro controla orcamento fornecedor parcelas e pagamento inicial',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.52',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveBudget',
+
+                                budgetLimit:
+                                    '20000,00',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.53',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveSupplier',
+
+                                name:
+                                    'Buffet Teste',
+
+                                contactName:
+                                    'Contato Teste',
+
+                                whatsapp:
+                                    '11999990000',
+
+                                service:
+                                    'Buffet',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const supplier =
+                    result.data.suppliers
+                        .find(
+                            (item) => (
+                                item.name
+                                === 'Buffet Teste'
+                            )
+                        )
+
+                assert.ok(
+                    supplier?.id
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.54',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveExpense',
+
+                                description:
+                                    'Buffet Festa Teste',
+
+                                category:
+                                    'Buffet',
+
+                                supplierId:
+                                    supplier.id,
+
+                                budgetAmount:
+                                    '6000,00',
+
+                                totalAmount:
+                                    '5500,00',
+
+                                installmentCount:
+                                    4,
+
+                                dueDate:
+                                    '2026-08-10',
+
+                                initialPaidAmount:
+                                    '1500,00',
+
+                                initialPaymentDate:
+                                    '2026-07-01',
+
+                                initialPaymentMethod:
+                                    'Pix',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .budgetLimit,
+                    2_000_000,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .total,
+                    550_000,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .paid,
+                    150_000,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .remaining,
+                    400_000,
+                )
+
+                const expense =
+                    result.data.expenses
+                        .find(
+                            (item) => (
+                                item.description
+                                === 'Buffet Festa Teste'
+                            )
+                        )
+
+                assert.ok(expense)
+
+                assert.equal(
+                    expense.supplierId,
+                    supplier.id,
+                )
+
+                assert.equal(
+                    expense
+                        .installments
+                        .length,
+                    4,
+                )
+
+                const installmentTotal =
+                    expense.installments
+                        .reduce(
+                            (
+                                sum,
+                                installment,
+                            ) => (
+                                sum
+                                + installment
+                                    .amountCents
+                            ),
+                            0,
+                        )
+
+                assert.equal(
+                    installmentTotal,
+                    550_000,
+                )
+
+                assert.equal(
+                    expense
+                        .payments
+                        .length,
+                    1,
+                )
+
+                assert.equal(
+                    expense
+                        .payments[0]
+                        .amountCents,
+                    150_000,
                 )
             },
         )
