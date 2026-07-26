@@ -7649,3 +7649,30 @@ html {
 }
 
 /* === COMUNICACOES V2 END === */
+
+
+.communication-undo-mark {
+    display: block;
+
+    margin-top: 6px;
+    padding: 5px 8px;
+
+    border:
+        1px solid
+        rgba(173, 70, 70, .18);
+
+    border-radius: 7px;
+
+    background: #fff6f6;
+    color: #a34545;
+
+    font: inherit;
+    font-size: .64rem;
+    font-weight: 850;
+
+    cursor: pointer;
+}
+
+.communication-undo-mark:hover {
+    background: #ffecec;
+}

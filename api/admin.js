@@ -329,6 +329,74 @@ const COMMUNICATION_TYPES = new Set([
 ])
 
 
+async function unmarkCommunication(body) {
+    const guestId = Number.parseInt(
+        String(body.guestId || ''),
+        10,
+    )
+
+    const communicationType = String(
+        body.communicationType || ''
+    ).trim()
+
+    if (
+        !Number.isInteger(guestId)
+        || guestId <= 0
+    ) {
+        return {
+            error: 'Convidado invalido.',
+        }
+    }
+
+    if (
+        !COMMUNICATION_TYPES.has(
+            communicationType
+        )
+    ) {
+        return {
+            error: 'Tipo de comunicacao invalido.',
+        }
+    }
+
+    const guestResult =
+        await getClient().execute({
+            sql: `
+                SELECT id, guest_name
+                FROM invited_guests
+                WHERE id = ?
+                LIMIT 1
+            `,
+            args: [guestId],
+        })
+
+    const guest =
+        guestResult.rows[0]
+
+    if (!guest) {
+        return {
+            error: 'Convidado nao encontrado.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM guest_communications
+            WHERE invited_guest_id = ?
+              AND communication_type = ?
+        `,
+        args: [
+            guestId,
+            communicationType,
+        ],
+    })
+
+    return {
+        message:
+            `Marcacao de envio removida para ${guest.guest_name}.`,
+    }
+}
+
+
 async function markCommunication(body) {
     const guestId = Number.parseInt(
         String(body.guestId || ''),
@@ -634,6 +702,30 @@ export default async function handler(request, response) {
             if (saved.error) return response.status(400).json({ error: saved.error })
             const summary = await getSummary()
             return response.status(200).json({ message: saved.message, ...summary })
+        }
+
+        if (body.action === 'unmarkCommunication') {
+            const unmarked =
+                await unmarkCommunication(body)
+
+            if (unmarked.error) {
+                return response
+                    .status(400)
+                    .json({
+                        error: unmarked.error,
+                    })
+            }
+
+            const summary =
+                await getSummary()
+
+            return response
+                .status(200)
+                .json({
+                    message:
+                        unmarked.message,
+                    ...summary,
+                })
         }
 
         if (body.action === 'markCommunication') {

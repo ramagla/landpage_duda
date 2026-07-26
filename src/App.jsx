@@ -1696,6 +1696,46 @@ function AdminPage() {
         }
     }
 
+    async function handleUnmarkCommunication(
+        guestItem,
+        communicationType,
+    ) {
+        const confirmed = window.confirm(
+            `Desmarcar o envio para ${guestItem.name}?`
+        )
+
+        if (!confirmed) {
+            return
+        }
+
+        try {
+            const result =
+                await callAdmin({
+                    action:
+                        'unmarkCommunication',
+
+                    guestId:
+                        guestItem.id,
+
+                    communicationType,
+                })
+
+            setStatus('success')
+
+            setMessage(
+                result.message
+                || 'Marcacao removida.'
+            )
+
+            return result
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+            throw error
+        }
+    }
+
+
     async function handleMarkCommunication(
         guestItem,
         communicationType,
@@ -2644,6 +2684,19 @@ function AdminPage() {
                                                                     guestItem.communications.convite_inicial
                                                                 )}
                                                             </small>
+
+                                                            <button
+                                                                type="button"
+                                                                className="communication-undo-mark"
+                                                                onClick={() => (
+                                                                    handleUnmarkCommunication(
+                                                                        guestItem,
+                                                                        'convite_inicial',
+                                                                    )
+                                                                )}
+                                                            >
+                                                                Desmarcar
+                                                            </button>
                                                         </>
                                                     ) : (
                                                         <>
