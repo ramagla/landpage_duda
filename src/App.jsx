@@ -1994,7 +1994,7 @@ function AdminPage() {
                             </label>
                             <label>
                                 <span>Idade</span>
-                                <input name="age" defaultValue={editing?.age || ''} type="number" min="0" max="120" placeholder="Idade" required />
+                                <input name="age" defaultValue={editing?.age || ''} type="number" min="0" max="120" placeholder="Opcional" />
                             </label>
                             <label>
                                 <span>WhatsApp</span>

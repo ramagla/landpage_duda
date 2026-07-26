@@ -396,7 +396,7 @@ async function saveGuest(body) {
     const storedWhatsapp = whatsapp || guestPhonePlaceholder(inviteCode)
 
     if (name.length < 2) return { error: 'Informe o nome do convidado.' }
-    if (age === null || age < 0 || age > 120) return { error: 'Informe a idade do convidado.' }
+    if (age !== null && (age < 0 || age > 120)) return { error: 'Idade do convidado invalida.' }
     if (whatsapp && !/^\d{10,11}$/.test(whatsapp)) return { error: 'WhatsApp invalido. Use DDD + numero.' }
     if (presetValidation.error) return { error: presetValidation.error }
 

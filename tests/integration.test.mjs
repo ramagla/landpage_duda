@@ -963,7 +963,7 @@ test(
         )
 
         await t.test(
-            'admin exige idade ao cadastrar convidado',
+            'admin permite cadastrar convidado sem idade',
             async () => {
                 const {
                     response,
@@ -990,7 +990,7 @@ test(
 
                 assert.equal(
                     response.status,
-                    400,
+                    200,
                 )
             },
         )
