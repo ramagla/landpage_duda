@@ -12,6 +12,33 @@ const WAZE_URL = `https://waze.com/ul?q=${encodeURIComponent(EVENT_ADDRESS)}&nav
 const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
+
+function getYoutubePlayerUrl(autoplay = false) {
+    const params = new URLSearchParams({
+        autoplay: autoplay ? '1' : '0',
+        loop: '1',
+        playlist: YOUTUBE_VIDEO_ID,
+        controls: '0',
+        playsinline: '1',
+        enablejsapi: '1',
+        rel: '0',
+    })
+
+    if (
+        typeof window !== 'undefined'
+        && window.location?.origin
+    ) {
+        params.set(
+            'origin',
+            window.location.origin,
+        )
+    }
+
+    return (
+        `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`
+        + `?${params.toString()}`
+    )
+}
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
 const PIX_COPY_PASTE = '00020101021226330014br.gov.bcb.pix0111567659868985204000053039865802BR5921MARIA EDUARDA ALMEIDA6015ITAQUAQUECETUBA62100506DUDA166304E334'
@@ -396,7 +423,21 @@ function MusicPlayer({ enabled }) {
 
     useEffect(() => {
         window.__dudaMusicPlay = () => {
-            sendCommand('playVideo')
+            const iframe =
+                iframeRef.current
+
+            if (!iframe) return
+
+            /*
+             * O mobile e mais restritivo com comandos enviados
+             * depois do gesto do usuario.
+             *
+             * Por isso a navegacao para autoplay=1 acontece
+             * diretamente durante o toque no selo.
+             */
+            iframe.src =
+                getYoutubePlayerUrl(true)
+
             setPlaying(true)
         }
 
@@ -435,7 +476,7 @@ function MusicPlayer({ enabled }) {
                 ref={iframeRef}
                 className="music-player__frame"
                 title="Música do convite da Duda"
-                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=${enabled ? 1 : 0}&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&playsinline=1&enablejsapi=1&rel=0`}
+                src={getYoutubePlayerUrl(enabled)}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 onLoad={handlePlayerLoad}
             />
@@ -2735,6 +2776,7 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     const [whatsappValue, setWhatsappValue] = useState('')
     const [message, setMessage] = useState('')
     const [validatedData, setValidatedData] = useState(null)
+    const [sealBroken, setSealBroken] = useState(false)
 
     useEffect(() => {
         return () => {
@@ -2750,32 +2792,39 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
         if (stage !== 'intro') return
 
         /*
-         * Inicia a musica no MESMO toque que rompe o selo.
-         * Isso preserva a permissao de audio do navegador mobile.
+         * A musica e iniciada exatamente no gesto que rompe o selo.
          */
         window.__dudaMusicPlay?.()
         onMusicStart?.()
 
         setStage('opening')
 
-        const reducedMotion = window
-            .matchMedia?.('(prefers-reduced-motion: reduce)')
-            .matches
+        /*
+         * O PNG rompido passa a ser controlado pelo React.
+         * Assim nao dependemos do navegador mobile executar
+         * corretamente a troca de opacidade entre duas animacoes CSS.
+         */
+        window.setTimeout(
+            () => setSealBroken(true),
+            180,
+        )
 
-        const revealDelay = reducedMotion
-            ? 120
-            : 4200
-
+        /*
+         * Mantemos tempo suficiente para a pessoa enxergar
+         * o selo realmente rompido antes de abrir o envelope.
+         *
+         * Nao encurtamos mais para 120ms no celular.
+         */
         openingTimerRef.current = window.setTimeout(
             () => {
                 setStage('card-visible')
 
                 window.setTimeout(
                     () => inputRef.current?.focus(),
-                    reducedMotion ? 0 : 120,
+                    120,
                 )
             },
-            revealDelay,
+            4200,
         )
     }
 
@@ -2895,12 +2944,13 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                         aria-label="Romper o selo e abrir o convite"
                     >
                         <img
-                            className="envelope__seal-img envelope__seal-img--intact"
+                            className={`envelope__seal-img envelope__seal-img--intact${sealBroken ? ' envelope__seal-img--hidden-by-state' : ''}`}
                             src="/selo.png"
                             alt=""
                         />
+
                         <img
-                            className="envelope__seal-img envelope__seal-img--broken"
+                            className={`envelope__seal-img envelope__seal-img--broken${sealBroken ? ' envelope__seal-img--visible-by-state' : ''}`}
                             src="/selo-rompido.png"
                             alt=""
                         />

@@ -6417,3 +6417,120 @@ html {
 }
 
 /* === FIX FINAL QUEBRA DO SELO - END === */
+
+
+/* ======================================================================
+   SELO MOBILE V3 - ESTADO CONTROLADO PELO REACT
+   ====================================================================== */
+
+/*
+ * Essas classes têm prioridade sobre todas as animações antigas.
+ * A troca de imagem deixa de depender de timing CSS no celular.
+ */
+
+.envelope__seal-img--hidden-by-state {
+    opacity: 0 !important;
+
+    animation: none !important;
+
+    transform:
+        translate(-50%, -50%)
+        scale(.72) !important;
+
+    transition:
+        opacity 180ms ease,
+        transform 220ms ease !important;
+}
+
+
+.envelope__seal-img--visible-by-state {
+    display: block !important;
+
+    opacity: 1 !important;
+
+    animation:
+        dudaSealBrokenMobileV3
+        1050ms
+        cubic-bezier(.18,.82,.18,1)
+        forwards !important;
+}
+
+
+@keyframes dudaSealBrokenMobileV3 {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(.72);
+    }
+
+    18% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(1.04);
+    }
+
+    68% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(1.08);
+    }
+
+    100% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-5px)
+            scale(1.04);
+    }
+}
+
+
+/*
+ * Mesmo em celulares configurados para reduzir animacoes,
+ * mostramos claramente a troca do selo intacto pelo rompido.
+ */
+@media (prefers-reduced-motion: reduce) {
+
+    .envelope__seal-img--hidden-by-state {
+        opacity: 0 !important;
+        animation: none !important;
+    }
+
+    .envelope__seal-img--visible-by-state {
+        opacity: 1 !important;
+        animation: none !important;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-5px)
+            scale(1.04) !important;
+    }
+}
+
+
+/*
+ * No mobile aumentamos ligeiramente o tempo em que o selo
+ * rompido permanece perceptivel.
+ */
+@media (max-width: 520px) {
+
+    .envelope__seal-img--visible-by-state {
+        z-index: 50 !important;
+
+        width: 112px !important;
+        height: 112px !important;
+    }
+}
+
+/* === SELO MOBILE V3 - END === */
