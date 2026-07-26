@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+
 import { verifyAdminRequest } from './_admin-session.js'
 import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
 
@@ -6,6 +8,12 @@ async function ensureCompanionAttendanceColumn() {
         if (!String(error?.message || '').toLowerCase().includes('duplicate column')) throw error
     })
 }
+function generateInviteToken() {
+    return randomBytes(32)
+        .toString('hex')
+}
+
+
 function parsePresetCompanions(value, maxCompanions) {
     if (Array.isArray(value)) {
         const companions = value.map((item, index) => ({
@@ -383,10 +391,12 @@ async function saveGuest(body) {
     const whatsapp = normalizePhone(body.whatsapp)
     const maxCompanions = Math.max(Number.parseInt(String(body.maxCompanions || 0), 10) || 0, 0)
     const inviteCode = slugify(body.inviteCode || name)
+    const inviteToken = generateInviteToken()
     const presetValidation = parsePresetCompanions(body.presetCompanions, maxCompanions)
     const storedWhatsapp = whatsapp || guestPhonePlaceholder(inviteCode)
 
     if (name.length < 2) return { error: 'Informe o nome do convidado.' }
+    if (age === null || age < 0 || age > 120) return { error: 'Informe a idade do convidado.' }
     if (whatsapp && !/^\d{10,11}$/.test(whatsapp)) return { error: 'WhatsApp invalido. Use DDD + numero.' }
     if (presetValidation.error) return { error: presetValidation.error }
 
@@ -396,23 +406,63 @@ async function saveGuest(body) {
         await getClient().execute({
             sql: `
                 UPDATE invited_guests
-                SET guest_name = ?, invite_code = ?, age = ?, whatsapp_digits = ?, max_companions = ?
+                SET
+                    guest_name = ?,
+                    invite_code = ?,
+                    invite_token = CASE
+                        WHEN invite_token IS NULL
+                          OR invite_token = ''
+                        THEN ?
+                        ELSE invite_token
+                    END,
+                    age = ?,
+                    whatsapp_digits = ?,
+                    max_companions = ?
                 WHERE id = ?
             `,
-            args: [name, inviteCode, age, storedWhatsapp, maxCompanions, id],
+            args: [
+                name,
+                inviteCode,
+                inviteToken,
+                age,
+                storedWhatsapp,
+                maxCompanions,
+                id,
+            ],
         })
     } else {
         await getClient().execute({
             sql: `
-                INSERT INTO invited_guests (guest_name, invite_code, age, whatsapp_digits, max_companions)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO invited_guests (
+                    guest_name,
+                    invite_code,
+                    invite_token,
+                    age,
+                    whatsapp_digits,
+                    max_companions
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+
                 ON CONFLICT(invite_code) DO UPDATE SET
                     guest_name = excluded.guest_name,
+                    invite_token = CASE
+                        WHEN invited_guests.invite_token IS NULL
+                          OR invited_guests.invite_token = ''
+                        THEN excluded.invite_token
+                        ELSE invited_guests.invite_token
+                    END,
                     age = excluded.age,
                     whatsapp_digits = excluded.whatsapp_digits,
                     max_companions = excluded.max_companions
             `,
-            args: [name, inviteCode, age, storedWhatsapp, maxCompanions],
+            args: [
+                name,
+                inviteCode,
+                inviteToken,
+                age,
+                storedWhatsapp,
+                maxCompanions,
+            ],
         })
         guestId = await findGuestIdByInviteCode(inviteCode)
     }

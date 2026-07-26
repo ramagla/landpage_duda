@@ -963,6 +963,96 @@ test(
         )
 
         await t.test(
+            'admin exige idade ao cadastrar convidado',
+            async () => {
+                const {
+                    response,
+                } = await requestJson(
+                    '/api/admin',
+                    {
+                        ip: '10.0.0.44',
+
+                        headers: {
+                            cookie: adminCookie,
+                        },
+
+                        body: {
+                            action: 'saveGuest',
+                            guestName: 'Convidado Sem Idade',
+                            inviteCode: 'convidado-sem-idade',
+                            age: '',
+                            whatsapp: '11988886666',
+                            maxCompanions: 0,
+                            presetCompanions: [],
+                        },
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    400,
+                )
+            },
+        )
+
+
+        await t.test(
+            'admin cria convidado com token seguro',
+            async () => {
+                const phone = '11988887777'
+
+                const {
+                    response,
+                } = await requestJson(
+                    '/api/admin',
+                    {
+                        ip: '10.0.0.45',
+
+                        headers: {
+                            cookie: adminCookie,
+                        },
+
+                        body: {
+                            action: 'saveGuest',
+                            guestName: 'Convidado Token Teste',
+                            inviteCode: 'convidado-token-teste',
+                            age: 30,
+                            whatsapp: phone,
+                            maxCompanions: 0,
+                            presetCompanions: [],
+                        },
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    200,
+                )
+
+                const result = await db.execute({
+                    sql: `
+                        SELECT invite_token
+                        FROM invited_guests
+                        WHERE whatsapp_digits = ?
+                        LIMIT 1
+                    `,
+                    args: [phone],
+                })
+
+                const token = String(
+                    result.rows[0]?.invite_token
+                    || ''
+                )
+
+                assert.match(
+                    token,
+                    /^[a-f0-9]{64}$/,
+                )
+            },
+        )
+
+
+        await t.test(
             'rate limit bloqueia excesso de login',
             async () => {
                 /*
