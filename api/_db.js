@@ -349,6 +349,83 @@ export async function ensureSchema() {
                 CREATE INDEX IF NOT EXISTS party_expense_payments_installment_index
                 ON party_expense_payments (installment_id)
             `)
+
+            /*
+             * Checklist geral da festa.
+             */
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    category TEXT,
+                    responsible TEXT,
+                    priority TEXT NOT NULL DEFAULT 'media'
+                        CHECK (
+                            priority IN (
+                                'baixa',
+                                'media',
+                                'alta'
+                            )
+                        ),
+                    due_date TEXT,
+                    completed INTEGER NOT NULL DEFAULT 0,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_tasks_due_date_index
+                ON party_tasks (due_date)
+            `)
+
+            /*
+             * Cronograma do dia da festa.
+             */
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_timeline (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_time TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    responsible TEXT,
+                    location TEXT,
+                    notes TEXT,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_timeline_time_index
+                ON party_timeline (event_time, sort_order)
+            `)
+
+            /*
+             * Lista de compras.
+             */
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_shopping_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_name TEXT NOT NULL,
+                    category TEXT,
+                    quantity REAL NOT NULL DEFAULT 1,
+                    unit TEXT,
+                    unit_price_cents INTEGER NOT NULL DEFAULT 0,
+                    store TEXT,
+                    responsible TEXT,
+                    purchased INTEGER NOT NULL DEFAULT 0,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_shopping_items_status_index
+                ON party_shopping_items (purchased)
+            `)
         })()
     }
 

@@ -75,6 +75,24 @@ function parseInteger(
 }
 
 
+function parseDecimal(
+    value,
+    fallback = 0,
+) {
+    const normalized =
+        String(value ?? '')
+            .trim()
+            .replace(',', '.')
+
+    const parsed =
+        Number(normalized)
+
+    return Number.isFinite(parsed)
+        ? parsed
+        : fallback
+}
+
+
 function getTodayIso() {
     const parts =
         new Intl.DateTimeFormat(
@@ -1167,10 +1185,277 @@ async function getSummary() {
             }
         )
 
+    const tasksResult =
+        await db.execute(`
+            SELECT
+                id,
+                title,
+                category,
+                responsible,
+                priority,
+                due_date,
+                completed,
+                notes
+            FROM party_tasks
+            ORDER BY
+                completed,
+                CASE priority
+                    WHEN 'alta' THEN 1
+                    WHEN 'media' THEN 2
+                    ELSE 3
+                END,
+                CASE
+                    WHEN due_date IS NULL
+                      OR due_date = ''
+                    THEN 1
+                    ELSE 0
+                END,
+                due_date,
+                id DESC
+        `)
+
+    const timelineResult =
+        await db.execute(`
+            SELECT
+                id,
+                event_time,
+                title,
+                responsible,
+                location,
+                notes,
+                sort_order
+            FROM party_timeline
+            ORDER BY
+                event_time,
+                sort_order,
+                id
+        `)
+
+    const shoppingResult =
+        await db.execute(`
+            SELECT
+                id,
+                item_name,
+                category,
+                quantity,
+                unit,
+                unit_price_cents,
+                store,
+                responsible,
+                purchased,
+                notes
+            FROM party_shopping_items
+            ORDER BY
+                purchased,
+                category,
+                item_name
+        `)
+
+    const tasks =
+        tasksResult.rows.map(
+            (row) => ({
+                id:
+                    Number(row.id),
+
+                title:
+                    row.title,
+
+                category:
+                    row.category || '',
+
+                responsible:
+                    row.responsible || '',
+
+                priority:
+                    row.priority || 'media',
+
+                dueDate:
+                    row.due_date || '',
+
+                completed:
+                    Number(
+                        row.completed
+                        || 0
+                    ) === 1,
+
+                notes:
+                    row.notes || '',
+            })
+        )
+
+    const timeline =
+        timelineResult.rows.map(
+            (row) => ({
+                id:
+                    Number(row.id),
+
+                eventTime:
+                    row.event_time
+                    || '',
+
+                title:
+                    row.title,
+
+                responsible:
+                    row.responsible
+                    || '',
+
+                location:
+                    row.location
+                    || '',
+
+                notes:
+                    row.notes
+                    || '',
+
+                sortOrder:
+                    Number(
+                        row.sort_order
+                        || 0
+                    ),
+            })
+        )
+
+    const shoppingItems =
+        shoppingResult.rows.map(
+            (row) => {
+                const quantity =
+                    Number(
+                        row.quantity
+                        || 0
+                    )
+
+                const unitPrice =
+                    Number(
+                        row.unit_price_cents
+                        || 0
+                    )
+
+                return {
+                    id:
+                        Number(row.id),
+
+                    itemName:
+                        row.item_name,
+
+                    category:
+                        row.category
+                        || '',
+
+                    quantity,
+
+                    unit:
+                        row.unit || '',
+
+                    unitPriceCents:
+                        unitPrice,
+
+                    totalPriceCents:
+                        Math.round(
+                            quantity
+                            * unitPrice
+                        ),
+
+                    store:
+                        row.store || '',
+
+                    responsible:
+                        row.responsible
+                        || '',
+
+                    purchased:
+                        Number(
+                            row.purchased
+                            || 0
+                        ) === 1,
+
+                    notes:
+                        row.notes || '',
+                }
+            }
+        )
+
+    const management = {
+        tasksTotal:
+            tasks.length,
+
+        tasksCompleted:
+            tasks.filter(
+                (task) => (
+                    task.completed
+                )
+            ).length,
+
+        tasksPending:
+            tasks.filter(
+                (task) => (
+                    !task.completed
+                )
+            ).length,
+
+        tasksOverdue:
+            tasks.filter(
+                (task) => (
+                    !task.completed
+                    && task.dueDate
+                    && task.dueDate
+                        < today
+                )
+            ).length,
+
+        timelineTotal:
+            timeline.length,
+
+        shoppingTotal:
+            shoppingItems.length,
+
+        shoppingPurchased:
+            shoppingItems.filter(
+                (item) => (
+                    item.purchased
+                )
+            ).length,
+
+        shoppingPending:
+            shoppingItems.filter(
+                (item) => (
+                    !item.purchased
+                )
+            ).length,
+
+        shoppingEstimatedCents:
+            shoppingItems.reduce(
+                (sum, item) => (
+                    sum
+                    + item.totalPriceCents
+                ),
+                0,
+            ),
+
+        shoppingPurchasedCents:
+            shoppingItems
+                .filter(
+                    (item) => (
+                        item.purchased
+                    )
+                )
+                .reduce(
+                    (sum, item) => (
+                        sum
+                        + item.totalPriceCents
+                    ),
+                    0,
+                ),
+    }
+
     return {
         totals,
         expenses,
         suppliers,
+        tasks,
+        timeline,
+        shoppingItems,
+        management,
 
         categories:
             [...categoryMap.values()]
@@ -2077,6 +2362,515 @@ async function deletePayment(body) {
 }
 
 
+async function saveTask(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    const title =
+        cleanText(
+            body.title
+        )
+
+    if (title.length < 2) {
+        return {
+            error:
+                'Informe a tarefa.',
+        }
+    }
+
+    const allowedPriorities =
+        new Set([
+            'baixa',
+            'media',
+            'alta',
+        ])
+
+    const priority =
+        allowedPriorities.has(
+            cleanText(
+                body.priority
+            )
+        )
+            ? cleanText(
+                body.priority
+            )
+            : 'media'
+
+    const values = [
+        title,
+
+        cleanText(
+            body.category
+        ),
+
+        cleanText(
+            body.responsible
+        ),
+
+        priority,
+
+        cleanText(
+            body.dueDate
+        ),
+
+        cleanText(
+            body.notes
+        ),
+    ]
+
+    const db = getClient()
+
+    if (id > 0) {
+        await db.execute({
+            sql: `
+                UPDATE party_tasks
+                SET
+                    title = ?,
+                    category = ?,
+                    responsible = ?,
+                    priority = ?,
+                    due_date = ?,
+                    notes = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                ...values,
+                id,
+            ],
+        })
+
+        return {
+            message:
+                'Tarefa atualizada.',
+        }
+    }
+
+    await db.execute({
+        sql: `
+            INSERT INTO party_tasks (
+                title,
+                category,
+                responsible,
+                priority,
+                due_date,
+                notes
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        args: values,
+    })
+
+    return {
+        message:
+            'Tarefa cadastrada.',
+    }
+}
+
+
+async function toggleTask(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Tarefa inválida.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            UPDATE party_tasks
+            SET
+                completed = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        `,
+        args: [
+            body.completed
+                ? 1
+                : 0,
+            id,
+        ],
+    })
+
+    return {
+        message:
+            body.completed
+                ? 'Tarefa concluída.'
+                : 'Tarefa reaberta.',
+    }
+}
+
+
+async function deleteTask(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Tarefa inválida.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM party_tasks
+            WHERE id = ?
+        `,
+        args: [id],
+    })
+
+    return {
+        message:
+            'Tarefa excluída.',
+    }
+}
+
+
+async function saveTimelineItem(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    const eventTime =
+        cleanText(
+            body.eventTime
+        )
+
+    const title =
+        cleanText(
+            body.title
+        )
+
+    if (!eventTime) {
+        return {
+            error:
+                'Informe o horário.',
+        }
+    }
+
+    if (title.length < 2) {
+        return {
+            error:
+                'Informe a atividade do cronograma.',
+        }
+    }
+
+    const values = [
+        eventTime,
+        title,
+
+        cleanText(
+            body.responsible
+        ),
+
+        cleanText(
+            body.location
+        ),
+
+        cleanText(
+            body.notes
+        ),
+
+        parseInteger(
+            body.sortOrder,
+            0,
+        ),
+    ]
+
+    const db = getClient()
+
+    if (id > 0) {
+        await db.execute({
+            sql: `
+                UPDATE party_timeline
+                SET
+                    event_time = ?,
+                    title = ?,
+                    responsible = ?,
+                    location = ?,
+                    notes = ?,
+                    sort_order = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                ...values,
+                id,
+            ],
+        })
+
+        return {
+            message:
+                'Item do cronograma atualizado.',
+        }
+    }
+
+    await db.execute({
+        sql: `
+            INSERT INTO party_timeline (
+                event_time,
+                title,
+                responsible,
+                location,
+                notes,
+                sort_order
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        args: values,
+    })
+
+    return {
+        message:
+            'Item adicionado ao cronograma.',
+    }
+}
+
+
+async function deleteTimelineItem(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Item do cronograma inválido.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM party_timeline
+            WHERE id = ?
+        `,
+        args: [id],
+    })
+
+    return {
+        message:
+            'Item removido do cronograma.',
+    }
+}
+
+
+async function saveShoppingItem(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    const itemName =
+        cleanText(
+            body.itemName
+        )
+
+    if (itemName.length < 2) {
+        return {
+            error:
+                'Informe o item da compra.',
+        }
+    }
+
+    const quantity =
+        parseDecimal(
+            body.quantity,
+            1,
+        )
+
+    if (
+        !Number.isFinite(quantity)
+        || quantity <= 0
+    ) {
+        return {
+            error:
+                'Informe uma quantidade válida.',
+        }
+    }
+
+    const unitPriceCents =
+        parseMoneyToCents(
+            body.unitPrice,
+            {
+                allowEmpty: true,
+            },
+        )
+
+    if (unitPriceCents === null) {
+        return {
+            error:
+                'Informe um preço unitário válido.',
+        }
+    }
+
+    const values = [
+        itemName,
+
+        cleanText(
+            body.category
+        ),
+
+        quantity,
+
+        cleanText(
+            body.unit
+        ),
+
+        unitPriceCents,
+
+        cleanText(
+            body.store
+        ),
+
+        cleanText(
+            body.responsible
+        ),
+
+        cleanText(
+            body.notes
+        ),
+    ]
+
+    const db = getClient()
+
+    if (id > 0) {
+        await db.execute({
+            sql: `
+                UPDATE party_shopping_items
+                SET
+                    item_name = ?,
+                    category = ?,
+                    quantity = ?,
+                    unit = ?,
+                    unit_price_cents = ?,
+                    store = ?,
+                    responsible = ?,
+                    notes = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                ...values,
+                id,
+            ],
+        })
+
+        return {
+            message:
+                'Item de compra atualizado.',
+        }
+    }
+
+    await db.execute({
+        sql: `
+            INSERT INTO party_shopping_items (
+                item_name,
+                category,
+                quantity,
+                unit,
+                unit_price_cents,
+                store,
+                responsible,
+                notes
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: values,
+    })
+
+    return {
+        message:
+            'Item adicionado à lista de compras.',
+    }
+}
+
+
+async function toggleShoppingItem(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Item de compra inválido.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            UPDATE party_shopping_items
+            SET
+                purchased = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        `,
+        args: [
+            body.purchased
+                ? 1
+                : 0,
+            id,
+        ],
+    })
+
+    return {
+        message:
+            body.purchased
+                ? 'Item marcado como comprado.'
+                : 'Item voltou para pendente.',
+    }
+}
+
+
+async function deleteShoppingItem(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Item de compra inválido.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM party_shopping_items
+            WHERE id = ?
+        `,
+        args: [id],
+    })
+
+    return {
+        message:
+            'Item removido da lista de compras.',
+    }
+}
+
+
 export default async function handler(
     request,
     response,
@@ -2183,6 +2977,62 @@ export default async function handler(
             case 'deletePayment':
                 result =
                     await deletePayment(
+                        body
+                    )
+                break
+
+            case 'saveTask':
+                result =
+                    await saveTask(
+                        body
+                    )
+                break
+
+            case 'toggleTask':
+                result =
+                    await toggleTask(
+                        body
+                    )
+                break
+
+            case 'deleteTask':
+                result =
+                    await deleteTask(
+                        body
+                    )
+                break
+
+            case 'saveTimelineItem':
+                result =
+                    await saveTimelineItem(
+                        body
+                    )
+                break
+
+            case 'deleteTimelineItem':
+                result =
+                    await deleteTimelineItem(
+                        body
+                    )
+                break
+
+            case 'saveShoppingItem':
+                result =
+                    await saveShoppingItem(
+                        body
+                    )
+                break
+
+            case 'toggleShoppingItem':
+                result =
+                    await toggleShoppingItem(
+                        body
+                    )
+                break
+
+            case 'deleteShoppingItem':
+                result =
+                    await deleteShoppingItem(
                         body
                     )
                 break

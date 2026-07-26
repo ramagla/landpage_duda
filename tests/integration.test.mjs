@@ -1453,6 +1453,230 @@ test(
 
 
         await t.test(
+            'financeiro gerencia checklist cronograma e lista de compras',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.55',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveTask',
+
+                                title:
+                                    'Confirmar quantidade final do buffet',
+
+                                category:
+                                    'Buffet',
+
+                                responsible:
+                                    'Responsavel Teste',
+
+                                priority:
+                                    'alta',
+
+                                dueDate:
+                                    '2026-10-20',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const task =
+                    result.data.tasks
+                        .find(
+                            (item) => (
+                                item.title
+                                === 'Confirmar quantidade final do buffet'
+                            )
+                        )
+
+                assert.ok(
+                    task?.id
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.56',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'toggleTask',
+
+                                id:
+                                    task.id,
+
+                                completed:
+                                    true,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.tasks
+                        .find(
+                            (item) => (
+                                item.id
+                                === task.id
+                            )
+                        )
+                        ?.completed,
+                    true,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.57',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveTimelineItem',
+
+                                eventTime:
+                                    '17:00',
+
+                                title:
+                                    'Inicio da festa',
+
+                                responsible:
+                                    'Equipe',
+
+                                location:
+                                    'Quintal do Ibiza',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.ok(
+                    result.data.timeline
+                        .some(
+                            (item) => (
+                                item.title
+                                === 'Inicio da festa'
+                            )
+                        )
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.58',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveShoppingItem',
+
+                                itemName:
+                                    'Gelo',
+
+                                category:
+                                    'Bebidas',
+
+                                quantity:
+                                    '10',
+
+                                unit:
+                                    'sacos',
+
+                                unitPrice:
+                                    '15,50',
+
+                                store:
+                                    'Mercado Teste',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const shopping =
+                    result.data.shoppingItems
+                        .find(
+                            (item) => (
+                                item.itemName
+                                === 'Gelo'
+                            )
+                        )
+
+                assert.ok(
+                    shopping?.id
+                )
+
+                assert.equal(
+                    shopping.totalPriceCents,
+                    15_500,
+                )
+
+                assert.equal(
+                    result.data.management
+                        .tasksCompleted,
+                    1,
+                )
+
+                assert.equal(
+                    result.data.management
+                        .timelineTotal,
+                    1,
+                )
+
+                assert.equal(
+                    result.data.management
+                        .shoppingTotal,
+                    1,
+                )
+            },
+        )
+
+
+        await t.test(
             'rate limit bloqueia excesso de login',
             async () => {
                 /*

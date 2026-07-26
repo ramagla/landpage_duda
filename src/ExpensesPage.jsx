@@ -187,6 +187,31 @@ export default function ExpensesPage() {
         setSupplierFilter,
     ] = useState('todos')
 
+    const [
+        editingTask,
+        setEditingTask,
+    ] = useState(null)
+
+    const [
+        editingTimeline,
+        setEditingTimeline,
+    ] = useState(null)
+
+    const [
+        editingShopping,
+        setEditingShopping,
+    ] = useState(null)
+
+    const [
+        taskFilter,
+        setTaskFilter,
+    ] = useState('pendentes')
+
+    const [
+        shoppingFilter,
+        setShoppingFilter,
+    ] = useState('pendentes')
+
 
     async function readJson(response) {
         const body =
@@ -884,6 +909,302 @@ export default function ExpensesPage() {
     }
 
 
+    async function handleSaveTask(
+        event,
+    ) {
+        event.preventDefault()
+
+        const formElement =
+            event.currentTarget
+
+        const form =
+            new FormData(
+                formElement
+            )
+
+        try {
+            await loadExpenses({
+                action:
+                    'saveTask',
+
+                id:
+                    form.get('id'),
+
+                title:
+                    form.get('title'),
+
+                category:
+                    form.get(
+                        'category'
+                    ),
+
+                responsible:
+                    form.get(
+                        'responsible'
+                    ),
+
+                priority:
+                    form.get(
+                        'priority'
+                    ),
+
+                dueDate:
+                    form.get(
+                        'dueDate'
+                    ),
+
+                notes:
+                    form.get(
+                        'notes'
+                    ),
+            })
+
+            setEditingTask(null)
+
+            formElement.reset()
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function toggleTask(task) {
+        try {
+            await loadExpenses({
+                action:
+                    'toggleTask',
+
+                id:
+                    task.id,
+
+                completed:
+                    !task.completed,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function deleteTask(task) {
+        if (
+            !window.confirm(
+                `Excluir a tarefa "${task.title}"?`
+            )
+        ) {
+            return
+        }
+
+        try {
+            await loadExpenses({
+                action:
+                    'deleteTask',
+
+                id:
+                    task.id,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function handleSaveTimeline(
+        event,
+    ) {
+        event.preventDefault()
+
+        const formElement =
+            event.currentTarget
+
+        const form =
+            new FormData(
+                formElement
+            )
+
+        try {
+            await loadExpenses({
+                action:
+                    'saveTimelineItem',
+
+                id:
+                    form.get('id'),
+
+                eventTime:
+                    form.get(
+                        'eventTime'
+                    ),
+
+                title:
+                    form.get('title'),
+
+                responsible:
+                    form.get(
+                        'responsible'
+                    ),
+
+                location:
+                    form.get(
+                        'location'
+                    ),
+
+                sortOrder:
+                    form.get(
+                        'sortOrder'
+                    ),
+
+                notes:
+                    form.get(
+                        'notes'
+                    ),
+            })
+
+            setEditingTimeline(null)
+
+            formElement.reset()
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function deleteTimelineItem(
+        item,
+    ) {
+        if (
+            !window.confirm(
+                `Excluir "${item.title}" do cronograma?`
+            )
+        ) {
+            return
+        }
+
+        try {
+            await loadExpenses({
+                action:
+                    'deleteTimelineItem',
+
+                id:
+                    item.id,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function handleSaveShopping(
+        event,
+    ) {
+        event.preventDefault()
+
+        const formElement =
+            event.currentTarget
+
+        const form =
+            new FormData(
+                formElement
+            )
+
+        try {
+            await loadExpenses({
+                action:
+                    'saveShoppingItem',
+
+                id:
+                    form.get('id'),
+
+                itemName:
+                    form.get(
+                        'itemName'
+                    ),
+
+                category:
+                    form.get(
+                        'category'
+                    ),
+
+                quantity:
+                    form.get(
+                        'quantity'
+                    ),
+
+                unit:
+                    form.get('unit'),
+
+                unitPrice:
+                    form.get(
+                        'unitPrice'
+                    ),
+
+                store:
+                    form.get('store'),
+
+                responsible:
+                    form.get(
+                        'responsible'
+                    ),
+
+                notes:
+                    form.get(
+                        'notes'
+                    ),
+            })
+
+            setEditingShopping(null)
+
+            formElement.reset()
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function toggleShoppingItem(
+        item,
+    ) {
+        try {
+            await loadExpenses({
+                action:
+                    'toggleShoppingItem',
+
+                id:
+                    item.id,
+
+                purchased:
+                    !item.purchased,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function deleteShoppingItem(
+        item,
+    ) {
+        if (
+            !window.confirm(
+                `Excluir "${item.itemName}" da lista de compras?`
+            )
+        ) {
+            return
+        }
+
+        try {
+            await loadExpenses({
+                action:
+                    'deleteShoppingItem',
+
+                id:
+                    item.id,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
     if (!data) {
         return (
             <main className="finance-shell finance-login-shell">
@@ -1050,6 +1371,54 @@ export default function ExpensesPage() {
                     )}
                 >
                     Fornecedores
+                </button>
+
+                <button
+                    type="button"
+                    className={
+                        activeTab === 'checklist'
+                            ? 'finance-tab finance-tab--active'
+                            : 'finance-tab'
+                    }
+                    onClick={() => (
+                        setActiveTab(
+                            'checklist'
+                        )
+                    )}
+                >
+                    Checklist
+                </button>
+
+                <button
+                    type="button"
+                    className={
+                        activeTab === 'timeline'
+                            ? 'finance-tab finance-tab--active'
+                            : 'finance-tab'
+                    }
+                    onClick={() => (
+                        setActiveTab(
+                            'timeline'
+                        )
+                    )}
+                >
+                    Cronograma
+                </button>
+
+                <button
+                    type="button"
+                    className={
+                        activeTab === 'shopping'
+                            ? 'finance-tab finance-tab--active'
+                            : 'finance-tab'
+                    }
+                    onClick={() => (
+                        setActiveTab(
+                            'shopping'
+                        )
+                    )}
+                >
+                    Compras
                 </button>
             </nav>
 
@@ -2662,6 +3031,1051 @@ export default function ExpensesPage() {
                                 )}
                             </div>
                         )}
+                    </section>
+                </>
+            ) : null}
+
+
+            {activeTab === 'checklist' ? (
+                <>
+                    <section className="finance-management-summary">
+                        <article>
+                            <span>Total</span>
+                            <strong>
+                                {data.management?.tasksTotal || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-management-card--success">
+                            <span>Concluídas</span>
+                            <strong>
+                                {data.management?.tasksCompleted || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-management-card--warning">
+                            <span>Pendentes</span>
+                            <strong>
+                                {data.management?.tasksPending || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-management-card--danger">
+                            <span>Vencidas</span>
+                            <strong>
+                                {data.management?.tasksOverdue || 0}
+                            </strong>
+                        </article>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Organização
+                                </p>
+
+                                <h2>
+                                    {editingTask
+                                        ? 'Editar tarefa'
+                                        : 'Nova tarefa'}
+                                </h2>
+
+                                <p>
+                                    Controle tudo que precisa ser resolvido
+                                    antes da festa.
+                                </p>
+                            </div>
+
+                            {editingTask ? (
+                                <button
+                                    type="button"
+                                    className="finance-secondary-button"
+                                    onClick={() => (
+                                        setEditingTask(
+                                            null
+                                        )
+                                    )}
+                                >
+                                    Cancelar edição
+                                </button>
+                            ) : null}
+                        </div>
+
+                        <form
+                            key={
+                                editingTask?.id
+                                || 'new-task'
+                            }
+                            className="party-management-form"
+                            onSubmit={
+                                handleSaveTask
+                            }
+                        >
+                            <input
+                                type="hidden"
+                                name="id"
+                                value={
+                                    editingTask?.id
+                                    || ''
+                                }
+                            />
+
+                            <label className="finance-field party-field--wide">
+                                <span>Tarefa</span>
+
+                                <input
+                                    name="title"
+                                    defaultValue={
+                                        editingTask?.title
+                                        || ''
+                                    }
+                                    placeholder="Ex.: Confirmar quantidade final do buffet"
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Categoria</span>
+
+                                <input
+                                    name="category"
+                                    defaultValue={
+                                        editingTask?.category
+                                        || ''
+                                    }
+                                    placeholder="Buffet, decoração..."
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Responsável</span>
+
+                                <input
+                                    name="responsible"
+                                    defaultValue={
+                                        editingTask?.responsible
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Prioridade</span>
+
+                                <select
+                                    name="priority"
+                                    defaultValue={
+                                        editingTask?.priority
+                                        || 'media'
+                                    }
+                                >
+                                    <option value="baixa">
+                                        Baixa
+                                    </option>
+
+                                    <option value="media">
+                                        Média
+                                    </option>
+
+                                    <option value="alta">
+                                        Alta
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Prazo</span>
+
+                                <input
+                                    name="dueDate"
+                                    type="date"
+                                    defaultValue={
+                                        editingTask?.dueDate
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field party-field--full">
+                                <span>Observações</span>
+
+                                <textarea
+                                    name="notes"
+                                    rows="3"
+                                    defaultValue={
+                                        editingTask?.notes
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <div className="finance-form-actions">
+                                <button
+                                    type="submit"
+                                    className="finance-primary-button"
+                                >
+                                    {editingTask
+                                        ? 'Salvar tarefa'
+                                        : 'Adicionar tarefa'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Checklist
+                                </p>
+
+                                <h2>
+                                    Tarefas da festa
+                                </h2>
+                            </div>
+
+                            <select
+                                className="party-inline-filter"
+                                value={
+                                    taskFilter
+                                }
+                                onChange={
+                                    (event) => (
+                                        setTaskFilter(
+                                            event.target.value
+                                        )
+                                    )
+                                }
+                            >
+                                <option value="pendentes">
+                                    Pendentes
+                                </option>
+
+                                <option value="concluidas">
+                                    Concluídas
+                                </option>
+
+                                <option value="todas">
+                                    Todas
+                                </option>
+                            </select>
+                        </div>
+
+                        <div className="party-task-list">
+                            {(
+                                data.tasks
+                                || []
+                            )
+                                .filter(
+                                    (task) => {
+                                        if (
+                                            taskFilter
+                                            === 'pendentes'
+                                        ) {
+                                            return !task.completed
+                                        }
+
+                                        if (
+                                            taskFilter
+                                            === 'concluidas'
+                                        ) {
+                                            return task.completed
+                                        }
+
+                                        return true
+                                    }
+                                )
+                                .map(
+                                    (task) => (
+                                        <article
+                                            key={task.id}
+                                            className={[
+                                                'party-task-card',
+                                                task.completed
+                                                    ? 'party-task-card--completed'
+                                                    : '',
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' ')}
+                                        >
+                                            <button
+                                                type="button"
+                                                className={[
+                                                    'party-check-button',
+                                                    task.completed
+                                                        ? 'party-check-button--done'
+                                                        : '',
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' ')}
+                                                onClick={() => (
+                                                    toggleTask(
+                                                        task
+                                                    )
+                                                )}
+                                                aria-label={
+                                                    task.completed
+                                                        ? 'Reabrir tarefa'
+                                                        : 'Concluir tarefa'
+                                                }
+                                            >
+                                                {task.completed
+                                                    ? '✓'
+                                                    : ''}
+                                            </button>
+
+                                            <div className="party-task-content">
+                                                <div className="party-task-title">
+                                                    <strong>
+                                                        {task.title}
+                                                    </strong>
+
+                                                    <span className={`party-priority party-priority--${task.priority}`}>
+                                                        {task.priority}
+                                                    </span>
+                                                </div>
+
+                                                <div className="party-task-meta">
+                                                    {task.category ? (
+                                                        <span>
+                                                            {task.category}
+                                                        </span>
+                                                    ) : null}
+
+                                                    {task.responsible ? (
+                                                        <span>
+                                                            Responsável: {task.responsible}
+                                                        </span>
+                                                    ) : null}
+
+                                                    {task.dueDate ? (
+                                                        <span>
+                                                            Prazo: {dateBr(task.dueDate)}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+
+                                                {task.notes ? (
+                                                    <p>
+                                                        {task.notes}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            <div className="party-row-actions">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => (
+                                                        setEditingTask(
+                                                            task
+                                                        )
+                                                    )}
+                                                >
+                                                    Editar
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="party-row-delete"
+                                                    onClick={() => (
+                                                        deleteTask(
+                                                            task
+                                                        )
+                                                    )}
+                                                >
+                                                    Excluir
+                                                </button>
+                                            </div>
+                                        </article>
+                                    )
+                                )}
+
+                            {(
+                                data.tasks
+                                || []
+                            ).length === 0 ? (
+                                <div className="finance-empty">
+                                    Nenhuma tarefa cadastrada.
+                                </div>
+                            ) : null}
+                        </div>
+                    </section>
+                </>
+            ) : null}
+
+
+            {activeTab === 'timeline' ? (
+                <>
+                    <section className="finance-management-summary finance-management-summary--timeline">
+                        <article>
+                            <span>Atividades</span>
+                            <strong>
+                                {data.management?.timelineTotal || 0}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <span>Data da festa</span>
+                            <strong className="party-summary-text">
+                                14/11/2026
+                            </strong>
+                        </article>
+
+                        <article>
+                            <span>Início</span>
+                            <strong className="party-summary-text">
+                                17h
+                            </strong>
+                        </article>
+
+                        <article>
+                            <span>Encerramento</span>
+                            <strong className="party-summary-text">
+                                23h
+                            </strong>
+                        </article>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    14 de novembro de 2026
+                                </p>
+
+                                <h2>
+                                    {editingTimeline
+                                        ? 'Editar atividade'
+                                        : 'Adicionar ao cronograma'}
+                                </h2>
+                            </div>
+
+                            {editingTimeline ? (
+                                <button
+                                    type="button"
+                                    className="finance-secondary-button"
+                                    onClick={() => (
+                                        setEditingTimeline(
+                                            null
+                                        )
+                                    )}
+                                >
+                                    Cancelar edição
+                                </button>
+                            ) : null}
+                        </div>
+
+                        <form
+                            key={
+                                editingTimeline?.id
+                                || 'new-timeline'
+                            }
+                            className="party-management-form party-timeline-form"
+                            onSubmit={
+                                handleSaveTimeline
+                            }
+                        >
+                            <input
+                                type="hidden"
+                                name="id"
+                                value={
+                                    editingTimeline?.id
+                                    || ''
+                                }
+                            />
+
+                            <label className="finance-field">
+                                <span>Horário</span>
+
+                                <input
+                                    name="eventTime"
+                                    type="time"
+                                    defaultValue={
+                                        editingTimeline?.eventTime
+                                        || ''
+                                    }
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field party-field--wide">
+                                <span>Atividade</span>
+
+                                <input
+                                    name="title"
+                                    defaultValue={
+                                        editingTimeline?.title
+                                        || ''
+                                    }
+                                    placeholder="Ex.: Entrada da decoração"
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Responsável</span>
+
+                                <input
+                                    name="responsible"
+                                    defaultValue={
+                                        editingTimeline?.responsible
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Local</span>
+
+                                <input
+                                    name="location"
+                                    defaultValue={
+                                        editingTimeline?.location
+                                        || ''
+                                    }
+                                    placeholder="Ex.: Salão principal"
+                                />
+                            </label>
+
+                            <input
+                                type="hidden"
+                                name="sortOrder"
+                                value={
+                                    editingTimeline?.sortOrder
+                                    || 0
+                                }
+                            />
+
+                            <label className="finance-field party-field--full">
+                                <span>Observações</span>
+
+                                <textarea
+                                    name="notes"
+                                    rows="3"
+                                    defaultValue={
+                                        editingTimeline?.notes
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <div className="finance-form-actions">
+                                <button
+                                    type="submit"
+                                    className="finance-primary-button"
+                                >
+                                    {editingTimeline
+                                        ? 'Salvar atividade'
+                                        : 'Adicionar atividade'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Roteiro
+                                </p>
+
+                                <h2>
+                                    Cronograma do dia
+                                </h2>
+                            </div>
+                        </div>
+
+                        <div className="party-timeline-list">
+                            {(
+                                data.timeline
+                                || []
+                            ).map(
+                                (item) => (
+                                    <article
+                                        key={
+                                            item.id
+                                        }
+                                        className="party-timeline-item"
+                                    >
+                                        <div className="party-timeline-time">
+                                            {item.eventTime}
+                                        </div>
+
+                                        <div className="party-timeline-marker">
+                                            <span />
+                                        </div>
+
+                                        <div className="party-timeline-content">
+                                            <strong>
+                                                {item.title}
+                                            </strong>
+
+                                            <div>
+                                                {item.responsible ? (
+                                                    <span>
+                                                        Responsável: {item.responsible}
+                                                    </span>
+                                                ) : null}
+
+                                                {item.location ? (
+                                                    <span>
+                                                        Local: {item.location}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+
+                                            {item.notes ? (
+                                                <p>
+                                                    {item.notes}
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="party-row-actions">
+                                            <button
+                                                type="button"
+                                                onClick={() => (
+                                                    setEditingTimeline(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                Editar
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="party-row-delete"
+                                                onClick={() => (
+                                                    deleteTimelineItem(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                Excluir
+                                            </button>
+                                        </div>
+                                    </article>
+                                )
+                            )}
+
+                            {(
+                                data.timeline
+                                || []
+                            ).length === 0 ? (
+                                <div className="finance-empty">
+                                    O cronograma ainda está vazio.
+                                </div>
+                            ) : null}
+                        </div>
+                    </section>
+                </>
+            ) : null}
+
+
+            {activeTab === 'shopping' ? (
+                <>
+                    <section className="finance-management-summary">
+                        <article>
+                            <span>Itens</span>
+                            <strong>
+                                {data.management?.shoppingTotal || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-management-card--success">
+                            <span>Comprados</span>
+                            <strong>
+                                {data.management?.shoppingPurchased || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-management-card--warning">
+                            <span>Pendentes</span>
+                            <strong>
+                                {data.management?.shoppingPending || 0}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <span>Estimativa total</span>
+                            <strong className="party-summary-money">
+                                {money(
+                                    data.management
+                                        ?.shoppingEstimatedCents
+                                    || 0
+                                )}
+                            </strong>
+                        </article>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Compras
+                                </p>
+
+                                <h2>
+                                    {editingShopping
+                                        ? 'Editar item'
+                                        : 'Adicionar item'}
+                                </h2>
+                            </div>
+
+                            {editingShopping ? (
+                                <button
+                                    type="button"
+                                    className="finance-secondary-button"
+                                    onClick={() => (
+                                        setEditingShopping(
+                                            null
+                                        )
+                                    )}
+                                >
+                                    Cancelar edição
+                                </button>
+                            ) : null}
+                        </div>
+
+                        <form
+                            key={
+                                editingShopping?.id
+                                || 'new-shopping'
+                            }
+                            className="party-management-form party-shopping-form"
+                            onSubmit={
+                                handleSaveShopping
+                            }
+                        >
+                            <input
+                                type="hidden"
+                                name="id"
+                                value={
+                                    editingShopping?.id
+                                    || ''
+                                }
+                            />
+
+                            <label className="finance-field party-field--wide">
+                                <span>Item</span>
+
+                                <input
+                                    name="itemName"
+                                    defaultValue={
+                                        editingShopping?.itemName
+                                        || ''
+                                    }
+                                    placeholder="Ex.: Gelo"
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Categoria</span>
+
+                                <input
+                                    name="category"
+                                    defaultValue={
+                                        editingShopping?.category
+                                        || ''
+                                    }
+                                    placeholder="Bebidas, decoração..."
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Quantidade</span>
+
+                                <input
+                                    name="quantity"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    defaultValue={
+                                        editingShopping?.quantity
+                                        || 1
+                                    }
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Unidade</span>
+
+                                <input
+                                    name="unit"
+                                    defaultValue={
+                                        editingShopping?.unit
+                                        || ''
+                                    }
+                                    placeholder="un., kg, litros, caixas..."
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Preço unitário</span>
+
+                                <input
+                                    name="unitPrice"
+                                    inputMode="decimal"
+                                    defaultValue={
+                                        editingShopping
+                                            ? moneyInput(
+                                                editingShopping
+                                                    .unitPriceCents
+                                            )
+                                            : ''
+                                    }
+                                    placeholder="0,00"
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Onde comprar</span>
+
+                                <input
+                                    name="store"
+                                    defaultValue={
+                                        editingShopping?.store
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Responsável</span>
+
+                                <input
+                                    name="responsible"
+                                    defaultValue={
+                                        editingShopping?.responsible
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field party-field--full">
+                                <span>Observações</span>
+
+                                <textarea
+                                    name="notes"
+                                    rows="3"
+                                    defaultValue={
+                                        editingShopping?.notes
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <div className="finance-form-actions">
+                                <button
+                                    type="submit"
+                                    className="finance-primary-button"
+                                >
+                                    {editingShopping
+                                        ? 'Salvar item'
+                                        : 'Adicionar à lista'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Lista
+                                </p>
+
+                                <h2>
+                                    Lista de compras
+                                </h2>
+                            </div>
+
+                            <select
+                                className="party-inline-filter"
+                                value={
+                                    shoppingFilter
+                                }
+                                onChange={
+                                    (event) => (
+                                        setShoppingFilter(
+                                            event.target.value
+                                        )
+                                    )
+                                }
+                            >
+                                <option value="pendentes">
+                                    Pendentes
+                                </option>
+
+                                <option value="comprados">
+                                    Comprados
+                                </option>
+
+                                <option value="todos">
+                                    Todos
+                                </option>
+                            </select>
+                        </div>
+
+                        <div className="party-shopping-list">
+                            {(
+                                data.shoppingItems
+                                || []
+                            )
+                                .filter(
+                                    (item) => {
+                                        if (
+                                            shoppingFilter
+                                            === 'pendentes'
+                                        ) {
+                                            return !item.purchased
+                                        }
+
+                                        if (
+                                            shoppingFilter
+                                            === 'comprados'
+                                        ) {
+                                            return item.purchased
+                                        }
+
+                                        return true
+                                    }
+                                )
+                                .map(
+                                    (item) => (
+                                        <article
+                                            key={
+                                                item.id
+                                            }
+                                            className={[
+                                                'party-shopping-card',
+                                                item.purchased
+                                                    ? 'party-shopping-card--purchased'
+                                                    : '',
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' ')}
+                                        >
+                                            <button
+                                                type="button"
+                                                className={[
+                                                    'party-check-button',
+                                                    item.purchased
+                                                        ? 'party-check-button--done'
+                                                        : '',
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' ')}
+                                                onClick={() => (
+                                                    toggleShoppingItem(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                {item.purchased
+                                                    ? '✓'
+                                                    : ''}
+                                            </button>
+
+                                            <div className="party-shopping-main">
+                                                <strong>
+                                                    {item.itemName}
+                                                </strong>
+
+                                                <small>
+                                                    {[
+                                                        item.category,
+                                                        item.store,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' • ')
+                                                    || 'Sem categoria'}
+                                                </small>
+                                            </div>
+
+                                            <div className="party-shopping-value">
+                                                <span>
+                                                    Quantidade
+                                                </span>
+
+                                                <strong>
+                                                    {item.quantity}
+                                                    {' '}
+                                                    {item.unit}
+                                                </strong>
+                                            </div>
+
+                                            <div className="party-shopping-value">
+                                                <span>
+                                                    Unitário
+                                                </span>
+
+                                                <strong>
+                                                    {money(
+                                                        item.unitPriceCents
+                                                    )}
+                                                </strong>
+                                            </div>
+
+                                            <div className="party-shopping-value">
+                                                <span>
+                                                    Total
+                                                </span>
+
+                                                <strong>
+                                                    {money(
+                                                        item.totalPriceCents
+                                                    )}
+                                                </strong>
+                                            </div>
+
+                                            <div className="party-row-actions">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => (
+                                                        setEditingShopping(
+                                                            item
+                                                        )
+                                                    )}
+                                                >
+                                                    Editar
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="party-row-delete"
+                                                    onClick={() => (
+                                                        deleteShoppingItem(
+                                                            item
+                                                        )
+                                                    )}
+                                                >
+                                                    Excluir
+                                                </button>
+                                            </div>
+                                        </article>
+                                    )
+                                )}
+
+                            {(
+                                data.shoppingItems
+                                || []
+                            ).length === 0 ? (
+                                <div className="finance-empty">
+                                    Nenhum item na lista de compras.
+                                </div>
+                            ) : null}
+                        </div>
                     </section>
                 </>
             ) : null}

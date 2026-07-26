@@ -9273,3 +9273,511 @@ html {
 }
 
 /* === GESTAO FINANCEIRA V2 END === */
+
+
+/* ======================================================================
+   GESTAO DA FESTA - FASE 2
+   ====================================================================== */
+
+.finance-tabs {
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr)) !important;
+}
+
+
+.finance-management-summary {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.finance-management-summary article {
+    display: grid;
+    gap: 6px;
+    min-height: 92px;
+    align-content: center;
+    padding: 15px;
+    border: 1px solid rgba(8,120,111,.13);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.finance-management-summary span {
+    color: #687f7a;
+    font-size: .62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.finance-management-summary strong {
+    color: #173f39;
+    font-size: 1.4rem;
+}
+
+.finance-management-card--success {
+    background: #eafaf4 !important;
+}
+
+.finance-management-card--warning {
+    background: #fff9df !important;
+}
+
+.finance-management-card--danger {
+    background: #fff0f0 !important;
+}
+
+.finance-management-card--danger strong {
+    color: #a64040;
+}
+
+.party-summary-text {
+    font-size: 1rem !important;
+}
+
+.party-summary-money {
+    font-size: 1rem !important;
+}
+
+
+.party-management-form {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 17px;
+}
+
+.party-field--wide {
+    grid-column: span 2;
+}
+
+.party-field--full {
+    grid-column: 1 / -1;
+}
+
+
+.party-inline-filter {
+    min-height: 40px;
+    padding: 7px 10px;
+    border: 1px solid rgba(8,120,111,.18);
+    border-radius: 8px;
+    background: #fff;
+    color: #28534d;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+
+/* CHECKLIST */
+
+.party-task-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.party-task-card {
+    display: grid;
+    grid-template-columns:
+        auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(8,120,111,.12);
+    border-radius: 10px;
+    background: #fcfffe;
+}
+
+.party-task-card--completed {
+    opacity: .66;
+    background: #f1f6f4;
+}
+
+.party-task-card--completed .party-task-title > strong {
+    text-decoration: line-through;
+}
+
+.party-check-button {
+    width: 34px;
+    height: 34px;
+    border: 2px solid #a7c9c1;
+    border-radius: 50%;
+    background: #fff;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.party-check-button--done {
+    border-color: #0b9077;
+    background: #0b9077;
+}
+
+.party-task-content {
+    min-width: 0;
+}
+
+.party-task-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+}
+
+.party-task-title > strong {
+    color: #173f39;
+}
+
+.party-task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 13px;
+    margin-top: 5px;
+}
+
+.party-task-meta span {
+    color: #6c817d;
+    font-size: .68rem;
+}
+
+.party-task-content p {
+    margin: 7px 0 0;
+    color: #657c77;
+    font-size: .73rem;
+}
+
+.party-priority {
+    padding: 4px 7px;
+    border-radius: 999px;
+    font-size: .56rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.party-priority--alta {
+    background: #ffe1e1;
+    color: #a24040;
+}
+
+.party-priority--media {
+    background: #fff3ce;
+    color: #83630d;
+}
+
+.party-priority--baixa {
+    background: #dff6ed;
+    color: #087058;
+}
+
+
+/* ACOES */
+
+.party-row-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.party-row-actions button {
+    min-height: 32px;
+    padding: 5px 8px;
+    border: 1px solid rgba(8,120,111,.16);
+    border-radius: 7px;
+    background: #eff8f5;
+    color: #08756b;
+    font: inherit;
+    font-size: .62rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.party-row-actions .party-row-delete {
+    border-color: rgba(174,65,65,.16);
+    background: #fff2f2;
+    color: #a44141;
+}
+
+
+/* CRONOGRAMA */
+
+.party-timeline-list {
+    display: grid;
+    margin-top: 15px;
+}
+
+.party-timeline-item {
+    display: grid;
+    grid-template-columns:
+        70px 28px 1fr auto;
+    gap: 9px;
+    min-height: 76px;
+}
+
+.party-timeline-time {
+    padding-top: 4px;
+    color: #08786f;
+    font-size: .9rem;
+    font-weight: 900;
+    text-align: right;
+}
+
+.party-timeline-marker {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.party-timeline-marker::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    bottom: -10px;
+    width: 2px;
+    background: #d2e7e1;
+}
+
+.party-timeline-item:last-child
+.party-timeline-marker::after {
+    display: none;
+}
+
+.party-timeline-marker span {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 12px;
+    height: 12px;
+    margin-top: 7px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: #0a8b76;
+    box-shadow: 0 0 0 2px #a8d5cb;
+}
+
+.party-timeline-content {
+    padding: 0 0 18px;
+}
+
+.party-timeline-content > strong {
+    color: #173f39;
+    font-size: .95rem;
+}
+
+.party-timeline-content > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+    margin-top: 5px;
+}
+
+.party-timeline-content span,
+.party-timeline-content p {
+    color: #6b817c;
+    font-size: .69rem;
+}
+
+.party-timeline-content p {
+    margin: 6px 0 0;
+}
+
+
+/* COMPRAS */
+
+.party-shopping-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.party-shopping-card {
+    display: grid;
+    grid-template-columns:
+        auto minmax(160px, 1.5fr)
+        repeat(3, minmax(90px, .7fr))
+        auto;
+    align-items: center;
+    gap: 9px;
+    padding: 11px;
+    border: 1px solid rgba(8,120,111,.12);
+    border-radius: 9px;
+    background: #fcfffe;
+}
+
+.party-shopping-card--purchased {
+    opacity: .67;
+    background: #f2f7f5;
+}
+
+.party-shopping-card--purchased
+.party-shopping-main > strong {
+    text-decoration: line-through;
+}
+
+.party-shopping-main {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.party-shopping-main strong {
+    color: #173f39;
+}
+
+.party-shopping-main small {
+    color: #6c817c;
+}
+
+.party-shopping-value {
+    display: grid;
+    gap: 3px;
+}
+
+.party-shopping-value span {
+    color: #778984;
+    font-size: .55rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.party-shopping-value strong {
+    color: #315650;
+    font-size: .73rem;
+}
+
+
+@media (max-width: 1000px) {
+
+    .finance-tabs {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .party-management-form {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .party-shopping-card {
+        grid-template-columns:
+            auto 1fr 1fr 1fr;
+    }
+
+    .party-shopping-main {
+        grid-column: span 2;
+    }
+
+    .party-shopping-card
+    .party-row-actions {
+        grid-column: 2 / -1;
+    }
+}
+
+
+@media (max-width: 720px) {
+
+    .finance-tabs {
+        position: relative;
+        top: auto;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .finance-management-summary {
+        grid-template-columns:
+            1fr 1fr;
+        gap: 7px;
+    }
+
+    .finance-management-summary article {
+        min-height: 82px;
+        padding: 11px;
+    }
+
+    .finance-management-summary strong {
+        font-size: 1.05rem;
+    }
+
+    .party-management-form {
+        grid-template-columns: 1fr;
+    }
+
+    .party-field--wide,
+    .party-field--full {
+        grid-column: auto;
+    }
+
+    .party-task-card {
+        grid-template-columns:
+            auto 1fr;
+        align-items: flex-start;
+    }
+
+    .party-task-card .party-row-actions {
+        grid-column: 2;
+    }
+
+    .party-timeline-item {
+        grid-template-columns:
+            55px 22px 1fr;
+    }
+
+    .party-timeline-item
+    .party-row-actions {
+        grid-column: 3;
+        padding-bottom: 15px;
+    }
+
+    .party-shopping-card {
+        grid-template-columns:
+            auto 1fr 1fr;
+        align-items: flex-start;
+    }
+
+    .party-shopping-main {
+        grid-column: 2 / -1;
+    }
+
+    .party-shopping-value {
+        padding: 7px;
+        border-radius: 7px;
+        background: #eff7f4;
+    }
+
+    .party-shopping-card
+    .party-row-actions {
+        grid-column: 2 / -1;
+    }
+}
+
+
+@media (max-width: 390px) {
+
+    .finance-management-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .party-shopping-card {
+        grid-template-columns:
+            auto 1fr;
+    }
+
+    .party-shopping-main {
+        grid-column: 2;
+    }
+
+    .party-shopping-value {
+        grid-column: 2;
+    }
+
+    .party-shopping-card
+    .party-row-actions {
+        grid-column: 2;
+        flex-direction: column;
+    }
+}
+
+/* === GESTAO DA FESTA FASE 2 END === */
