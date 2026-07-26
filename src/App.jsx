@@ -423,21 +423,12 @@ function MusicPlayer({ enabled }) {
 
     useEffect(() => {
         window.__dudaMusicPlay = () => {
-            const iframe =
-                iframeRef.current
-
-            if (!iframe) return
-
             /*
-             * O mobile e mais restritivo com comandos enviados
-             * depois do gesto do usuario.
-             *
-             * Por isso a navegacao para autoplay=1 acontece
-             * diretamente durante o toque no selo.
+             * O player já está carregado antes do toque.
+             * No gesto do usuário enviamos playVideo diretamente,
+             * sem recarregar o iframe.
              */
-            iframe.src =
-                getYoutubePlayerUrl(true)
-
+            sendCommand('playVideo')
             setPlaying(true)
         }
 
@@ -464,10 +455,14 @@ function MusicPlayer({ enabled }) {
     }
 
     function handlePlayerLoad() {
-        if (!enabled) return
-
-        sendCommand('playVideo')
-        setPlaying(true)
+        /*
+         * Apenas confirma que o iframe terminou de carregar.
+         * A reprodução com som continua dependente do gesto
+         * explícito do usuário.
+         */
+        if (enabled) {
+            setPlaying(false)
+        }
     }
 
     return (
@@ -476,7 +471,7 @@ function MusicPlayer({ enabled }) {
                 ref={iframeRef}
                 className="music-player__frame"
                 title="Música do convite da Duda"
-                src={getYoutubePlayerUrl(enabled)}
+                src={getYoutubePlayerUrl(false)}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 onLoad={handlePlayerLoad}
             />

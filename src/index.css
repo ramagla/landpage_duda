@@ -4403,13 +4403,25 @@ html {
    ====================================================================== */
 
 .music-player__frame {
+    /*
+     * YouTube exige viewport real para o player incorporado.
+     * Mantemos 200x200 dentro da tela, mas atrás da interface.
+     */
     position: fixed;
-    width: 1px;
-    height: 1px;
-    left: -9999px;
-    top: -9999px;
-    opacity: 0;
+
+    width: 200px;
+    height: 200px;
+
+    left: 0;
+    bottom: 0;
+
+    z-index: -1;
+
+    opacity: 0.001;
+
     pointer-events: none;
+
+    border: 0;
 }
 
 .music-player__control {
