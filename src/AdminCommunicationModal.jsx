@@ -8,21 +8,28 @@ const TYPES = {
     convite_inicial: {
         label: 'Convite inicial',
         shortLabel: 'Inicial',
+        availableFrom: null,
     },
 
     lembrete_60d: {
         label: 'Lembrete de 60 dias',
         shortLabel: '60 dias',
+        availableFrom: '2026-09-15T00:00:00-03:00',
+        availableDisplay: '15/09/2026',
     },
 
     lembrete_30d: {
         label: 'Lembrete de 30 dias',
         shortLabel: '30 dias',
+        availableFrom: '2026-10-15T00:00:00-03:00',
+        availableDisplay: '15/10/2026',
     },
 
     lembrete_10d: {
         label: 'Lembrete de 10 dias',
         shortLabel: '10 dias',
+        availableFrom: '2026-11-04T00:00:00-03:00',
+        availableDisplay: '04/11/2026',
     },
 }
 
@@ -128,6 +135,22 @@ function renderTemplate(
 }
 
 
+function isCommunicationAvailable(type) {
+    const item = TYPES[type]
+
+    if (!item?.availableFrom) {
+        return true
+    }
+
+    return (
+        Date.now()
+        >= new Date(
+            item.availableFrom
+        ).getTime()
+    )
+}
+
+
 function isEligible(
     guest,
     type,
@@ -183,7 +206,14 @@ export default function AdminCommunicationModal({
     const [marking, setMarking] =
         useState(false)
 
+    const typeAvailable =
+        isCommunicationAvailable(type)
+
     const queue = useMemo(() => {
+        if (!typeAvailable) {
+            return []
+        }
+
         return (guests || [])
             .filter(
                 (guest) => (
@@ -209,6 +239,7 @@ export default function AdminCommunicationModal({
         guests,
         type,
         statusFilter,
+        typeAvailable,
     ])
 
     const safeIndex = Math.min(
@@ -349,22 +380,55 @@ export default function AdminCommunicationModal({
                 <div className="communication-type-grid">
                     {Object.entries(TYPES)
                         .map(
-                            ([key, item]) => (
-                                <button
-                                    key={key}
-                                    type="button"
-                                    className={
-                                        key === type
-                                            ? 'communication-type communication-type--active'
-                                            : 'communication-type'
-                                    }
-                                    onClick={() => changeType(key)}
-                                >
-                                    {item.shortLabel}
-                                </button>
-                            )
+                            ([key, item]) => {
+                                const available =
+                                    isCommunicationAvailable(
+                                        key
+                                    )
+
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        className={[
+                                            'communication-type',
+                                            key === type
+                                                ? 'communication-type--active'
+                                                : '',
+                                            !available
+                                                ? 'communication-type--locked'
+                                                : '',
+                                        ].filter(Boolean).join(' ')}
+                                        onClick={() => changeType(key)}
+                                    >
+                                        <strong>
+                                            {item.shortLabel}
+                                        </strong>
+
+                                        <small>
+                                            {available
+                                                ? 'Disponível'
+                                                : `Libera ${item.availableDisplay}`}
+                                        </small>
+                                    </button>
+                                )
+                            }
                         )}
                 </div>
+
+                {!typeAvailable ? (
+                    <div className="communication-date-lock">
+                        <strong>
+                            🔒 Este disparo ainda não está disponível
+                        </strong>
+
+                        <span>
+                            {TYPES[type]?.label}
+                            {' será liberado em '}
+                            {TYPES[type]?.availableDisplay}.
+                        </span>
+                    </div>
+                ) : null}
 
                 <div className="communication-toolbar">
                     <label>
@@ -409,7 +473,7 @@ export default function AdminCommunicationModal({
                     </div>
                 </div>
 
-                {currentGuest ? (
+                {typeAvailable && currentGuest ? (
                     <>
                         <div className="communication-current">
                             <div>
@@ -516,7 +580,7 @@ export default function AdminCommunicationModal({
                             tenha sido realmente enviada.
                         </p>
                     </>
-                ) : (
+                ) : typeAvailable ? (
                     <div className="communication-empty">
                         <strong>
                             Tudo certo por aqui ✓
@@ -525,6 +589,16 @@ export default function AdminCommunicationModal({
                         <p>
                             Não existem convidados pendentes
                             para este disparo com o filtro selecionado.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="communication-empty communication-empty--locked">
+                        <strong>
+                            Aguardando a data do disparo
+                        </strong>
+
+                        <p>
+                            Este lembrete será liberado automaticamente na data programada.
                         </p>
                     </div>
                 )}
