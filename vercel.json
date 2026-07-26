@@ -39,6 +39,10 @@
     {
       "source": "/admin",
       "destination": "/index.html"
+    },
+    {
+      "source": "/despesas",
+      "destination": "/index.html"
     }
   ]
 }
