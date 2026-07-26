@@ -1408,7 +1408,14 @@ function AdminPage() {
 
     async function handleSaveGuest(event) {
         event.preventDefault()
-        const form = new FormData(event.currentTarget)
+
+        /*
+         * Guardamos o formulario antes do primeiro await.
+         * Depois de uma operacao assincrona, event.currentTarget
+         * pode nao estar mais disponivel.
+         */
+        const formElement = event.currentTarget
+        const form = new FormData(formElement)
 
         const maxCompanions = Math.max(Number.parseInt(String(form.get('maxCompanions') || 0), 10) || 0, 0)
         const presetCompanions = Array.from({ length: maxCompanions }, (_, index) => {
@@ -1435,7 +1442,7 @@ function AdminPage() {
             setMessage(result.message || 'Convidado salvo.')
             setEditing(null)
             setAdminCompanionCount(0)
-            event.currentTarget.reset()
+            formElement.reset()
         } catch (error) {
             setStatus('error')
             setMessage(error.message)
