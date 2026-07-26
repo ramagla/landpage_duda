@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AdminCommunicationModal from './AdminCommunicationModal.jsx'
+
 import {
     RSVP_CLOSED_MESSAGE,
     RSVP_DEADLINE_DISPLAY,
@@ -1148,6 +1150,7 @@ function AdminPage() {
     const [guestStatusFilter, setGuestStatusFilter] = useState('todos')
     const [lastUpdatedAt, setLastUpdatedAt] = useState('')
     const [refreshing, setRefreshing] = useState(false)
+    const [communicationModalOpen, setCommunicationModalOpen] = useState(false)
     const adminRefreshRef = useRef(null)
     const lastAutoRefreshAtRef = useRef(0)
 
@@ -1693,6 +1696,38 @@ function AdminPage() {
         }
     }
 
+    async function handleMarkCommunication(
+        guestItem,
+        communicationType,
+    ) {
+        try {
+            const result =
+                await callAdmin({
+                    action:
+                        'markCommunication',
+
+                    guestId:
+                        guestItem.id,
+
+                    communicationType,
+                })
+
+            setStatus('success')
+
+            setMessage(
+                result.message
+                || 'Envio registrado.'
+            )
+
+            return result
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+            throw error
+        }
+    }
+
+
     function handleOpenGuestWhatsapp(guestItem) {
         const phone = digitsOnly(
             guestItem.whatsapp || '',
@@ -2062,6 +2097,17 @@ function AdminPage() {
                             <strong>{data.totals.viewed || 0}</strong>
                         </div>
                         <div><span>Buffet</span><strong>{data.totals.buffet}</strong></div>
+
+                        <div className="admin-summary__sent">
+                            <span>Convites enviados</span>
+                            <strong>{data.totals.invitesSent || 0}</strong>
+                        </div>
+
+                        <div className="admin-summary__not-sent">
+                            <span>Não enviados</span>
+                            <strong>{data.totals.invitesNotSent || 0}</strong>
+                        </div>
+
                         <div>
                             <span>Mensagens</span>
                             <strong>{data.messages?.length || 0}</strong>
@@ -2213,6 +2259,16 @@ function AdminPage() {
                             </label>
 
                             <button
+                                className="admin-communication-launch"
+                                type="button"
+                                onClick={() => (
+                                    setCommunicationModalOpen(true)
+                                )}
+                            >
+                                ◉ Disparar lembretes
+                            </button>
+
+                            <button
                                 className="admin-export-guests"
                                 type="button"
                                 onClick={handleExportGuests}
@@ -2291,6 +2347,15 @@ function AdminPage() {
                                             </div>
 
                                             <div>
+                                                <span>Convite</span>
+                                                <strong>
+                                                    {guestItem.communications?.convite_inicial
+                                                        ? '✓ Enviado'
+                                                        : 'Não enviado'}
+                                                </strong>
+                                            </div>
+
+                                            <div>
                                                 <span>WhatsApp</span>
                                                 <strong className="admin-mobile-phone">
                                                     {guestItem.whatsapp
@@ -2362,7 +2427,11 @@ function AdminPage() {
                                             </span>
 
                                             {guestItem.whatsapp
-                                                ? 'Enviar convite no WhatsApp'
+                                                ? (
+                                                    guestItem.communications?.convite_inicial
+                                                        ? 'Reenviar convite no WhatsApp'
+                                                        : 'Enviar convite no WhatsApp'
+                                                )
                                                 : 'WhatsApp não cadastrado'}
                                         </button>
 
@@ -2449,6 +2518,7 @@ function AdminPage() {
                                         <th>Acomp.</th>
                                         <th>Buffet</th>
                                         <th>WhatsApp</th>
+                                        <th>Envio</th>
                                         <th>Convite</th>
                                         <th>Ações</th>
                                     </tr>
@@ -2459,7 +2529,7 @@ function AdminPage() {
                                         <tr>
                                             <td
                                                 className="admin-guests-empty"
-                                                colSpan="7"
+                                                colSpan="8"
                                             >
                                                 Nenhum convidado encontrado com os filtros atuais.
                                             </td>
@@ -2562,6 +2632,41 @@ function AdminPage() {
                                                     )}
                                                 </td>
 
+                                                <td className="admin-communication-status-cell">
+                                                    {guestItem.communications?.convite_inicial ? (
+                                                        <>
+                                                            <strong className="communication-sent-badge">
+                                                                ✓ Enviado
+                                                            </strong>
+
+                                                            <small>
+                                                                {formatAdminAccessDate(
+                                                                    guestItem.communications.convite_inicial
+                                                                )}
+                                                            </small>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <strong className="communication-pending-badge">
+                                                                Não enviado
+                                                            </strong>
+
+                                                            <button
+                                                                type="button"
+                                                                className="communication-quick-mark"
+                                                                onClick={() => (
+                                                                    handleMarkCommunication(
+                                                                        guestItem,
+                                                                        'convite_inicial',
+                                                                    )
+                                                                )}
+                                                            >
+                                                                ✓ Marcar enviado
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </td>
+
                                                 <td>
                                                     <div className="admin-invite-actions">
                                                         <button
@@ -2600,7 +2705,9 @@ function AdminPage() {
                                                                 ◉
                                                             </span>
 
-                                                            WhatsApp
+                                                            {guestItem.communications?.convite_inicial
+                                                                ? 'Reenviar'
+                                                                : 'WhatsApp'}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -2667,6 +2774,17 @@ function AdminPage() {
                             </table>
                         </div>
                     </section>
+
+                    {communicationModalOpen ? (
+                        <AdminCommunicationModal
+                            guests={data.guests || []}
+                            baseUrl={baseUrl}
+                            onClose={() => (
+                                setCommunicationModalOpen(false)
+                            )}
+                            onMarkSent={handleMarkCommunication}
+                        />
+                    ) : null}
 
                     <section
                         className="confirm-panel admin-messages-panel"

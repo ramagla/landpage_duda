@@ -205,6 +205,37 @@ export async function ensureSchema() {
                 ON birthday_messages (invited_guest_id)
                 WHERE invited_guest_id IS NOT NULL
             `)
+
+            /*
+             * Historico de comunicacoes enviadas aos convidados.
+             *
+             * Mantemos uma linha por convidado/tipo para impedir
+             * disparos duplicados acidentais.
+             */
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS guest_communications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER NOT NULL,
+                    communication_type TEXT NOT NULL
+                        CHECK (
+                            communication_type IN (
+                                'convite_inicial',
+                                'lembrete_60d',
+                                'lembrete_30d',
+                                'lembrete_10d'
+                            )
+                        ),
+                    channel TEXT NOT NULL DEFAULT 'whatsapp',
+                    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(invited_guest_id, communication_type)
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS guest_communications_guest_index
+                ON guest_communications (invited_guest_id)
+            `)
         })()
     }
 

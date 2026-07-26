@@ -6546,3 +6546,507 @@ html {
 }
 
 /* === SELO MOBILE V3 - END === */
+
+
+/* ======================================================================
+   ADMIN - COMUNICACOES E LEMBRETES
+   ====================================================================== */
+
+.admin-summary__sent {
+    border-color: rgba(21, 155, 120, 0.24) !important;
+    background: rgba(221, 252, 242, 0.88) !important;
+}
+
+.admin-summary__not-sent {
+    border-color: rgba(205, 144, 18, 0.24) !important;
+    background: rgba(255, 248, 220, 0.92) !important;
+}
+
+.admin-communication-launch {
+    min-height: 46px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 9px;
+    background:
+        linear-gradient(
+            135deg,
+            #159b78,
+            #08786f
+        );
+    color: #fff;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.admin-communication-status-cell {
+    min-width: 122px;
+}
+
+.admin-communication-status-cell small {
+    display: block;
+    margin-top: 4px;
+    color: #67807b;
+    font-size: .67rem;
+}
+
+.communication-sent-badge,
+.communication-pending-badge {
+    display: inline-block;
+    padding: 5px 8px;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 900;
+}
+
+.communication-sent-badge {
+    background: #ddf8ee;
+    color: #08735d;
+}
+
+.communication-pending-badge {
+    background: #fff3d4;
+    color: #8a6508;
+}
+
+.communication-quick-mark {
+    display: block;
+    margin-top: 6px;
+    padding: 5px 8px;
+    border: 1px solid rgba(8, 120, 111, .18);
+    border-radius: 7px;
+    background: #f0fbf7;
+    color: #08786f;
+    font: inherit;
+    font-size: .66rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+
+/* MODAL */
+
+.communication-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+
+    display: grid;
+    place-items: center;
+
+    padding: 22px;
+
+    background:
+        rgba(4, 35, 32, .58);
+
+    backdrop-filter:
+        blur(8px);
+}
+
+.communication-modal {
+    width: min(780px, 100%);
+    max-height: calc(100dvh - 44px);
+    overflow-y: auto;
+
+    padding: 24px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .18);
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #effcf7
+        );
+
+    box-shadow:
+        0 28px 90px
+        rgba(0, 45, 40, .30);
+}
+
+.communication-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.communication-modal__header h2 {
+    margin: 2px 0 6px;
+    color: #123e3a;
+    font-family:
+        'Playfair Display',
+        Georgia,
+        serif;
+    font-size: clamp(1.8rem, 5vw, 2.7rem);
+}
+
+.communication-modal__header p {
+    margin: 0;
+    color: #58746f;
+}
+
+.communication-modal__close {
+    flex: 0 0 auto;
+
+    width: 42px;
+    height: 42px;
+
+    border:
+        1px solid
+        rgba(173, 70, 70, .18);
+
+    border-radius: 50%;
+
+    background: #fff3f3;
+    color: #a34545;
+
+    font-size: 1.6rem;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.communication-type-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 8px;
+
+    margin-top: 22px;
+}
+
+.communication-type {
+    min-height: 44px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .18);
+
+    border-radius: 9px;
+
+    background: #fff;
+    color: #55716c;
+
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 850;
+
+    cursor: pointer;
+}
+
+.communication-type--active {
+    background: #08786f;
+    color: #fff;
+}
+
+.communication-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+
+    margin-top: 18px;
+}
+
+.communication-toolbar label {
+    display: grid;
+    gap: 5px;
+}
+
+.communication-toolbar label span,
+.communication-message-editor > span {
+    color: #08786f;
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.communication-toolbar select {
+    min-height: 42px;
+
+    padding: 7px 10px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .20);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    font: inherit;
+}
+
+.communication-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    padding: 8px 12px;
+
+    border-radius: 999px;
+
+    background: #ddf8ee;
+    color: #08735d;
+}
+
+.communication-counter strong {
+    font-size: 1.2rem;
+}
+
+.communication-counter span {
+    font-size: .72rem;
+    font-weight: 750;
+}
+
+.communication-current {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+
+    margin-top: 18px;
+    padding: 14px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .14);
+
+    border-radius: 11px;
+
+    background:
+        rgba(255, 255, 255, .76);
+}
+
+.communication-current > div:first-child {
+    display: grid;
+    gap: 2px;
+}
+
+.communication-current span,
+.communication-current small {
+    color: #69807c;
+    font-size: .69rem;
+}
+
+.communication-current strong {
+    color: #123e3a;
+    font-size: 1.15rem;
+}
+
+.communication-history-mini {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.communication-history-mini span {
+    padding: 5px 7px;
+    border-radius: 999px;
+    background: #edf6f3;
+    color: #466b65;
+    font-weight: 800;
+}
+
+.communication-message-editor {
+    display: grid;
+    gap: 6px;
+
+    margin-top: 16px;
+}
+
+.communication-message-editor textarea {
+    width: 100%;
+    min-height: 210px;
+
+    padding: 13px;
+
+    border:
+        1px solid
+        rgba(8, 120, 111, .20);
+
+    border-radius: 10px;
+
+    background: #fff;
+
+    color: #264f49;
+    font: inherit;
+    line-height: 1.45;
+
+    resize: vertical;
+}
+
+.communication-preview {
+    margin-top: 14px;
+}
+
+.communication-preview > span {
+    display: block;
+    margin-bottom: 5px;
+
+    color: #08786f;
+    font-size: .7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.communication-preview pre {
+    margin: 0;
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    background: #17201e;
+    color: #f6faf9;
+
+    font-family:
+        system-ui,
+        sans-serif;
+
+    font-size: .78rem;
+    line-height: 1.45;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.communication-actions {
+    display: grid;
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 16px;
+}
+
+.communication-actions button {
+    min-height: 48px;
+
+    border-radius: 9px;
+
+    font: inherit;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+.communication-whatsapp {
+    border: 0;
+
+    background:
+        linear-gradient(
+            135deg,
+            #21bd75,
+            #128c5d
+        );
+
+    color: #fff;
+}
+
+.communication-mark {
+    border:
+        1px solid
+        rgba(8, 120, 111, .22);
+
+    background: #effbf7;
+    color: #08786f;
+}
+
+.communication-warning {
+    margin: 11px 0 0;
+
+    color: #7b7060;
+
+    font-size: .7rem;
+    line-height: 1.4;
+}
+
+.communication-empty {
+    margin-top: 20px;
+    padding: 30px;
+
+    border:
+        1px dashed
+        rgba(8, 120, 111, .25);
+
+    border-radius: 12px;
+
+    text-align: center;
+
+    background:
+        rgba(239, 251, 247, .8);
+}
+
+.communication-empty strong {
+    color: #08786f;
+    font-size: 1.1rem;
+}
+
+.communication-empty p {
+    margin-bottom: 0;
+    color: #617b76;
+}
+
+
+@media (max-width: 720px) {
+
+    .communication-modal-backdrop {
+        align-items: end;
+
+        padding:
+            8px
+            8px
+            max(8px, env(safe-area-inset-bottom));
+    }
+
+    .communication-modal {
+        max-height: 92dvh;
+
+        padding: 18px;
+
+        border-radius:
+            18px
+            18px
+            12px
+            12px;
+    }
+
+    .communication-type-grid {
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .communication-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .communication-counter {
+        align-self: flex-start;
+    }
+
+    .communication-current {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .communication-history-mini {
+        justify-content: flex-start;
+    }
+
+    .communication-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* === ADMIN COMUNICACOES END === */

@@ -127,6 +127,15 @@ async function getSummary() {
         LIMIT 500
     `)
 
+    const communicationsResult = await getClient().execute(`
+        SELECT
+            invited_guest_id,
+            communication_type,
+            sent_at
+        FROM guest_communications
+        ORDER BY sent_at DESC, id DESC
+    `)
+
     const companionsByRsvp = new Map()
     for (const row of companionsResult.rows) {
         const key = Number(row.rsvp_id)
@@ -149,6 +158,25 @@ async function getSummary() {
             name: row.companion_name || '',
             age: row.age ?? '',
         })
+    }
+
+    const communicationsByGuest = new Map()
+
+    for (const row of communicationsResult.rows) {
+        const guestId = Number(
+            row.invited_guest_id
+        )
+
+        if (!communicationsByGuest.has(guestId)) {
+            communicationsByGuest.set(
+                guestId,
+                {},
+            )
+        }
+
+        communicationsByGuest
+            .get(guestId)[row.communication_type] =
+            row.sent_at || ''
     }
 
     const guests = guestsResult.rows.map((row) => {
@@ -178,6 +206,9 @@ async function getSummary() {
             confirmedAt: row.rsvp_created_at || '',
             companions: confirmedCompanions,
             presetCompanions,
+            communications:
+                communicationsByGuest.get(id)
+                || {},
         }
     })
 
@@ -189,6 +220,15 @@ async function getSummary() {
         const pendingCompanions = Math.max(maxCompanions - companionAnswers.length, 0)
 
         summary.invited += 1 + maxCompanions
+
+        if (
+            guest.communications
+                ?.convite_inicial
+        ) {
+            summary.invitesSent += 1
+        } else {
+            summary.invitesNotSent += 1
+        }
 
         if (guest.status === 'visualizou') {
             summary.viewed += 1
@@ -212,6 +252,8 @@ async function getSummary() {
         pending: 0,
         viewed: 0,
         buffet: 0,
+        invitesSent: 0,
+        invitesNotSent: 0,
     })
 
     return {
@@ -275,6 +317,92 @@ async function deleteMessage(body) {
 
     return {
         message: `Mensagem de ${message.name || 'convidado'} excluída.`,
+    }
+}
+
+
+const COMMUNICATION_TYPES = new Set([
+    'convite_inicial',
+    'lembrete_60d',
+    'lembrete_30d',
+    'lembrete_10d',
+])
+
+
+async function markCommunication(body) {
+    const guestId = Number.parseInt(
+        String(body.guestId || ''),
+        10,
+    )
+
+    const communicationType = String(
+        body.communicationType || ''
+    ).trim()
+
+    if (
+        !Number.isInteger(guestId)
+        || guestId <= 0
+    ) {
+        return {
+            error: 'Convidado invalido.',
+        }
+    }
+
+    if (
+        !COMMUNICATION_TYPES.has(
+            communicationType
+        )
+    ) {
+        return {
+            error: 'Tipo de comunicacao invalido.',
+        }
+    }
+
+    const guestResult =
+        await getClient().execute({
+            sql: `
+                SELECT id, guest_name
+                FROM invited_guests
+                WHERE id = ?
+                LIMIT 1
+            `,
+            args: [
+                guestId,
+            ],
+        })
+
+    const guest =
+        guestResult.rows[0]
+
+    if (!guest) {
+        return {
+            error: 'Convidado nao encontrado.',
+        }
+    }
+
+    /*
+     * INSERT OR IGNORE preserva a primeira data de envio.
+     * Se houver reenvio, nao apagamos o historico inicial.
+     */
+    await getClient().execute({
+        sql: `
+            INSERT OR IGNORE INTO guest_communications (
+                invited_guest_id,
+                communication_type,
+                channel,
+                sent_at
+            )
+            VALUES (?, ?, 'whatsapp', datetime('now'))
+        `,
+        args: [
+            guestId,
+            communicationType,
+        ],
+    })
+
+    return {
+        message:
+            `Envio registrado para ${guest.guest_name}.`,
     }
 }
 
@@ -374,6 +502,10 @@ async function deleteGuest(body) {
     })
     await getClient().execute({
         sql: 'DELETE FROM guest_companions WHERE invited_guest_id = ?',
+        args: [id],
+    })
+    await getClient().execute({
+        sql: 'DELETE FROM guest_communications WHERE invited_guest_id = ?',
         args: [id],
     })
     await getClient().execute({
@@ -502,6 +634,30 @@ export default async function handler(request, response) {
             if (saved.error) return response.status(400).json({ error: saved.error })
             const summary = await getSummary()
             return response.status(200).json({ message: saved.message, ...summary })
+        }
+
+        if (body.action === 'markCommunication') {
+            const marked =
+                await markCommunication(body)
+
+            if (marked.error) {
+                return response
+                    .status(400)
+                    .json({
+                        error: marked.error,
+                    })
+            }
+
+            const summary =
+                await getSummary()
+
+            return response
+                .status(200)
+                .json({
+                    message:
+                        marked.message,
+                    ...summary,
+                })
         }
 
         if (body.action === 'deleteGuest') {

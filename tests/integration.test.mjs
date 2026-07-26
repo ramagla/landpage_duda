@@ -1053,6 +1053,105 @@ test(
 
 
         await t.test(
+            'admin registra envio de convite',
+            async () => {
+                const guestResult =
+                    await db.execute(`
+                        SELECT id
+                        FROM invited_guests
+                        ORDER BY id
+                        LIMIT 1
+                    `)
+
+                const guestId =
+                    Number(
+                        guestResult
+                            .rows[0]
+                            ?.id
+                        || 0
+                    )
+
+                assert.ok(
+                    guestId > 0
+                )
+
+                const {
+                    response,
+                    data,
+                } = await requestJson(
+                    '/api/admin',
+                    {
+                        ip:
+                            '10.0.0.46',
+
+                        headers: {
+                            cookie:
+                                adminCookie,
+                        },
+
+                        body: {
+                            action:
+                                'markCommunication',
+
+                            guestId,
+
+                            communicationType:
+                                'convite_inicial',
+                        },
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    200,
+                )
+
+                const guest =
+                    data.guests.find(
+                        (item) => (
+                            item.id
+                            === guestId
+                        )
+                    )
+
+                assert.ok(
+                    guest
+                        ?.communications
+                        ?.convite_inicial
+                )
+
+                const saved =
+                    await db.execute({
+                        sql: `
+                            SELECT
+                                communication_type,
+                                sent_at
+                            FROM guest_communications
+                            WHERE invited_guest_id = ?
+                              AND communication_type = ?
+                            LIMIT 1
+                        `,
+                        args: [
+                            guestId,
+                            'convite_inicial',
+                        ],
+                    })
+
+                assert.equal(
+                    saved.rows[0]
+                        ?.communication_type,
+                    'convite_inicial',
+                )
+
+                assert.ok(
+                    saved.rows[0]
+                        ?.sent_at
+                )
+            },
+        )
+
+
+        await t.test(
             'rate limit bloqueia excesso de login',
             async () => {
                 /*
