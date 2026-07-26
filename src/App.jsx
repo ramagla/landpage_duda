@@ -14,66 +14,28 @@ const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
+const PIX_COPY_PASTE = '00020101021226330014br.gov.bcb.pix0111567659868985204000053039865802BR5921MARIA EDUARDA ALMEIDA6015ITAQUAQUECETUBA62100506DUDA166304E334'
 
-const CALENDAR_FILENAME = 'duda-16-anos.ics'
+const GOOGLE_CALENDAR_URL = (
+    'https://calendar.google.com/calendar/render'
+    + '?action=TEMPLATE'
+    + `&text=${encodeURIComponent('16 anos da Duda')}`
+    + '&dates=20261114T200000Z/20261115T020000Z'
+    + `&details=${encodeURIComponent('Aniversário de 16 anos da Duda no Quintal do Ibiza.')}`
+    + `&location=${encodeURIComponent(EVENT_ADDRESS)}`
+    + '&ctz=America%2FSao_Paulo'
+)
 
-function escapeIcsText(value) {
-    return String(value || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/\r?\n/g, '\\n')
-        .replace(/,/g, '\\,')
-        .replace(/;/g, '\\;')
-}
-
-function downloadCalendarEvent() {
+function openCalendarEvent() {
     if (typeof window === 'undefined') return
 
-    const now = new Date()
-
-    const stamp = now
-        .toISOString()
-        .replace(/[-:]/g, '')
-        .replace(/\.\d{3}Z$/, 'Z')
-
-    const lines = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
-        'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH',
-        'BEGIN:VEVENT',
-        'UID:duda-16-20261114@convite',
-        `DTSTAMP:${stamp}`,
-        'DTSTART;TZID=America/Sao_Paulo:20261114T170000',
-        `SUMMARY:${escapeIcsText('16 anos da Duda')}`,
-        `LOCATION:${escapeIcsText(EVENT_ADDRESS)}`,
-        `DESCRIPTION:${escapeIcsText('Aniversário de 16 anos da Duda no Quintal do Ibiza.')}`,
-        'END:VEVENT',
-        'END:VCALENDAR',
-    ]
-
-    const blob = new Blob(
-        [lines.join('\r\n')],
-        {
-            type: 'text/calendar;charset=utf-8',
-        },
-    )
-
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-
-    link.href = url
-    link.download = CALENDAR_FILENAME
-
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-
-    window.setTimeout(
-        () => URL.revokeObjectURL(url),
-        1000,
+    window.open(
+        GOOGLE_CALENDAR_URL,
+        '_blank',
+        'noopener,noreferrer',
     )
 }
+
 
 async function copyTextToClipboard(value) {
     const textValue = String(value || '').trim()
@@ -82,39 +44,62 @@ async function copyTextToClipboard(value) {
         throw new Error('Não há conteúdo para copiar.')
     }
 
-    if (
-        navigator.clipboard
-        && window.isSecureContext
-    ) {
-        await navigator.clipboard.writeText(textValue)
-        return
-    }
-
+    /*
+     * Safari/iPhone costuma ser mais confiavel quando a copia
+     * acontece imediatamente dentro do toque.
+     */
     const textarea = document.createElement('textarea')
 
     textarea.value = textValue
     textarea.setAttribute('readonly', '')
+
     textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
+    textarea.style.left = '-9999px'
+    textarea.style.top = '0'
+    textarea.style.width = '1px'
+    textarea.style.height = '1px'
+    textarea.style.fontSize = '16px'
+    textarea.style.opacity = '0.01'
 
     document.body.appendChild(textarea)
 
+    textarea.focus()
     textarea.select()
+
     textarea.setSelectionRange(
         0,
         textarea.value.length,
     )
 
-    const copied = document.execCommand('copy')
+    let copied
+
+    try {
+        copied = document.execCommand('copy')
+    } catch {
+        copied = false
+    }
 
     textarea.remove()
 
-    if (!copied) {
-        throw new Error(
-            'Não foi possível copiar automaticamente.'
-        )
+    if (copied) return
+
+    if (
+        navigator.clipboard
+        && window.isSecureContext
+    ) {
+        try {
+            await navigator.clipboard.writeText(textValue)
+            return
+        } catch {
+            // Continua para o erro amigavel.
+        }
     }
+
+    throw new Error(
+        'Não foi possível copiar automaticamente. Toque e segure sobre o código para copiar.'
+    )
 }
+
 
 function scrollToSection(id) {
     if (typeof window === 'undefined') return
@@ -408,6 +393,23 @@ function MusicPlayer({ enabled }) {
             '*',
         )
     }
+
+    useEffect(() => {
+        window.__dudaMusicPlay = () => {
+            sendCommand('playVideo')
+            setPlaying(true)
+        }
+
+        window.__dudaMusicPause = () => {
+            sendCommand('pauseVideo')
+            setPlaying(false)
+        }
+
+        return () => {
+            delete window.__dudaMusicPlay
+            delete window.__dudaMusicPause
+        }
+    }, [])
 
     function toggleMusic() {
         if (playing) {
@@ -773,7 +775,7 @@ function GiftPanel() {
     async function handleCopyPixKey() {
         try {
             await copyTextToClipboard(PIX_KEY)
-            setCopyStatus('Chave Pix copiada.')
+            setCopyStatus('✓ Chave Pix copiada.')
         } catch (error) {
             setCopyStatus(error.message)
         }
@@ -781,25 +783,12 @@ function GiftPanel() {
 
     async function handleCopyPixCode() {
         try {
-            const response = await fetch(
-                '/pix-duda-brcode.txt',
-                {
-                    cache: 'force-cache',
-                },
+            await copyTextToClipboard(
+                PIX_COPY_PASTE
             )
 
-            if (!response.ok) {
-                throw new Error(
-                    'Não foi possível carregar o Pix copia e cola.'
-                )
-            }
-
-            const pixCode = await response.text()
-
-            await copyTextToClipboard(pixCode)
-
             setCopyStatus(
-                'Pix copia e cola copiado.'
+                '✓ Pix copia e cola copiado.'
             )
         } catch (error) {
             setCopyStatus(error.message)
@@ -2005,7 +1994,7 @@ function AdminPage() {
                             </label>
                             <label>
                                 <span>Idade</span>
-                                <input name="age" defaultValue={editing?.age || ''} type="number" min="0" max="120" placeholder="Opcional" />
+                                <input name="age" defaultValue={editing?.age || ''} type="number" min="0" max="120" placeholder="Idade" required />
                             </label>
                             <label>
                                 <span>WhatsApp</span>
@@ -2760,6 +2749,13 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     function startOpening() {
         if (stage !== 'intro') return
 
+        /*
+         * Inicia a musica no MESMO toque que rompe o selo.
+         * Isso preserva a permissao de audio do navegador mobile.
+         */
+        window.__dudaMusicPlay?.()
+        onMusicStart?.()
+
         setStage('opening')
 
         const reducedMotion = window
@@ -2972,11 +2968,21 @@ function LandingPage() {
     }
 
     if (!openingData) {
-        return <OpeningInvitationGate onUnlocked={handleUnlocked} onMusicStart={() => setMusicStarted(true)} />
+        return (
+            <>
+                <OpeningInvitationGate
+                    onUnlocked={handleUnlocked}
+                    onMusicStart={() => setMusicStarted(true)}
+                />
+
+                <MusicPlayer enabled={musicStarted} />
+            </>
+        )
     }
 
     return (
-        <main className="page-shell page-shell--revealed">
+        <>
+            <main className="page-shell page-shell--revealed">
             <section className="invite-card" aria-labelledby="invite-title">
                 <div className="disco-cluster" aria-hidden="true">
                     <img className="disco-image disco-image--small" src="/disco-ball.jpg" alt="" />
@@ -2998,7 +3004,6 @@ function LandingPage() {
 
                 <Countdown />
                     <InvitationQuickActions />
-                <MusicPlayer enabled={musicStarted} />
 
                 <div
                     id="local-evento"
@@ -3048,7 +3053,7 @@ function LandingPage() {
                     <button
                         className="event-action-button"
                         type="button"
-                        onClick={downloadCalendarEvent}
+                        onClick={openCalendarEvent}
                     >
                         <span aria-hidden="true">＋</span>
                         Adicionar à agenda
@@ -3109,9 +3114,13 @@ function LandingPage() {
                     />
                 </section>
             </div>
-        </main>
+            </main>
+
+            <MusicPlayer enabled={musicStarted} />
+        </>
     )
 }
+
 function App() {
     const isAdmin = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/admin'
     return isAdmin ? <AdminPage /> : <LandingPage />

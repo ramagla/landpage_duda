@@ -6274,3 +6274,146 @@ html {
 }
 
 /* ADMIN MOBILE V2 - END */
+
+
+/* ======================================================================
+   FIX FINAL - QUEBRA DO SELO
+   ====================================================================== */
+
+.opening-gate--intro .envelope__seal-img--intact {
+    display: block !important;
+    opacity: 1 !important;
+
+    transform:
+        translate(-50%, -50%)
+        scale(.98) !important;
+
+    animation: none !important;
+}
+
+.opening-gate--intro .envelope__seal-img--broken {
+    display: block !important;
+    opacity: 0 !important;
+    animation: none !important;
+}
+
+.opening-gate--opening .envelope__seal-img--intact {
+    display: block !important;
+
+    animation:
+        dudaSealIntactBreak
+        650ms
+        cubic-bezier(.2,.8,.2,1)
+        forwards !important;
+}
+
+.opening-gate--opening .envelope__seal-img--broken {
+    display: block !important;
+
+    animation:
+        dudaSealBrokenReveal
+        1350ms
+        390ms
+        cubic-bezier(.18,.82,.18,1)
+        forwards !important;
+}
+
+@keyframes dudaSealIntactBreak {
+    0% {
+        opacity: 1;
+        transform:
+            translate(-50%, -50%)
+            scale(.98);
+    }
+
+    45% {
+        opacity: 1;
+        transform:
+            translate(-50%, -50%)
+            scale(1.08);
+    }
+
+    75% {
+        opacity: .75;
+        transform:
+            translate(-50%, -50%)
+            scale(.90);
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            scale(.68);
+    }
+}
+
+@keyframes dudaSealBrokenReveal {
+    0% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(.72);
+    }
+
+    18% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(1.02);
+    }
+
+    58% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-8px)
+            scale(1.08);
+    }
+
+    78% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(-3px)
+            scale(1.10);
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            translateY(8px)
+            scale(1.18);
+    }
+}
+
+/*
+ * Aba abre somente depois que o rompimento ficou perceptivel.
+ */
+.opening-gate--opening .envelope__flap {
+    animation:
+        envelopeRealFlapOpen
+        1250ms
+        1500ms
+        cubic-bezier(.22,.78,.18,1)
+        both !important;
+}
+
+.opening-gate--opening .letter-sheet {
+    animation:
+        foldedSheetRise
+        2100ms
+        2150ms
+        cubic-bezier(.18,.82,.18,1)
+        forwards !important;
+}
+
+/* === FIX FINAL QUEBRA DO SELO - END === */
