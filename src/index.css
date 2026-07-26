@@ -7676,3 +7676,463 @@ html {
 .communication-undo-mark:hover {
     background: #ffecec;
 }
+
+
+/* ======================================================================
+   GESTAO DE DESPESAS DA FESTA
+   ====================================================================== */
+
+.expenses-shell {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 32px 0 60px;
+    color: #173d38;
+}
+
+.expenses-login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+}
+
+.expenses-login-card,
+.expenses-panel,
+.expenses-header {
+    border: 1px solid rgba(8, 120, 111, .16);
+    border-radius: 16px;
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 18px 50px rgba(6, 88, 80, .08);
+}
+
+.expenses-login-card {
+    width: min(480px, 100%);
+    padding: 30px;
+}
+
+.expenses-login-card h1,
+.expenses-header h1,
+.expenses-panel h2,
+.expense-modal h2 {
+    margin: 4px 0 8px;
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #153d38;
+}
+
+.expenses-login-card form,
+.expense-modal form {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.expenses-login-card label,
+.expenses-form label,
+.expense-modal label {
+    display: grid;
+    gap: 5px;
+}
+
+.expenses-login-card label span,
+.expenses-form label span,
+.expense-modal label span {
+    color: #08786f;
+    font-size: .7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.expenses-login-card input,
+.expenses-form input,
+.expenses-form textarea,
+.expense-modal input,
+.expense-modal select,
+.expense-modal textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 11px;
+    border: 1px solid rgba(8, 120, 111, .22);
+    border-radius: 9px;
+    background: #fff;
+    color: #244c47;
+    font: inherit;
+}
+
+.expenses-login-card button,
+.expenses-form button,
+.expense-modal form > button {
+    min-height: 46px;
+    border: 0;
+    border-radius: 9px;
+    background: #08786f;
+    color: #fff;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.expenses-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 24px;
+}
+
+.expenses-header > button {
+    min-height: 42px;
+    padding: 8px 16px;
+    border: 1px solid rgba(173,70,70,.18);
+    border-radius: 9px;
+    background: #fff5f5;
+    color: #9d4545;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.expenses-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.expenses-summary article {
+    display: grid;
+    gap: 6px;
+    padding: 18px;
+    border: 1px solid rgba(8,120,111,.14);
+    border-radius: 13px;
+    background: rgba(255,255,255,.95);
+}
+
+.expenses-summary span {
+    color: #617d78;
+    font-size: .7rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.expenses-summary strong {
+    color: #173d38;
+    font-size: 1.5rem;
+}
+
+.expenses-summary--paid {
+    background: #ebfbf4 !important;
+}
+
+.expenses-summary--pending {
+    background: #fff9df !important;
+}
+
+.expenses-summary--overdue {
+    background: #fff0f0 !important;
+}
+
+.expenses-summary--overdue strong {
+    color: #a24444;
+}
+
+.expenses-panel {
+    margin-top: 16px;
+    padding: 22px;
+}
+
+.expenses-form {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0,1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.expenses-form__notes {
+    grid-column: 1 / -1;
+}
+
+.expenses-form__actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+}
+
+.expenses-secondary {
+    border: 1px solid rgba(8,120,111,.18) !important;
+    background: #f1faf7 !important;
+    color: #08786f !important;
+}
+
+.expenses-list-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.expenses-list-heading > strong {
+    display: grid;
+    place-items: center;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 999px;
+    background: #e0f8ef;
+    color: #08735d;
+}
+
+.expenses-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.expense-card {
+    padding: 16px;
+    border: 1px solid rgba(8,120,111,.14);
+    border-radius: 12px;
+    background: #fbfffd;
+}
+
+.expense-card > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.expense-card > header > div {
+    display: grid;
+    gap: 3px;
+}
+
+.expense-card > header strong {
+    font-size: 1.05rem;
+}
+
+.expense-card > header small {
+    color: #67807b;
+}
+
+.expense-status {
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: .67rem;
+    font-weight: 900;
+}
+
+.expense-status--pago {
+    background: #daf6ea;
+    color: #087158;
+}
+
+.expense-status--parcial {
+    background: #e8f3ff;
+    color: #34688b;
+}
+
+.expense-status--pendente {
+    background: #fff3cd;
+    color: #82620d;
+}
+
+.expense-status--vencido {
+    background: #ffe1e1;
+    color: #a13d3d;
+}
+
+.expense-values {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.expense-values > div {
+    display: grid;
+    gap: 3px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #eef8f5;
+}
+
+.expense-values span {
+    color: #65817c;
+    font-size: .62rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.expense-values strong {
+    font-size: .9rem;
+}
+
+.expense-notes {
+    margin: 12px 0 0;
+    color: #5d7672;
+}
+
+.expense-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.expense-actions button {
+    min-height: 38px;
+    padding: 7px 11px;
+    border: 1px solid rgba(8,120,111,.18);
+    border-radius: 8px;
+    background: #f2faf8;
+    color: #08746a;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.expense-pay-button {
+    background: #08786f !important;
+    color: #fff !important;
+}
+
+.expense-delete-button {
+    background: #fff3f3 !important;
+    color: #a34545 !important;
+    border-color: rgba(173,70,70,.18) !important;
+}
+
+.expense-payments {
+    margin-top: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #f5faf8;
+}
+
+.expense-payments summary {
+    cursor: pointer;
+    color: #08786f;
+    font-size: .76rem;
+    font-weight: 850;
+}
+
+.expense-payment-row {
+    display: grid;
+    grid-template-columns: 100px 120px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(8,120,111,.10);
+}
+
+.expense-payment-row button {
+    border: 0;
+    background: transparent;
+    color: #a34545;
+    cursor: pointer;
+}
+
+.expense-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 700;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(5,40,36,.62);
+    backdrop-filter: blur(8px);
+}
+
+.expense-modal {
+    width: min(520px,100%);
+    padding: 22px;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.expense-modal > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.expense-modal > header > button {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #fff1f1;
+    color: #a34545;
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+
+.expenses-toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 800;
+    max-width: 360px;
+    padding: 12px 15px;
+    border-radius: 10px;
+    background: #173d38;
+    color: #fff;
+    box-shadow: 0 15px 40px rgba(0,0,0,.2);
+}
+
+@media (max-width: 760px) {
+    .expenses-shell {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .expenses-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .expenses-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .expenses-summary strong {
+        font-size: 1.15rem;
+    }
+
+    .expenses-form {
+        grid-template-columns: 1fr;
+    }
+
+    .expenses-form__notes,
+    .expenses-form__actions {
+        grid-column: auto;
+    }
+
+    .expenses-form__actions {
+        flex-direction: column;
+    }
+
+    .expense-values {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .expense-payment-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .expense-payment-row small {
+        grid-column: 1 / -1;
+    }
+
+    .expense-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .expense-pay-button {
+        grid-column: 1 / -1;
+    }
+
+    .expense-actions button {
+        width: 100%;
+    }
+}
+
+/* === GESTAO DE DESPESAS END === */

@@ -74,6 +74,9 @@ async function handleApi(request, response, url) {
         'admin',
         'admin-login',
         'admin-logout',
+        'expenses',
+        'expenses-login',
+        'expenses-logout',
         'guest',
         'messages',
         'rsvp',
@@ -123,4 +126,5 @@ const server = createHttpServer(async (request, response) => {
 server.listen(port, () => {
     console.log(`Convite da Duda local: http://localhost:${port}`)
     console.log(`Admin local: http://localhost:${port}/admin`)
+    console.log(`Despesas local: http://localhost:${port}/despesas`)
 })

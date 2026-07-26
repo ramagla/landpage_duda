@@ -236,6 +236,42 @@ export async function ensureSchema() {
                 CREATE INDEX IF NOT EXISTS guest_communications_guest_index
                 ON guest_communications (invited_guest_id)
             `)
+
+            /*
+             * Gestao financeira da festa.
+             *
+             * Valores monetarios sao armazenados em centavos.
+             */
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_expenses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    description TEXT NOT NULL,
+                    category TEXT,
+                    supplier TEXT,
+                    total_amount_cents INTEGER NOT NULL,
+                    due_date TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_expense_payments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    expense_id INTEGER NOT NULL,
+                    amount_cents INTEGER NOT NULL,
+                    paid_at TEXT NOT NULL,
+                    payment_method TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_expense_payments_expense_index
+                ON party_expense_payments (expense_id)
+            `)
         })()
     }
 

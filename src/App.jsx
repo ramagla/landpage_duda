@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AdminCommunicationModal from './AdminCommunicationModal.jsx'
+import ExpensesPage from './ExpensesPage.jsx'
 
 import {
     RSVP_CLOSED_MESSAGE,
@@ -3395,8 +3396,21 @@ function LandingPage() {
 }
 
 function App() {
-    const isAdmin = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/admin'
-    return isAdmin ? <AdminPage /> : <LandingPage />
+    const pathname =
+        typeof window === 'undefined'
+            ? ''
+            : window.location.pathname
+                .replace(/\/$/, '')
+
+    if (pathname === '/admin') {
+        return <AdminPage />
+    }
+
+    if (pathname === '/despesas') {
+        return <ExpensesPage />
+    }
+
+    return <LandingPage />
 }
 
 export default App
