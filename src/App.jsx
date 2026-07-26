@@ -53,9 +53,59 @@ const GOOGLE_CALENDAR_URL = (
     + '&ctz=America%2FSao_Paulo'
 )
 
+function getCalendarPlatform() {
+    if (
+        typeof window === 'undefined'
+        || typeof navigator === 'undefined'
+    ) {
+        return 'desktop'
+    }
+
+    const userAgent =
+        navigator.userAgent || ''
+
+    const isIOS = (
+        /iPhone|iPad|iPod/i.test(userAgent)
+        || (
+            navigator.platform === 'MacIntel'
+            && navigator.maxTouchPoints > 1
+        )
+    )
+
+    if (isIOS) {
+        return 'ios'
+    }
+
+    if (/Android/i.test(userAgent)) {
+        return 'android'
+    }
+
+    return 'desktop'
+}
+
+
 function openCalendarEvent() {
     if (typeof window === 'undefined') return
 
+    const platform =
+        getCalendarPlatform()
+
+    /*
+     * iPhone/iPad:
+     * entregamos um calendario ICS para o Calendario Apple.
+     */
+    if (platform === 'ios') {
+        window.location.assign(
+            '/api/calendar'
+        )
+
+        return
+    }
+
+    /*
+     * Android e desktop:
+     * abre o Google Agenda com todos os dados preenchidos.
+     */
     window.open(
         GOOGLE_CALENDAR_URL,
         '_blank',
