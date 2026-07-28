@@ -1677,6 +1677,89 @@ test(
                         '/api/expenses',
                         {
                             ip:
+                                '10.0.0.65',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveExpense',
+
+                                description:
+                                    'Salao Sinal Geral Teste',
+
+                                category:
+                                    'Salao',
+
+                                totalAmount:
+                                    '2000,00',
+
+                                installmentCount:
+                                    2,
+
+                                dueDate:
+                                    '2026-09-25',
+
+                                requiresSignal:
+                                    'sim',
+
+                                signalType:
+                                    'fixed',
+
+                                signalAmount:
+                                    '500,00',
+
+                                initialPaidAmount:
+                                    '500,00',
+
+                                initialPaymentDate:
+                                    '2026-08-05',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const generalSignalContract =
+                    result.data.expenses.find(
+                        (item) => (
+                            item.description
+                            === 'Salao Sinal Geral Teste'
+                        )
+                    )
+
+                assert.equal(
+                    generalSignalContract.signalPaidAmountCents,
+                    50_000,
+                )
+
+                assert.equal(
+                    generalSignalContract.signalStatus,
+                    'sinal_pago',
+                )
+
+                assert.equal(
+                    generalSignalContract.installments.reduce(
+                        (sum, installment) => (
+                            sum
+                            + installment.paidAmountCents
+                        ),
+                        0,
+                    ),
+                    0,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
                                 '10.0.0.62',
 
                             headers: {

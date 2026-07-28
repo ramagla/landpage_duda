@@ -735,6 +735,31 @@ export default function ExpensesPage() {
                         'reservationConfirmedAt'
                     ),
 
+                contractDocumentName:
+                    form.get(
+                        'contractDocumentName'
+                    ),
+
+                contractDocumentType:
+                    form.get(
+                        'contractDocumentType'
+                    ),
+
+                contractDocumentDate:
+                    form.get(
+                        'contractDocumentDate'
+                    ),
+
+                contractDocumentUrl:
+                    form.get(
+                        'contractDocumentUrl'
+                    ),
+
+                contractDocumentNotes:
+                    form.get(
+                        'contractDocumentNotes'
+                    ),
+
                 notes:
                     form.get(
                         'notes'
@@ -2824,7 +2849,7 @@ export default function ExpensesPage() {
                                 />
                             </label>
 
-                            <div className="finance-form-divider">
+                            <div className="finance-form-divider finance-form-divider--signal">
                                 Sinal e reserva do contrato
                             </div>
 
@@ -2976,15 +3001,91 @@ export default function ExpensesPage() {
                                 />
                             </label>
 
+                            <div className="finance-form-divider finance-form-divider--document">
+                                Contrato e anexos
+                            </div>
+
+                            <label className="finance-field">
+                                <span>
+                                    Nome do anexo
+                                </span>
+
+                                <input
+                                    name="contractDocumentName"
+                                    placeholder="Ex.: Contrato assinado"
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Tipo de anexo
+                                </span>
+
+                                <select
+                                    name="contractDocumentType"
+                                    defaultValue="contrato"
+                                >
+                                    {DOCUMENT_TYPES.map(
+                                        (type) => (
+                                            <option
+                                                key={type.value}
+                                                value={type.value}
+                                            >
+                                                {type.label}
+                                            </option>
+                                        )
+                                    )}
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Data do anexo
+                                </span>
+
+                                <input
+                                    name="contractDocumentDate"
+                                    type="date"
+                                    defaultValue={todayIso()}
+                                />
+                            </label>
+
+                            <label className="finance-field finance-field--wide">
+                                <span>
+                                    Link do contrato/anexo
+                                </span>
+
+                                <input
+                                    name="contractDocumentUrl"
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                />
+
+                                <small>
+                                    Cole aqui o link do contrato, comprovante ou recibo. O arquivo deve ficar no Drive/OneDrive/Dropbox com permissao controlada.
+                                </small>
+                            </label>
+
+                            <label className="finance-field finance-field--wide">
+                                <span>
+                                    Observacao do anexo
+                                </span>
+
+                                <input
+                                    name="contractDocumentNotes"
+                                    placeholder="Ex.: contrato assinado pelo fornecedor"
+                                />
+                            </label>
+
                             {!editing ? (
                                 <>
-                                    <div className="finance-form-divider">
-                                        Pagamento j? realizado
+                                    <div className="finance-form-divider finance-form-divider--payment">
+                                        Pagamento ja realizado
                                     </div>
 
                                     <label className="finance-field">
                                         <span>
-                                            Valor j? pago
+                                            Valor ja pago
                                         </span>
 
                                         <input
@@ -3029,7 +3130,7 @@ export default function ExpensesPage() {
                                                         }
                                                     >
                                                         {method
-                                                            || 'N?o informado'}
+                                                            || 'Nao informado'}
                                                     </option>
                                                 )
                                             )}
@@ -3071,13 +3172,13 @@ export default function ExpensesPage() {
                                 </>
                             ) : (
                                 <>
-                                    <div className="finance-form-divider">
+                                    <div className="finance-form-divider finance-form-divider--payment">
                                         Pagamentos registrados
                                     </div>
 
                                     <label className="finance-field">
                                         <span>
-                                            Valor j? pago
+                                            Valor ja pago
                                         </span>
 
                                         <input
@@ -3118,7 +3219,7 @@ export default function ExpensesPage() {
                                                 editing
                                                     .payments?.[0]
                                                     ?.paymentMethod
-                                                || 'N?o informado'
+                                                || 'Nao informado'
                                             }
                                             readOnly
                                         />

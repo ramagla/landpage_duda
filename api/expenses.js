@@ -757,9 +757,39 @@ async function getSummary() {
                         .get(id)
                     || []
 
+                const requiresSignal =
+                    Number(
+                        row.requires_signal
+                        || 0
+                    ) === 1
+
+                const signalType =
+                    normalizeSignalType(
+                        row.signal_type
+                    )
+
+                const signalAmountCents =
+                    calculateSignalAmountCents({
+                        totalAmountCents:
+                            total,
+                        requiresSignal,
+                        signalType,
+                        signalAmountCents:
+                            Number(
+                                row.signal_amount_cents
+                                || 0
+                            ),
+                        signalPercent:
+                            Number(
+                                row.signal_percent
+                                || 0
+                            ),
+                    })
+
                 const explicitPayments =
                     new Map()
 
+                let explicitSignalPaidAmountCents = 0
                 let generalPaymentPool = 0
 
                 for (
@@ -782,12 +812,34 @@ async function getSummary() {
                         )
                     } else if (
                         payment.paymentType
-                        !== 'sinal'
+                        === 'sinal'
                     ) {
+                        explicitSignalPaidAmountCents +=
+                            payment.amountCents
+                    } else {
                         generalPaymentPool +=
                             payment.amountCents
                     }
                 }
+
+                const generalSignalPaymentCents =
+                    requiresSignal
+                        ? Math.min(
+                            Math.max(
+                                signalAmountCents
+                                - explicitSignalPaidAmountCents,
+                                0,
+                            ),
+                            generalPaymentPool,
+                        )
+                        : 0
+
+                generalPaymentPool -=
+                    generalSignalPaymentCents
+
+                const signalPaidAmountCents =
+                    explicitSignalPaidAmountCents
+                    + generalSignalPaymentCents
 
                 const installments =
                     rawInstallments.map(
@@ -900,51 +952,6 @@ async function getSummary() {
                     overdueAmountCents =
                         remaining
                 }
-
-                const requiresSignal =
-                    Number(
-                        row.requires_signal
-                        || 0
-                    ) === 1
-
-                const signalType =
-                    normalizeSignalType(
-                        row.signal_type
-                    )
-
-                const signalAmountCents =
-                    calculateSignalAmountCents({
-                        totalAmountCents:
-                            total,
-                        requiresSignal,
-                        signalType,
-                        signalAmountCents:
-                            Number(
-                                row.signal_amount_cents
-                                || 0
-                            ),
-                        signalPercent:
-                            Number(
-                                row.signal_percent
-                                || 0
-                            ),
-                    })
-
-                const signalPaidAmountCents =
-                    payments
-                        .filter(
-                            (payment) => (
-                                payment.paymentType
-                                === 'sinal'
-                            )
-                        )
-                        .reduce(
-                            (sum, payment) => (
-                                sum
-                                + payment.amountCents
-                            ),
-                            0,
-                        )
 
                 const signalRemainingAmountCents =
                     Math.max(
@@ -2149,6 +2156,49 @@ async function deleteSupplier(body) {
 }
 
 
+async function saveExpenseDocumentFromBody({
+    body,
+    expenseId,
+    supplierId,
+    description,
+}) {
+    const documentUrl =
+        cleanText(
+            body.contractDocumentUrl
+        )
+
+    if (!documentUrl) {
+        return null
+    }
+
+    return saveDocument({
+        name:
+            cleanText(
+                body.contractDocumentName
+            ) || `Contrato - ${description}`,
+
+        documentType:
+            body.contractDocumentType
+            || 'contrato',
+
+        supplierId,
+        expenseId,
+
+        documentDate:
+            cleanText(
+                body.contractDocumentDate
+            ) || getTodayIso(),
+
+        documentUrl,
+
+        notes:
+            cleanText(
+                body.contractDocumentNotes
+            ),
+    })
+}
+
+
 async function saveExpense(body) {
     const db = getClient()
 
@@ -2449,9 +2499,25 @@ async function saveExpense(body) {
             ],
         })
 
+        const documentResult =
+            await saveExpenseDocumentFromBody({
+                body,
+                expenseId:
+                    id,
+                supplierId:
+                    supplier.id,
+                description,
+            })
+
+        if (documentResult?.error) {
+            return documentResult
+        }
+
         return {
             message:
-                'Despesa atualizada.',
+                documentResult
+                    ? 'Despesa atualizada e documento cadastrado.'
+                    : 'Despesa atualizada.',
         }
     }
 
@@ -2576,11 +2642,26 @@ async function saveExpense(body) {
         })
     }
 
+    const documentResult =
+        await saveExpenseDocumentFromBody({
+            body,
+            expenseId,
+            supplierId:
+                supplier.id,
+            description,
+        })
+
+    if (documentResult?.error) {
+        return documentResult
+    }
+
     return {
         message:
-            initialPaidAmountCents > 0
-                ? 'Despesa e pagamento inicial cadastrados.'
-                : 'Despesa cadastrada.',
+            documentResult
+                ? 'Despesa e documento cadastrados.'
+                : initialPaidAmountCents > 0
+                    ? 'Despesa e pagamento inicial cadastrados.'
+                    : 'Despesa cadastrada.',
     }
 }
 

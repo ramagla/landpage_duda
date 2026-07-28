@@ -10072,3 +10072,82 @@ html {
         justify-content: flex-start;
     }
 }
+﻿
+/* Visual polish for party management forms */
+.finance-expense-form,
+.finance-supplier-form,
+.party-management-form {
+    padding: 14px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fbfffd 0%, #f4fbf8 100%);
+}
+
+.finance-field {
+    padding: 10px;
+    border: 1px solid rgba(8, 120, 111, .10);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .82);
+}
+
+.finance-field:focus-within {
+    border-color: rgba(8, 120, 111, .34);
+    box-shadow: 0 8px 22px rgba(8, 120, 111, .08);
+}
+
+.finance-form-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 11px;
+    background: #eaf7f3;
+    color: #0b6c62;
+    box-shadow: inset 4px 0 0 #0f8f7d;
+}
+
+.finance-form-divider::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.finance-form-divider--signal {
+    background: #fff5db;
+    color: #8a6100;
+    box-shadow: inset 4px 0 0 #f2b84b;
+}
+
+.finance-form-divider--document {
+    background: #edf2ff;
+    color: #315f96;
+    box-shadow: inset 4px 0 0 #6c8ee8;
+}
+
+.finance-form-divider--payment {
+    background: #eaf8ff;
+    color: #24637d;
+    box-shadow: inset 4px 0 0 #45a5c4;
+}
+
+.finance-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.finance-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: linear-gradient(90deg, #0f8f7d, #f2b84b, #6c8ee8);
+}
+
+.finance-section-heading h2,
+.finance-budget-panel h2 {
+    color: #073c36;
+}
