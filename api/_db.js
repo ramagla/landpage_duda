@@ -398,6 +398,37 @@ export async function ensureSchema() {
                 ON party_expenses (contract_status)
             `)
 
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS party_documents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    document_type TEXT NOT NULL DEFAULT 'outros',
+                    supplier_id INTEGER,
+                    expense_id INTEGER,
+                    payment_id INTEGER,
+                    document_date TEXT,
+                    document_url TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_documents_expense_index
+                ON party_documents (expense_id)
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_documents_supplier_index
+                ON party_documents (supplier_id)
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_documents_payment_index
+                ON party_documents (payment_id)
+            `)
+
             /*
              * Checklist geral da festa.
              */

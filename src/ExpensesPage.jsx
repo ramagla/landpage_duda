@@ -64,6 +64,38 @@ const PAYMENT_TYPES = [
 ]
 
 
+const DOCUMENT_TYPES = [
+    {
+        value: 'contrato',
+        label: 'Contrato',
+    },
+    {
+        value: 'orcamento',
+        label: 'Orcamento',
+    },
+    {
+        value: 'comprovante',
+        label: 'Comprovante',
+    },
+    {
+        value: 'nota_fiscal',
+        label: 'Nota fiscal',
+    },
+    {
+        value: 'recibo',
+        label: 'Recibo',
+    },
+    {
+        value: 'cardapio',
+        label: 'Cardapio',
+    },
+    {
+        value: 'outros',
+        label: 'Outros',
+    },
+]
+
+
 function money(cents) {
     return new Intl.NumberFormat(
         'pt-BR',
@@ -190,6 +222,11 @@ export default function ExpensesPage() {
     const [
         paymentExpense,
         setPaymentExpense,
+    ] = useState(null)
+
+    const [
+        documentModal,
+        setDocumentModal,
     ] = useState(null)
 
     const [search, setSearch] =
@@ -737,6 +774,79 @@ export default function ExpensesPage() {
                     expense.id,
 
                 contractStatus,
+            })
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function handleSaveDocument(
+        event,
+    ) {
+        event.preventDefault()
+
+        const form =
+            new FormData(
+                event.currentTarget
+            )
+
+        try {
+            await loadExpenses({
+                action:
+                    'saveDocument',
+
+                id:
+                    form.get('id'),
+
+                name:
+                    form.get('name'),
+
+                documentType:
+                    form.get('documentType'),
+
+                supplierId:
+                    form.get('supplierId'),
+
+                expenseId:
+                    form.get('expenseId'),
+
+                paymentId:
+                    form.get('paymentId'),
+
+                documentDate:
+                    form.get('documentDate'),
+
+                documentUrl:
+                    form.get('documentUrl'),
+
+                notes:
+                    form.get('notes'),
+            })
+
+            setDocumentModal(null)
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function deleteDocument(document) {
+        if (
+            !window.confirm(
+                `Remover o documento "${document.name}"?`
+            )
+        ) {
+            return
+        }
+
+        try {
+            await loadExpenses({
+                action:
+                    'deleteDocument',
+
+                id:
+                    document.id,
             })
         } catch {
             // mensagem ja tratada
@@ -1646,6 +1756,22 @@ export default function ExpensesPage() {
                 <button
                     type="button"
                     className={
+                        activeTab === 'documents'
+                            ? 'finance-tab finance-tab--active'
+                            : 'finance-tab'
+                    }
+                    onClick={() => (
+                        setActiveTab(
+                            'documents'
+                        )
+                    )}
+                >
+                    Documentos
+                </button>
+
+                <button
+                    type="button"
+                    className={
                         activeTab === 'suppliers'
                             ? 'finance-tab finance-tab--active'
                             : 'finance-tab'
@@ -2295,6 +2421,17 @@ export default function ExpensesPage() {
                                         <button
                                             type="button"
                                             className="finance-secondary-button"
+                                            onClick={() => setDocumentModal({
+                                                expense,
+                                                document: null,
+                                            })}
+                                        >
+                                            Documento
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="finance-secondary-button"
                                             onClick={() => startEditExpense(expense)}
                                         >
                                             Editar
@@ -2347,6 +2484,7 @@ export default function ExpensesPage() {
                                     </span>
 
                                     <span>Parcelas: {expense.installments.length || 0}</span>
+                                    <span>Documentos: {expense.documents?.length || 0}</span>
                                 </div>
 
                                 {expense.signalNotes ? (
@@ -2357,6 +2495,95 @@ export default function ExpensesPage() {
 
                         {(data.expenses || []).length === 0 ? (
                             <div className="finance-empty">Nenhum contrato cadastrado ainda.</div>
+                        ) : null}
+                    </section>
+                </>
+            ) : null}
+
+
+            {activeTab === 'documents' ? (
+                <>
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">Arquivos e links</p>
+                                <h2>Documentos da festa</h2>
+                                <p>Cadastre links seguros para contratos, comprovantes, recibos e orcamentos.</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="finance-primary-button"
+                                onClick={() => setDocumentModal({
+                                    expense: null,
+                                    document: null,
+                                })}
+                            >
+                                + Novo documento
+                            </button>
+                        </div>
+                    </section>
+
+                    <section className="finance-document-list">
+                        {(data.documents || []).map((document) => (
+                            <article
+                                key={document.id}
+                                className="finance-document-card"
+                            >
+                                <div>
+                                    <p className="panel-kicker">
+                                        {DOCUMENT_TYPES.find((type) => type.value === document.documentType)?.label || 'Documento'}
+                                    </p>
+
+                                    <h3>{document.name}</h3>
+
+                                    <small>
+                                        {[document.expenseDescription, document.supplierName, dateBr(document.documentDate)]
+                                            .filter(Boolean)
+                                            .join(' ? ')}
+                                    </small>
+
+                                    {document.notes ? (
+                                        <p>{document.notes}</p>
+                                    ) : null}
+                                </div>
+
+                                <div className="finance-document-actions">
+                                    <a
+                                        className="finance-primary-button"
+                                        href={document.documentUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Abrir
+                                    </a>
+
+                                    <button
+                                        type="button"
+                                        className="finance-secondary-button"
+                                        onClick={() => setDocumentModal({
+                                            expense: (data.expenses || []).find((expense) => expense.id === document.expenseId) || null,
+                                            document,
+                                        })}
+                                    >
+                                        Editar
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="finance-danger-button"
+                                        onClick={() => deleteDocument(document)}
+                                    >
+                                        Remover
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+
+                        {(data.documents || []).length === 0 ? (
+                            <div className="finance-empty">
+                                Nenhum documento cadastrado. Use o botao Documento em um contrato para anexar o link.
+                            </div>
                         ) : null}
                     </section>
                 </>
@@ -4886,6 +5113,140 @@ export default function ExpensesPage() {
                         </div>
                     </section>
                 </>
+            ) : null}
+
+
+            {documentModal ? (
+                <div className="finance-modal-backdrop">
+                    <section className="finance-modal">
+                        <header>
+                            <div>
+                                <p className="panel-kicker">Documento</p>
+                                <h2>
+                                    {documentModal.document
+                                        ? 'Editar documento'
+                                        : 'Anexar contrato/documento'}
+                                </h2>
+                                <p>
+                                    Informe um link seguro para o arquivo. Upload direto ficara para quando houver storage configurado.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="finance-modal-close"
+                                onClick={() => setDocumentModal(null)}
+                                aria-label="Fechar"
+                            >
+                                ?
+                            </button>
+                        </header>
+
+                        <form onSubmit={handleSaveDocument}>
+                            <input
+                                type="hidden"
+                                name="id"
+                                value={documentModal.document?.id || ''}
+                            />
+
+                            <input
+                                type="hidden"
+                                name="expenseId"
+                                value={documentModal.document?.expenseId || documentModal.expense?.id || ''}
+                            />
+
+                            <input
+                                type="hidden"
+                                name="supplierId"
+                                value={documentModal.document?.supplierId || documentModal.expense?.supplierId || ''}
+                            />
+
+                            <input
+                                type="hidden"
+                                name="paymentId"
+                                value={documentModal.document?.paymentId || ''}
+                            />
+
+                            <label className="finance-field">
+                                <span>Nome</span>
+                                <input
+                                    name="name"
+                                    defaultValue={
+                                        documentModal.document?.name
+                                        || (documentModal.expense
+                                            ? `Contrato - ${documentModal.expense.description}`
+                                            : '')
+                                    }
+                                    placeholder="Ex.: Contrato do DJ"
+                                    required
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Tipo</span>
+                                <select
+                                    name="documentType"
+                                    defaultValue={documentModal.document?.documentType || 'contrato'}
+                                >
+                                    {DOCUMENT_TYPES.map((type) => (
+                                        <option
+                                            key={type.value}
+                                            value={type.value}
+                                        >
+                                            {type.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Data</span>
+                                <input
+                                    name="documentDate"
+                                    type="date"
+                                    defaultValue={documentModal.document?.documentDate || todayIso()}
+                                />
+                            </label>
+
+                            <label className="finance-field finance-field--full">
+                                <span>URL do documento</span>
+                                <input
+                                    name="documentUrl"
+                                    type="url"
+                                    defaultValue={documentModal.document?.documentUrl || ''}
+                                    placeholder="https://drive.google.com/..."
+                                    required
+                                />
+                                <small>
+                                    Use um link de Drive/OneDrive/Dropbox ou storage com permissao controlada.
+                                </small>
+                            </label>
+
+                            {documentModal.expense ? (
+                                <div className="finance-linked-document">
+                                    Vinculado ao contrato: <strong>{documentModal.expense.description}</strong>
+                                </div>
+                            ) : null}
+
+                            <label className="finance-field finance-field--full">
+                                <span>Observacao</span>
+                                <textarea
+                                    name="notes"
+                                    rows="3"
+                                    defaultValue={documentModal.document?.notes || ''}
+                                    placeholder="Ex.: contrato assinado, comprovante do sinal, recibo final..."
+                                />
+                            </label>
+
+                            <button
+                                type="submit"
+                                className="finance-primary-button"
+                            >
+                                Salvar documento
+                            </button>
+                        </form>
+                    </section>
+                </div>
             ) : null}
 
 

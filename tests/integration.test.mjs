@@ -1615,6 +1615,68 @@ test(
                         '/api/expenses',
                         {
                             ip:
+                                '10.0.0.64',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveDocument',
+
+                                name:
+                                    'Contrato DJ assinado',
+
+                                documentType:
+                                    'contrato',
+
+                                expenseId:
+                                    contract.id,
+
+                                documentDate:
+                                    '2026-08-10',
+
+                                documentUrl:
+                                    'https://example.com/contrato-dj.pdf',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const savedDocument =
+                    result.data.documents.find(
+                        (item) => (
+                            item.name
+                            === 'Contrato DJ assinado'
+                        )
+                    )
+
+                assert.equal(
+                    savedDocument?.expenseId,
+                    contract.id,
+                )
+
+                assert.equal(
+                    result.data.expenses.find(
+                        (item) => (
+                            item.id
+                            === contract.id
+                        )
+                    )?.documents.length,
+                    1,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
                                 '10.0.0.62',
 
                             headers: {

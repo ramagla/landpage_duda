@@ -10019,3 +10019,56 @@ html {
 .finance-form-inline-actions button {
     min-height: 44px;
 }
+﻿
+.finance-document-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.finance-document-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid rgba(8, 120, 111, .13);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .95);
+    box-shadow: 0 14px 36px rgba(5, 76, 69, .055);
+}
+
+.finance-document-card h3 {
+    margin: 0 0 4px;
+    color: #173f39;
+}
+
+.finance-document-card small,
+.finance-document-card p {
+    color: #647d78;
+}
+
+.finance-document-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.finance-linked-document {
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #eef7f4;
+    color: #31524d;
+    font-size: .85rem;
+}
+
+@media (max-width: 720px) {
+    .finance-document-card {
+        display: grid;
+    }
+
+    .finance-document-actions {
+        justify-content: flex-start;
+    }
+}

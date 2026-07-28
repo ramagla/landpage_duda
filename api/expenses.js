@@ -133,6 +133,41 @@ function normalizePaymentType(value) {
 }
 
 
+function normalizeDocumentType(value) {
+    const type =
+        String(value || '')
+            .trim()
+            .toLowerCase()
+
+    return [
+        'contrato',
+        'orcamento',
+        'comprovante',
+        'nota_fiscal',
+        'recibo',
+        'cardapio',
+        'outros',
+    ].includes(type)
+        ? type
+        : 'outros'
+}
+
+
+function isSafeDocumentUrl(value) {
+    try {
+        const parsed =
+            new URL(value)
+
+        return [
+            'https:',
+            'http:',
+        ].includes(parsed.protocol)
+    } catch {
+        return false
+    }
+}
+
+
 function calculateSignalAmountCents({
     totalAmountCents,
     requiresSignal,
@@ -1553,6 +1588,31 @@ async function getSummary() {
                 item_name
         `)
 
+    const documentsResult =
+        await db.execute(`
+            SELECT
+                d.id,
+                d.name,
+                d.document_type,
+                d.supplier_id,
+                d.expense_id,
+                d.payment_id,
+                d.document_date,
+                d.document_url,
+                d.notes,
+                d.created_at,
+                s.name AS supplier_name,
+                e.description AS expense_description
+            FROM party_documents d
+            LEFT JOIN party_suppliers s
+                ON s.id = d.supplier_id
+            LEFT JOIN party_expenses e
+                ON e.id = d.expense_id
+            ORDER BY
+                COALESCE(d.document_date, d.created_at) DESC,
+                d.id DESC
+        `)
+
     const tasks =
         tasksResult.rows.map(
             (row) => ({
@@ -1677,6 +1737,82 @@ async function getSummary() {
             }
         )
 
+    const documents =
+        documentsResult.rows.map(
+            (row) => ({
+                id:
+                    Number(row.id),
+
+                name:
+                    row.name,
+
+                documentType:
+                    normalizeDocumentType(
+                        row.document_type
+                    ),
+
+                supplierId:
+                    row.supplier_id
+                        ? Number(row.supplier_id)
+                        : null,
+
+                supplierName:
+                    row.supplier_name
+                    || '',
+
+                expenseId:
+                    row.expense_id
+                        ? Number(row.expense_id)
+                        : null,
+
+                expenseDescription:
+                    row.expense_description
+                    || '',
+
+                paymentId:
+                    row.payment_id
+                        ? Number(row.payment_id)
+                        : null,
+
+                documentDate:
+                    row.document_date
+                    || '',
+
+                documentUrl:
+                    row.document_url
+                    || '',
+
+                notes:
+                    row.notes || '',
+            })
+        )
+
+    const documentsByExpense =
+        new Map()
+
+    for (const document of documents) {
+        if (!document.expenseId) {
+            continue
+        }
+
+        if (!documentsByExpense.has(document.expenseId)) {
+            documentsByExpense.set(
+                document.expenseId,
+                [],
+            )
+        }
+
+        documentsByExpense
+            .get(document.expenseId)
+            .push(document)
+    }
+
+    for (const expense of expenses) {
+        expense.documents =
+            documentsByExpense.get(expense.id)
+            || []
+    }
+
     const management = {
         tasksTotal:
             tasks.length,
@@ -1757,6 +1893,7 @@ async function getSummary() {
         tasks,
         timeline,
         shoppingItems,
+        documents,
         management,
 
         categories:
@@ -3209,6 +3346,151 @@ async function deleteTimelineItem(body) {
 }
 
 
+async function saveDocument(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    const name =
+        cleanText(
+            body.name,
+        )
+
+    const documentUrl =
+        cleanText(
+            body.documentUrl,
+        )
+
+    if (name.length < 2) {
+        return {
+            error:
+                'Informe o nome do documento.',
+        }
+    }
+
+    if (
+        !documentUrl
+        || !isSafeDocumentUrl(documentUrl)
+    ) {
+        return {
+            error:
+                'Informe um link http ou https valido para o documento.',
+        }
+    }
+
+    const fields = [
+        name,
+        normalizeDocumentType(
+            body.documentType,
+        ),
+        parseInteger(
+            body.supplierId,
+            0,
+        ) || null,
+        parseInteger(
+            body.expenseId,
+            0,
+        ) || null,
+        parseInteger(
+            body.paymentId,
+            0,
+        ) || null,
+        cleanText(
+            body.documentDate,
+        ),
+        documentUrl,
+        cleanText(
+            body.notes,
+        ),
+    ]
+
+    const db = getClient()
+
+    if (id > 0) {
+        await db.execute({
+            sql: `
+                UPDATE party_documents
+                SET
+                    name = ?,
+                    document_type = ?,
+                    supplier_id = ?,
+                    expense_id = ?,
+                    payment_id = ?,
+                    document_date = ?,
+                    document_url = ?,
+                    notes = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                ...fields,
+                id,
+            ],
+        })
+
+        return {
+            message:
+                'Documento atualizado.',
+        }
+    }
+
+    await db.execute({
+        sql: `
+            INSERT INTO party_documents (
+                name,
+                document_type,
+                supplier_id,
+                expense_id,
+                payment_id,
+                document_date,
+                document_url,
+                notes
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: fields,
+    })
+
+    return {
+        message:
+            'Documento cadastrado.',
+    }
+}
+
+
+async function deleteDocument(body) {
+    const id =
+        parseInteger(
+            body.id,
+            0,
+        )
+
+    if (id <= 0) {
+        return {
+            error:
+                'Documento invalido.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM party_documents
+            WHERE id = ?
+        `,
+        args: [
+            id,
+        ],
+    })
+
+    return {
+        message:
+            'Documento removido.',
+    }
+}
+
+
 async function saveShoppingItem(body) {
     const id =
         parseInteger(
@@ -3557,6 +3839,20 @@ export default async function handler(
             case 'deleteTimelineItem':
                 result =
                     await deleteTimelineItem(
+                        body
+                    )
+                break
+
+            case 'saveDocument':
+                result =
+                    await saveDocument(
+                        body
+                    )
+                break
+
+            case 'deleteDocument':
+                result =
+                    await deleteDocument(
                         body
                     )
                 break
