@@ -2597,15 +2597,167 @@ export default function ExpensesPage() {
                                 />
                             </label>
 
+                            <div className="finance-form-divider">
+                                Sinal e reserva do contrato
+                            </div>
+
+                            <label className="finance-field">
+                                <span>
+                                    Exige sinal?
+                                </span>
+
+                                <select
+                                    name="requiresSignal"
+                                    defaultValue={
+                                        editing?.requiresSignal
+                                            ? 'sim'
+                                            : 'nao'
+                                    }
+                                >
+                                    <option value="nao">
+                                        Nao
+                                    </option>
+
+                                    <option value="sim">
+                                        Sim
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Tipo de sinal
+                                </span>
+
+                                <select
+                                    name="signalType"
+                                    defaultValue={
+                                        editing?.signalType
+                                        || 'fixed'
+                                    }
+                                >
+                                    <option value="fixed">
+                                        Valor fixo
+                                    </option>
+
+                                    <option value="percent">
+                                        Percentual
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Valor do sinal
+                                </span>
+
+                                <input
+                                    name="signalAmount"
+                                    inputMode="decimal"
+                                    defaultValue={
+                                        editing
+                                            ? moneyInput(
+                                                editing.signalAmountCents
+                                            )
+                                            : ''
+                                    }
+                                    placeholder="0,00"
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Percentual do sinal
+                                </span>
+
+                                <input
+                                    name="signalPercent"
+                                    inputMode="decimal"
+                                    defaultValue={
+                                        editing?.signalPercent
+                                        || ''
+                                    }
+                                    placeholder="30"
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Vencimento do sinal
+                                </span>
+
+                                <input
+                                    name="signalDueDate"
+                                    type="date"
+                                    defaultValue={
+                                        editing?.signalDueDate
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Reserva confirmada?
+                                </span>
+
+                                <select
+                                    name="reservationConfirmed"
+                                    defaultValue={
+                                        editing?.reservationConfirmed
+                                            ? 'sim'
+                                            : 'nao'
+                                    }
+                                >
+                                    <option value="nao">
+                                        Nao
+                                    </option>
+
+                                    <option value="sim">
+                                        Sim
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label className="finance-field">
+                                <span>
+                                    Data da confirmacao
+                                </span>
+
+                                <input
+                                    name="reservationConfirmedAt"
+                                    type="date"
+                                    defaultValue={
+                                        editing?.reservationConfirmedAt
+                                        || ''
+                                    }
+                                />
+                            </label>
+
+                            <label className="finance-field finance-field--wide">
+                                <span>
+                                    Observacao do sinal
+                                </span>
+
+                                <input
+                                    name="signalNotes"
+                                    defaultValue={
+                                        editing?.signalNotes
+                                        || ''
+                                    }
+                                    placeholder="Ex.: entrada para reservar a data"
+                                />
+                            </label>
+
                             {!editing ? (
                                 <>
                                     <div className="finance-form-divider">
-                                        Pagamento já realizado
+                                        Pagamento j? realizado
                                     </div>
 
                                     <label className="finance-field">
                                         <span>
-                                            Valor já pago
+                                            Valor j? pago
                                         </span>
 
                                         <input
@@ -2650,7 +2802,7 @@ export default function ExpensesPage() {
                                                         }
                                                     >
                                                         {method
-                                                            || 'Não informado'}
+                                                            || 'N?o informado'}
                                                     </option>
                                                 )
                                             )}
@@ -2659,7 +2811,29 @@ export default function ExpensesPage() {
 
                                     <label className="finance-field">
                                         <span>
-                                            Observação do pagamento
+                                            Tipo de pagamento
+                                        </span>
+
+                                        <select
+                                            name="initialPaymentType"
+                                            defaultValue="pagamento_geral"
+                                        >
+                                            {PAYMENT_TYPES.map(
+                                                (type) => (
+                                                    <option
+                                                        key={type.value}
+                                                        value={type.value}
+                                                    >
+                                                        {type.label}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </label>
+
+                                    <label className="finance-field">
+                                        <span>
+                                            Observa??o do pagamento
                                         </span>
 
                                         <input
@@ -2668,7 +2842,93 @@ export default function ExpensesPage() {
                                         />
                                     </label>
                                 </>
-                            ) : null}
+                            ) : (
+                                <>
+                                    <div className="finance-form-divider">
+                                        Pagamentos registrados
+                                    </div>
+
+                                    <label className="finance-field">
+                                        <span>
+                                            Valor j? pago
+                                        </span>
+
+                                        <input
+                                            value={
+                                                moneyInput(
+                                                    editing
+                                                        .paidAmountCents
+                                                )
+                                            }
+                                            readOnly
+                                        />
+                                    </label>
+
+                                    <label className="finance-field">
+                                        <span>
+                                            ?ltimo pagamento
+                                        </span>
+
+                                        <input
+                                            value={
+                                                dateBr(
+                                                    editing
+                                                        .payments?.[0]
+                                                        ?.paidAt
+                                                )
+                                            }
+                                            readOnly
+                                        />
+                                    </label>
+
+                                    <label className="finance-field">
+                                        <span>
+                                            Forma de pagamento
+                                        </span>
+
+                                        <input
+                                            value={
+                                                editing
+                                                    .payments?.[0]
+                                                    ?.paymentMethod
+                                                || 'N?o informado'
+                                            }
+                                            readOnly
+                                        />
+                                    </label>
+
+                                    <label className="finance-field">
+                                        <span>
+                                            Observa??o do pagamento
+                                        </span>
+
+                                        <input
+                                            value={
+                                                editing
+                                                    .payments?.[0]
+                                                    ?.notes
+                                                || ''
+                                            }
+                                            readOnly
+                                            placeholder="Sem observa??o"
+                                        />
+                                    </label>
+
+                                    <div className="finance-form-inline-actions">
+                                        <button
+                                            type="button"
+                                            className="finance-secondary-button"
+                                            onClick={() => (
+                                                setPaymentExpense(
+                                                    editing
+                                                )
+                                            )}
+                                        >
+                                            Registrar novo pagamento
+                                        </button>
+                                    </div>
+                                </>
+                            )}
 
                             <label className="finance-field finance-field--full">
                                 <span>
