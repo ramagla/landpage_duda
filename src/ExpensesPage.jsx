@@ -3463,6 +3463,37 @@ export default function ExpensesPage() {
 
                                                     <div>
                                                         <span>
+                                                            Entrada / sinal
+                                                        </span>
+
+                                                        <strong>
+                                                            {money(
+                                                                expense
+                                                                    .signalAmountCents
+                                                            )}
+                                                        </strong>
+                                                    </div>
+
+                                                    <div>
+                                                        <span>
+                                                            Saldo ap?s entrada
+                                                        </span>
+
+                                                        <strong>
+                                                            {money(
+                                                                Math.max(
+                                                                    expense
+                                                                        .totalAmountCents
+                                                                    - expense
+                                                                        .signalAmountCents,
+                                                                    0,
+                                                                )
+                                                            )}
+                                                        </strong>
+                                                    </div>
+
+                                                    <div>
+                                                        <span>
                                                             Pago
                                                         </span>
 
