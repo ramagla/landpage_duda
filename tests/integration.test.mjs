@@ -1453,6 +1453,288 @@ test(
 
 
         await t.test(
+            'financeiro controla contratos com sinal e cancelamento',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.60',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveExpense',
+
+                                description:
+                                    'DJ com Sinal Teste',
+
+                                category:
+                                    'DJ / Som',
+
+                                totalAmount:
+                                    '5500,00',
+
+                                installmentCount:
+                                    4,
+
+                                dueDate:
+                                    '2026-09-15',
+
+                                requiresSignal:
+                                    'sim',
+
+                                signalType:
+                                    'fixed',
+
+                                signalAmount:
+                                    '1500,00',
+
+                                signalDueDate:
+                                    '2026-08-15',
+
+                                initialPaidAmount:
+                                    '500,00',
+
+                                initialPaymentType:
+                                    'sinal',
+
+                                initialPaymentDate:
+                                    '2026-08-01',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                let contract =
+                    result.data.expenses.find(
+                        (item) => (
+                            item.description
+                            === 'DJ com Sinal Teste'
+                        )
+                    )
+
+                assert.ok(contract)
+
+                assert.equal(
+                    contract.signalAmountCents,
+                    150_000,
+                )
+
+                assert.equal(
+                    contract.signalPaidAmountCents,
+                    50_000,
+                )
+
+                assert.equal(
+                    contract.signalRemainingAmountCents,
+                    100_000,
+                )
+
+                assert.equal(
+                    contract.payments[0].paymentType,
+                    'sinal',
+                )
+
+                assert.equal(
+                    contract.installments.reduce(
+                        (sum, installment) => (
+                            sum
+                            + installment.amountCents
+                        ),
+                        0,
+                    ),
+                    400_000,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.61',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'addPayment',
+
+                                expenseId:
+                                    contract.id,
+
+                                paymentType:
+                                    'sinal',
+
+                                amount:
+                                    '1000,00',
+
+                                paidAt:
+                                    '2026-08-10',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                contract =
+                    result.data.expenses.find(
+                        (item) => (
+                            item.id
+                            === contract.id
+                        )
+                    )
+
+                assert.equal(
+                    contract.signalStatus,
+                    'sinal_pago',
+                )
+
+                assert.equal(
+                    contract.signalPaidAmountCents,
+                    150_000,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.62',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'saveExpense',
+
+                                description:
+                                    'Decoracao Sinal Percentual Teste',
+
+                                category:
+                                    'Decora??o',
+
+                                totalAmount:
+                                    '2200.00',
+
+                                installmentCount:
+                                    2,
+
+                                dueDate:
+                                    '2026-09-20',
+
+                                requiresSignal:
+                                    'sim',
+
+                                signalType:
+                                    'percent',
+
+                                signalPercent:
+                                    '30',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const percentContract =
+                    result.data.expenses.find(
+                        (item) => (
+                            item.description
+                            === 'Decoracao Sinal Percentual Teste'
+                        )
+                    )
+
+                assert.equal(
+                    percentContract.signalAmountCents,
+                    66_000,
+                )
+
+                assert.equal(
+                    percentContract.installments.reduce(
+                        (sum, installment) => (
+                            sum
+                            + installment.amountCents
+                        ),
+                        0,
+                    ),
+                    154_000,
+                )
+
+                const activeTotalBeforeCancel =
+                    result.data.totals.total
+
+                result =
+                    await requestJson(
+                        '/api/expenses',
+                        {
+                            ip:
+                                '10.0.0.63',
+
+                            headers: {
+                                cookie:
+                                    expensesCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'updateContractStatus',
+
+                                expenseId:
+                                    percentContract.id,
+
+                                contractStatus:
+                                    'cancelled',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.expenses.find(
+                        (item) => (
+                            item.id
+                            === percentContract.id
+                        )
+                    )?.status,
+                    'cancelado',
+                )
+
+                assert.equal(
+                    result.data.totals.total,
+                    activeTotalBeforeCancel
+                    - 220_000,
+                )
+            },
+        )
+
+
+        await t.test(
             'financeiro gerencia checklist cronograma e lista de compras',
             async () => {
                 let result =

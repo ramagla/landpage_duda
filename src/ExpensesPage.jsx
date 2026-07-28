@@ -4,12 +4,19 @@ import {
     useState,
 } from 'react'
 
+import FinanceChart from './FinanceChart.jsx'
+
 
 const STATUS_LABELS = {
     pago: 'Pago',
     parcial: 'Parcial',
     pendente: 'Pendente',
     vencido: 'Vencido',
+    aguardando_sinal: 'Aguardando sinal',
+    sinal_parcial: 'Sinal parcial',
+    sinal_pago: 'Sinal pago',
+    sinal_vencido: 'Sinal vencido',
+    cancelado: 'Cancelado',
 }
 
 
@@ -38,6 +45,22 @@ const PAYMENT_METHODS = [
     'Cartão',
     'Transferência',
     'Boleto',
+]
+
+
+const PAYMENT_TYPES = [
+    {
+        value: 'pagamento_geral',
+        label: 'Pagamento geral',
+    },
+    {
+        value: 'sinal',
+        label: 'Sinal / entrada',
+    },
+    {
+        value: 'parcela',
+        label: 'Parcela',
+    },
 ]
 
 
@@ -621,12 +644,59 @@ export default function ExpensesPage() {
                             'initialPaymentMethod'
                         ),
 
+                initialPaymentType:
+                    editing
+                        ? ''
+                        : form.get(
+                            'initialPaymentType'
+                        ),
+
                 initialPaymentNotes:
                     editing
                         ? ''
                         : form.get(
                             'initialPaymentNotes'
                         ),
+
+                requiresSignal:
+                    form.get(
+                        'requiresSignal'
+                    ),
+
+                signalType:
+                    form.get(
+                        'signalType'
+                    ),
+
+                signalAmount:
+                    form.get(
+                        'signalAmount'
+                    ),
+
+                signalPercent:
+                    form.get(
+                        'signalPercent'
+                    ),
+
+                signalDueDate:
+                    form.get(
+                        'signalDueDate'
+                    ),
+
+                signalNotes:
+                    form.get(
+                        'signalNotes'
+                    ),
+
+                reservationConfirmed:
+                    form.get(
+                        'reservationConfirmed'
+                    ),
+
+                reservationConfirmedAt:
+                    form.get(
+                        'reservationConfirmedAt'
+                    ),
 
                 notes:
                     form.get(
@@ -639,6 +709,35 @@ export default function ExpensesPage() {
             if (!editing) {
                 formElement.reset()
             }
+        } catch {
+            // mensagem ja tratada
+        }
+    }
+
+
+    async function updateContractStatus(
+        expense,
+        contractStatus,
+    ) {
+        const question =
+            contractStatus === 'cancelled'
+                ? 'Cancelar este contrato? Ele ficara no historico e saira dos totais ativos.'
+                : 'Reativar este contrato nos totais ativos?'
+
+        if (!window.confirm(question)) {
+            return
+        }
+
+        try {
+            await loadExpenses({
+                action:
+                    'updateContractStatus',
+
+                expenseId:
+                    expense.id,
+
+                contractStatus,
+            })
         } catch {
             // mensagem ja tratada
         }
@@ -756,6 +855,11 @@ export default function ExpensesPage() {
                 paymentMethod:
                     form.get(
                         'paymentMethod'
+                    ),
+
+                paymentType:
+                    form.get(
+                        'paymentType'
                     ),
 
                 notes:
@@ -1293,6 +1397,172 @@ export default function ExpensesPage() {
             || 0
         ) < 0
 
+    const financeDonutOption = {
+        tooltip: {
+            trigger: 'item',
+            valueFormatter: (value) => money(value),
+        },
+        color: [
+            '#0f8f7d',
+            '#f2b84b',
+            '#d95f59',
+        ],
+        series: [
+            {
+                type: 'pie',
+                radius: [
+                    '54%',
+                    '78%',
+                ],
+                avoidLabelOverlap: true,
+                label: {
+                    formatter: '{b}',
+                    color: '#31524d',
+                    fontWeight: 700,
+                },
+                data: [
+                    {
+                        name: 'Pago',
+                        value: Number(totals.paid || 0),
+                    },
+                    {
+                        name: 'A pagar',
+                        value: Number(totals.remaining || 0),
+                    },
+                    {
+                        name: 'Vencido',
+                        value: Number(totals.overdue || 0),
+                    },
+                ].filter((item) => item.value > 0),
+            },
+        ],
+    }
+
+    const chartCategories =
+        (data.categories || [])
+            .slice(0, 7)
+
+    const categoryBarOption = {
+        tooltip: {
+            trigger: 'axis',
+            valueFormatter: (value) => money(value),
+        },
+        grid: {
+            top: 16,
+            right: 14,
+            bottom: 34,
+            left: 58,
+        },
+        xAxis: {
+            type: 'category',
+            data: chartCategories.map((item) => item.category),
+            axisLabel: {
+                interval: 0,
+                rotate: 24,
+            },
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                formatter: (value) => money(value).replace('R$', '').trim(),
+            },
+        },
+        color: [
+            '#0f8f7d',
+            '#8bb7ff',
+        ],
+        series: [
+            {
+                name: 'Contratado',
+                type: 'bar',
+                data: chartCategories.map((item) => Number(item.contractedAmountCents || 0)),
+                barMaxWidth: 28,
+                itemStyle: {
+                    borderRadius: [6, 6, 0, 0],
+                },
+            },
+            {
+                name: 'Pago',
+                type: 'bar',
+                data: chartCategories.map((item) => Number(item.paidAmountCents || 0)),
+                barMaxWidth: 28,
+                itemStyle: {
+                    borderRadius: [6, 6, 0, 0],
+                },
+            },
+        ],
+    }
+
+    const signalGaugeOption = {
+        tooltip: {
+            valueFormatter: (value) => `${value}%`,
+        },
+        series: [
+            {
+                type: 'gauge',
+                min: 0,
+                max: 100,
+                radius: '94%',
+                progress: {
+                    show: true,
+                    width: 12,
+                    itemStyle: {
+                        color: '#0f8f7d',
+                    },
+                },
+                axisLine: {
+                    lineStyle: {
+                        width: 12,
+                        color: [
+                            [1, '#e5f0ed'],
+                        ],
+                    },
+                },
+                pointer: {
+                    show: false,
+                },
+                axisTick: {
+                    show: false,
+                },
+                splitLine: {
+                    show: false,
+                },
+                axisLabel: {
+                    show: false,
+                },
+                detail: {
+                    valueAnimation: true,
+                    formatter: '{value}%',
+                    color: '#173f39',
+                    fontSize: 24,
+                    fontWeight: 900,
+                },
+                data: [
+                    {
+                        value: percentage(
+                            totals.signalPaid,
+                            totals.signalAmount,
+                        ),
+                    },
+                ],
+            },
+        ],
+    }
+
+    const contractAlerts =
+        (data.expenses || [])
+            .filter(
+                (expense) => (
+                    expense.contractStatus !== 'cancelled'
+                    && expense.requiresSignal
+                    && (
+                        expense.signalRemainingAmountCents > 0
+                        || !expense.reservationConfirmed
+                    )
+                )
+            )
+            .slice(0, 5)
+
 
     return (
         <main className="finance-shell">
@@ -1355,6 +1625,22 @@ export default function ExpensesPage() {
                     )}
                 >
                     Despesas
+                </button>
+
+                <button
+                    type="button"
+                    className={
+                        activeTab === 'contracts'
+                            ? 'finance-tab finance-tab--active'
+                            : 'finance-tab'
+                    }
+                    onClick={() => (
+                        setActiveTab(
+                            'contracts'
+                        )
+                    )}
+                >
+                    Contratos
                 </button>
 
                 <button
@@ -1568,6 +1854,36 @@ export default function ExpensesPage() {
 
                         <article>
                             <span>
+                                Contratos ativos
+                            </span>
+
+                            <strong>
+                                {totals.contractsActive || 0}
+                            </strong>
+                        </article>
+
+                        <article className="finance-summary-card--pending">
+                            <span>
+                                Sinais pendentes
+                            </span>
+
+                            <strong>
+                                {money(totals.signalPending)}
+                            </strong>
+                        </article>
+
+                        <article className="finance-summary-card--danger">
+                            <span>
+                                Reservas pendentes
+                            </span>
+
+                            <strong>
+                                {totals.reservationsPending || 0}
+                            </strong>
+                        </article>
+
+                        <article>
+                            <span>
                                 Fornecedores
                             </span>
 
@@ -1646,6 +1962,97 @@ export default function ExpensesPage() {
                         </article>
                     </section>
 
+
+                    <section className="finance-charts-grid">
+                        <article className="finance-chart-card">
+                            <div className="finance-section-heading">
+                                <div>
+                                    <p className="panel-kicker">Fluxo financeiro</p>
+                                    <h2>Pago x pendente</h2>
+                                </div>
+                            </div>
+
+                            {Number(totals.total || 0) > 0 ? (
+                                <FinanceChart
+                                    option={financeDonutOption}
+                                    ariaLabel="Grafico de valores pagos, pendentes e vencidos"
+                                />
+                            ) : (
+                                <div className="finance-empty finance-empty--compact">
+                                    Cadastre contratos para gerar o grafico.
+                                </div>
+                            )}
+                        </article>
+
+                        <article className="finance-chart-card finance-chart-card--wide">
+                            <div className="finance-section-heading">
+                                <div>
+                                    <p className="panel-kicker">Categorias</p>
+                                    <h2>Contratado e pago</h2>
+                                </div>
+                            </div>
+
+                            {(data.categories || []).length > 0 ? (
+                                <FinanceChart
+                                    option={categoryBarOption}
+                                    className="finance-chart--bar"
+                                    ariaLabel="Grafico de contratado e pago por categoria"
+                                />
+                            ) : (
+                                <div className="finance-empty finance-empty--compact">
+                                    Sem categorias cadastradas ainda.
+                                </div>
+                            )}
+                        </article>
+
+                        <article className="finance-chart-card">
+                            <div className="finance-section-heading">
+                                <div>
+                                    <p className="panel-kicker">Sinais</p>
+                                    <h2>Sinais pagos</h2>
+                                </div>
+                            </div>
+
+                            {Number(totals.signalAmount || 0) > 0 ? (
+                                <FinanceChart
+                                    option={signalGaugeOption}
+                                    ariaLabel="Grafico do percentual de sinais pagos"
+                                />
+                            ) : (
+                                <div className="finance-empty finance-empty--compact">
+                                    Nenhum contrato com sinal cadastrado.
+                                </div>
+                            )}
+                        </article>
+                    </section>
+
+                    {contractAlerts.length > 0 ? (
+                        <section className="finance-alert-strip">
+                            <div>
+                                <p className="panel-kicker">Atencao</p>
+                                <h2>Sinais e reservas para acompanhar</h2>
+                            </div>
+
+                            <div className="finance-alert-list">
+                                {contractAlerts.map((expense) => (
+                                    <article key={expense.id}>
+                                        <strong>{expense.description}</strong>
+                                        <span>
+                                            {expense.signalRemainingAmountCents > 0
+                                                ? `Sinal pendente de ${money(expense.signalRemainingAmountCents)}`
+                                                : 'Sinal quitado'}
+                                            {expense.signalDueDate
+                                                ? ` vence em ${dateBr(expense.signalDueDate)}`
+                                                : ''}
+                                            {!expense.reservationConfirmed
+                                                ? ' ? Reserva nao confirmada'
+                                                : ''}
+                                        </span>
+                                    </article>
+                                ))}
+                            </div>
+                        </section>
+                    ) : null}
 
                     <div className="finance-dashboard-columns">
                         <section className="finance-panel">
@@ -1829,6 +2236,129 @@ export default function ExpensesPage() {
                             )}
                         </section>
                     </div>
+                </>
+            ) : null}
+
+
+            {activeTab === 'contracts' ? (
+                <>
+                    <section className="finance-panel">
+                        <div className="finance-section-heading">
+                            <div>
+                                <p className="panel-kicker">Contratos</p>
+                                <h2>Controle de contratos e sinais</h2>
+                                <p>Acompanhe sinal, reserva, parcelas e status de cada fornecedor.</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="finance-primary-button"
+                                onClick={() => setActiveTab('expenses')}
+                            >
+                                + Novo contrato
+                            </button>
+                        </div>
+
+                        <section className="finance-contract-overview">
+                            <article><span>Contratos ativos</span><strong>{totals.contractsActive || 0}</strong></article>
+                            <article><span>Cancelados</span><strong>{totals.contractsCancelled || 0}</strong></article>
+                            <article><span>Total em sinais</span><strong>{money(totals.signalAmount)}</strong></article>
+                            <article><span>Sinais pagos</span><strong>{money(totals.signalPaid)}</strong></article>
+                            <article><span>Sinais vencidos</span><strong>{money(totals.signalOverdue)}</strong></article>
+                            <article><span>Reservas pendentes</span><strong>{totals.reservationsPending || 0}</strong></article>
+                        </section>
+                    </section>
+
+                    <section className="finance-contract-list">
+                        {(data.expenses || []).map((expense) => (
+                            <article
+                                key={expense.id}
+                                className={expense.contractStatus === 'cancelled'
+                                    ? 'finance-contract-card finance-contract-card--cancelled'
+                                    : 'finance-contract-card'}
+                            >
+                                <header>
+                                    <div>
+                                        <div className="finance-expense-title-row">
+                                            <strong>{expense.description}</strong>
+                                            <span className={`finance-status finance-status--${expense.status}`}>
+                                                {STATUS_LABELS[expense.status] || expense.status}
+                                            </span>
+                                        </div>
+
+                                        <small>
+                                            {[expense.supplier, expense.category].filter(Boolean).join(' ? ') || 'Sem fornecedor'}
+                                        </small>
+                                    </div>
+
+                                    <div className="finance-contract-actions">
+                                        <button
+                                            type="button"
+                                            className="finance-secondary-button"
+                                            onClick={() => startEditExpense(expense)}
+                                        >
+                                            Editar
+                                        </button>
+
+                                        {expense.contractStatus === 'cancelled' ? (
+                                            <button
+                                                type="button"
+                                                className="finance-primary-button"
+                                                onClick={() => updateContractStatus(expense, 'active')}
+                                            >
+                                                Reativar
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                className="finance-danger-button"
+                                                onClick={() => updateContractStatus(expense, 'cancelled')}
+                                            >
+                                                Cancelar
+                                            </button>
+                                        )}
+                                    </div>
+                                </header>
+
+                                <div className="finance-contract-metrics">
+                                    <div><span>Contrato</span><strong>{money(expense.totalAmountCents)}</strong></div>
+                                    <div><span>Pago</span><strong>{money(expense.paidAmountCents)}</strong></div>
+                                    <div><span>Pendente</span><strong>{money(expense.remainingAmountCents)}</strong></div>
+                                    <div><span>Sinal esperado</span><strong>{money(expense.signalAmountCents)}</strong></div>
+                                    <div><span>Sinal pago</span><strong>{money(expense.signalPaidAmountCents)}</strong></div>
+                                    <div><span>Vencimento do sinal</span><strong>{dateBr(expense.signalDueDate)}</strong></div>
+                                </div>
+
+                                <div className="finance-contract-flags">
+                                    <span>
+                                        {expense.requiresSignal
+                                            ? `Exige sinal (${expense.signalType === 'percent'
+                                                ? `${expense.signalPercent}%`
+                                                : money(expense.signalAmountCents)})`
+                                            : 'Sem sinal obrigatorio'}
+                                    </span>
+
+                                    <span>
+                                        {expense.reservationConfirmed
+                                            ? `Reserva confirmada${expense.reservationConfirmedAt
+                                                ? ` em ${dateBr(expense.reservationConfirmedAt)}`
+                                                : ''}`
+                                            : 'Reserva nao confirmada'}
+                                    </span>
+
+                                    <span>Parcelas: {expense.installments.length || 0}</span>
+                                </div>
+
+                                {expense.signalNotes ? (
+                                    <p className="finance-expense-notes">{expense.signalNotes}</p>
+                                ) : null}
+                            </article>
+                        ))}
+
+                        {(data.expenses || []).length === 0 ? (
+                            <div className="finance-empty">Nenhum contrato cadastrado ainda.</div>
+                        ) : null}
+                    </section>
                 </>
             ) : null}
 
@@ -2261,6 +2791,22 @@ export default function ExpensesPage() {
                                     <option value="vencido">
                                         Vencidos
                                     </option>
+
+                                    <option value="aguardando_sinal">
+                                        Aguardando sinal
+                                    </option>
+
+                                    <option value="sinal_parcial">
+                                        Sinal parcial
+                                    </option>
+
+                                    <option value="sinal_vencido">
+                                        Sinal vencido
+                                    </option>
+
+                                    <option value="cancelado">
+                                        Cancelados
+                                    </option>
                                 </select>
                             </label>
 
@@ -2606,9 +3152,11 @@ export default function ExpensesPage() {
                                                                         </small>
 
                                                                         <small>
-                                                                            {payment.installmentId
-                                                                                ? 'Vinculado a parcela'
-                                                                                : 'Pagamento geral'}
+                                                                            {payment.paymentType === 'sinal'
+                                                                                ? 'Sinal'
+                                                                                : payment.installmentId
+                                                                                    ? 'Vinculado a parcela'
+                                                                                    : 'Pagamento geral'}
                                                                         </small>
 
                                                                         <button
@@ -4206,6 +4754,18 @@ export default function ExpensesPage() {
                                     }
                                     required
                                 />
+                            </label>
+
+                            <label className="finance-field">
+                                <span>Tipo de pagamento</span>
+                                <select
+                                    name="paymentType"
+                                    defaultValue={paymentExpense.requiresSignal && paymentExpense.signalRemainingAmountCents > 0 ? 'sinal' : 'pagamento_geral'}
+                                >
+                                    {PAYMENT_TYPES.map((type) => (
+                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                    ))}
+                                </select>
                             </label>
 
                             <label className="finance-field">

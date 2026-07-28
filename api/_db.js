@@ -306,6 +306,43 @@ export async function ensureSchema() {
                 "ALTER TABLE party_expenses ADD COLUMN installment_count INTEGER NOT NULL DEFAULT 1"
             ).catch(ignoreDuplicateColumn)
 
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN requires_signal INTEGER NOT NULL DEFAULT 0"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN signal_type TEXT NOT NULL DEFAULT 'fixed'"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN signal_amount_cents INTEGER NOT NULL DEFAULT 0"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN signal_percent REAL NOT NULL DEFAULT 0"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN signal_due_date TEXT"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN signal_notes TEXT"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN reservation_confirmed INTEGER NOT NULL DEFAULT 0"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN reservation_confirmed_at TEXT"
+            ).catch(ignoreDuplicateColumn)
+
+            await db.execute(
+                "ALTER TABLE party_expenses ADD COLUMN contract_status TEXT NOT NULL DEFAULT 'active'"
+            ).catch(ignoreDuplicateColumn)
+
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS party_expense_installments (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -340,6 +377,11 @@ export async function ensureSchema() {
                 "ALTER TABLE party_expense_payments ADD COLUMN installment_id INTEGER"
             ).catch(ignoreDuplicateColumn)
 
+
+            await db.execute(
+                "ALTER TABLE party_expense_payments ADD COLUMN payment_type TEXT NOT NULL DEFAULT 'pagamento_geral'"
+            ).catch(ignoreDuplicateColumn)
+
             await db.execute(`
                 CREATE INDEX IF NOT EXISTS party_expense_payments_expense_index
                 ON party_expense_payments (expense_id)
@@ -348,6 +390,12 @@ export async function ensureSchema() {
             await db.execute(`
                 CREATE INDEX IF NOT EXISTS party_expense_payments_installment_index
                 ON party_expense_payments (installment_id)
+            `)
+
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS party_expenses_status_index
+                ON party_expenses (contract_status)
             `)
 
             /*

@@ -93,6 +93,78 @@ function parseDecimal(
 }
 
 
+function isTruthy(value) {
+    return [
+        '1',
+        'true',
+        'sim',
+        'on',
+        'yes',
+    ].includes(
+        String(value ?? '')
+            .trim()
+            .toLowerCase()
+    )
+}
+
+
+function normalizeSignalType(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase() === 'percent'
+        ? 'percent'
+        : 'fixed'
+}
+
+
+function normalizePaymentType(value) {
+    const type =
+        String(value || '')
+            .trim()
+            .toLowerCase()
+
+    return [
+        'sinal',
+        'parcela',
+        'pagamento_geral',
+    ].includes(type)
+        ? type
+        : 'pagamento_geral'
+}
+
+
+function calculateSignalAmountCents({
+    totalAmountCents,
+    requiresSignal,
+    signalType,
+    signalAmountCents,
+    signalPercent,
+}) {
+    if (!requiresSignal) {
+        return 0
+    }
+
+    const total =
+        Number(totalAmountCents || 0)
+
+    if (signalType === 'percent') {
+        return Math.min(
+            Math.round(
+                total
+                * Number(signalPercent || 0)
+                / 100
+            ),
+            total,
+        )
+    }
+
+    return Math.min(
+        Number(signalAmountCents || 0),
+        total,
+    )
+}
+
+
 function getTodayIso() {
     const parts =
         new Intl.DateTimeFormat(
@@ -426,6 +498,15 @@ async function getSummary() {
                 e.total_amount_cents,
                 e.installment_count,
                 e.due_date,
+                e.requires_signal,
+                e.signal_type,
+                e.signal_amount_cents,
+                e.signal_percent,
+                e.signal_due_date,
+                e.signal_notes,
+                e.reservation_confirmed,
+                e.reservation_confirmed_at,
+                e.contract_status,
                 e.notes,
                 e.created_at,
                 e.updated_at
@@ -462,6 +543,7 @@ async function getSummary() {
                 id,
                 expense_id,
                 installment_id,
+                payment_type,
                 amount_cents,
                 paid_at,
                 payment_method,
@@ -515,6 +597,11 @@ async function getSummary() {
                     Number(
                         row.amount_cents
                         || 0
+                    ),
+
+                paymentType:
+                    normalizePaymentType(
+                        row.payment_type
                     ),
 
                 paidAt:
@@ -658,7 +745,10 @@ async function getSummary() {
                             )
                             + payment.amountCents,
                         )
-                    } else {
+                    } else if (
+                        payment.paymentType
+                        !== 'sinal'
+                    ) {
                         generalPaymentPool +=
                             payment.amountCents
                     }
@@ -776,22 +866,122 @@ async function getSummary() {
                         remaining
                 }
 
-                let status =
-                    'pendente'
+                const requiresSignal =
+                    Number(
+                        row.requires_signal
+                        || 0
+                    ) === 1
+
+                const signalType =
+                    normalizeSignalType(
+                        row.signal_type
+                    )
+
+                const signalAmountCents =
+                    calculateSignalAmountCents({
+                        totalAmountCents:
+                            total,
+                        requiresSignal,
+                        signalType,
+                        signalAmountCents:
+                            Number(
+                                row.signal_amount_cents
+                                || 0
+                            ),
+                        signalPercent:
+                            Number(
+                                row.signal_percent
+                                || 0
+                            ),
+                    })
+
+                const signalPaidAmountCents =
+                    payments
+                        .filter(
+                            (payment) => (
+                                payment.paymentType
+                                === 'sinal'
+                            )
+                        )
+                        .reduce(
+                            (sum, payment) => (
+                                sum
+                                + payment.amountCents
+                            ),
+                            0,
+                        )
+
+                const signalRemainingAmountCents =
+                    Math.max(
+                        signalAmountCents
+                        - signalPaidAmountCents,
+                        0,
+                    )
+
+                const signalDueDate =
+                    row.signal_due_date
+                    || ''
+
+                let signalStatus =
+                    requiresSignal
+                        ? 'aguardando_sinal'
+                        : 'sem_sinal'
 
                 if (
-                    total > 0
-                    && remaining === 0
+                    requiresSignal
+                    && signalAmountCents > 0
+                    && signalRemainingAmountCents === 0
                 ) {
-                    status = 'pago'
+                    signalStatus = 'sinal_pago'
                 } else if (
-                    overdueAmountCents > 0
+                    requiresSignal
+                    && signalPaidAmountCents > 0
                 ) {
-                    status = 'vencido'
-                } else if (
-                    paid > 0
-                ) {
-                    status = 'parcial'
+                    signalStatus = 'sinal_parcial'
+                }
+
+                const contractStatus =
+                    String(
+                        row.contract_status
+                        || 'active'
+                    ) === 'cancelled'
+                        ? 'cancelled'
+                        : 'active'
+
+                let status =
+                    contractStatus === 'cancelled'
+                        ? 'cancelado'
+                        : 'pendente'
+
+                if (contractStatus !== 'cancelled') {
+                    if (
+                        total > 0
+                        && remaining === 0
+                    ) {
+                        status = 'pago'
+                    } else if (
+                        requiresSignal
+                        && signalRemainingAmountCents > 0
+                        && signalDueDate
+                        && signalDueDate < today
+                    ) {
+                        status = 'sinal_vencido'
+                    } else if (
+                        requiresSignal
+                        && signalRemainingAmountCents > 0
+                    ) {
+                        status = signalPaidAmountCents > 0
+                            ? 'sinal_parcial'
+                            : 'aguardando_sinal'
+                    } else if (
+                        overdueAmountCents > 0
+                    ) {
+                        status = 'vencido'
+                    } else if (
+                        paid > 0
+                    ) {
+                        status = 'parcial'
+                    }
                 }
 
                 const supplierId =
@@ -858,6 +1048,42 @@ async function getSummary() {
                         row.due_date
                         || '',
 
+                    requiresSignal,
+
+                    signalType,
+
+                    signalAmountCents,
+
+                    signalPercent:
+                        Number(
+                            row.signal_percent
+                            || 0
+                        ),
+
+                    signalDueDate,
+
+                    signalNotes:
+                        row.signal_notes
+                        || '',
+
+                    signalPaidAmountCents,
+
+                    signalRemainingAmountCents,
+
+                    signalStatus,
+
+                    reservationConfirmed:
+                        Number(
+                            row.reservation_confirmed
+                            || 0
+                        ) === 1,
+
+                    reservationConfirmedAt:
+                        row.reservation_confirmed_at
+                        || '',
+
+                    contractStatus,
+
                     nextDueDate:
                         nextInstallment
                             ?.dueDate
@@ -890,8 +1116,16 @@ async function getSummary() {
             || 0
         )
 
+    const activeExpenses =
+        expenses.filter(
+            (expense) => (
+                expense.contractStatus
+                !== 'cancelled'
+            )
+        )
+
     const totals =
-        expenses.reduce(
+        activeExpenses.reduce(
             (
                 summary,
                 expense,
@@ -942,9 +1176,77 @@ async function getSummary() {
         totals.budgeted
         - totals.total
 
+    totals.contractsActive =
+        activeExpenses.length
+
+    totals.contractsCancelled =
+        expenses.length
+        - activeExpenses.length
+
+    totals.signalContracts =
+        activeExpenses.filter(
+            (expense) => (
+                expense.requiresSignal
+            )
+        ).length
+
+    totals.signalAmount =
+        activeExpenses.reduce(
+            (sum, expense) => (
+                sum
+                + expense.signalAmountCents
+            ),
+            0,
+        )
+
+    totals.signalPaid =
+        activeExpenses.reduce(
+            (sum, expense) => (
+                sum
+                + Math.min(
+                    expense.signalPaidAmountCents,
+                    expense.signalAmountCents,
+                )
+            ),
+            0,
+        )
+
+    totals.signalPending =
+        activeExpenses.reduce(
+            (sum, expense) => (
+                sum
+                + expense.signalRemainingAmountCents
+            ),
+            0,
+        )
+
+    totals.signalOverdue =
+        activeExpenses.reduce(
+            (sum, expense) => (
+                sum
+                + (
+                    expense.requiresSignal
+                    && expense.signalRemainingAmountCents > 0
+                    && expense.signalDueDate
+                    && expense.signalDueDate < today
+                        ? expense.signalRemainingAmountCents
+                        : 0
+                )
+            ),
+            0,
+        )
+
+    totals.reservationsPending =
+        activeExpenses.filter(
+            (expense) => (
+                expense.requiresSignal
+                && !expense.reservationConfirmed
+            )
+        ).length
+
     const upcoming = []
 
-    for (const expense of expenses) {
+    for (const expense of activeExpenses) {
         if (
             expense.installments
                 .length > 0
@@ -1037,7 +1339,7 @@ async function getSummary() {
     const categoryMap =
         new Map()
 
-    for (const expense of expenses) {
+    for (const expense of activeExpenses) {
         const category =
             expense.category
             || 'Sem categoria'
@@ -1084,7 +1386,7 @@ async function getSummary() {
     const supplierTotals =
         new Map()
 
-    for (const expense of expenses) {
+    for (const expense of activeExpenses) {
         if (!expense.supplierId) {
             continue
         }
@@ -1819,6 +2121,93 @@ async function saveExpense(body) {
         }
     }
 
+    const requiresSignal =
+        isTruthy(
+            body.requiresSignal
+        )
+
+    const signalType =
+        normalizeSignalType(
+            body.signalType
+        )
+
+    const signalAmountCents =
+        parseMoneyToCents(
+            body.signalAmount,
+            {
+                allowEmpty: true,
+            },
+        )
+
+    const signalPercent =
+        parseDecimal(
+            body.signalPercent,
+            0,
+        )
+
+    const signalDueDate =
+        cleanText(
+            body.signalDueDate
+        )
+
+    if (
+        signalAmountCents === null
+    ) {
+        return {
+            error:
+                'Informe um valor de sinal valido.',
+        }
+    }
+
+    if (
+        requiresSignal
+        && signalType === 'fixed'
+        && (
+            signalAmountCents <= 0
+            || signalAmountCents > totalAmountCents
+        )
+    ) {
+        return {
+            error:
+                'O sinal deve ser maior que zero e nao pode superar o contrato.',
+        }
+    }
+
+    if (
+        requiresSignal
+        && signalType === 'percent'
+        && (
+            signalPercent <= 0
+            || signalPercent > 100
+        )
+    ) {
+        return {
+            error:
+                'O percentual do sinal deve ficar entre 0 e 100.',
+        }
+    }
+
+    const expectedSignalAmountCents =
+        calculateSignalAmountCents({
+            totalAmountCents,
+            requiresSignal,
+            signalType,
+            signalAmountCents,
+            signalPercent,
+        })
+
+    const installmentBaseAmountCents =
+        Math.max(
+            totalAmountCents
+            - expectedSignalAmountCents,
+            0,
+        )
+
+    const reservationConfirmed =
+        isTruthy(
+            body.reservationConfirmed
+        )
+
     const supplier =
         await resolveSupplier({
             supplierId:
@@ -1875,6 +2264,14 @@ async function saveExpense(body) {
                     total_amount_cents = ?,
                     installment_count = ?,
                     due_date = ?,
+                    requires_signal = ?,
+                    signal_type = ?,
+                    signal_amount_cents = ?,
+                    signal_percent = ?,
+                    signal_due_date = ?,
+                    signal_notes = ?,
+                    reservation_confirmed = ?,
+                    reservation_confirmed_at = ?,
                     notes = ?,
                     updated_at = datetime('now')
                 WHERE id = ?
@@ -1890,6 +2287,24 @@ async function saveExpense(body) {
                 totalAmountCents,
                 installmentCount,
                 dueDate,
+                requiresSignal ? 1 : 0,
+                signalType,
+                signalType === 'fixed'
+                    ? expectedSignalAmountCents
+                    : 0,
+                signalType === 'percent'
+                    ? signalPercent
+                    : 0,
+                signalDueDate,
+                cleanText(
+                    body.signalNotes
+                ),
+                reservationConfirmed ? 1 : 0,
+                reservationConfirmed
+                    ? cleanText(
+                        body.reservationConfirmedAt
+                    )
+                    : '',
                 cleanText(
                     body.notes
                 ),
@@ -1915,9 +2330,17 @@ async function saveExpense(body) {
                     total_amount_cents,
                     installment_count,
                     due_date,
+                    requires_signal,
+                    signal_type,
+                    signal_amount_cents,
+                    signal_percent,
+                    signal_due_date,
+                    signal_notes,
+                    reservation_confirmed,
+                    reservation_confirmed_at,
                     notes
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
             `,
             args: [
@@ -1931,6 +2354,24 @@ async function saveExpense(body) {
                 totalAmountCents,
                 installmentCount,
                 dueDate,
+                requiresSignal ? 1 : 0,
+                signalType,
+                signalType === 'fixed'
+                    ? expectedSignalAmountCents
+                    : 0,
+                signalType === 'percent'
+                    ? signalPercent
+                    : 0,
+                signalDueDate,
+                cleanText(
+                    body.signalNotes
+                ),
+                reservationConfirmed ? 1 : 0,
+                reservationConfirmed
+                    ? cleanText(
+                        body.reservationConfirmedAt
+                    )
+                    : '',
                 cleanText(
                     body.notes
                 ),
@@ -1953,7 +2394,8 @@ async function saveExpense(body) {
 
     await generateInstallments({
         expenseId,
-        totalAmountCents,
+        totalAmountCents:
+            installmentBaseAmountCents,
         installmentCount,
         firstDueDate:
             dueDate,
@@ -1967,15 +2409,19 @@ async function saveExpense(body) {
                 INSERT INTO party_expense_payments (
                     expense_id,
                     installment_id,
+                    payment_type,
                     amount_cents,
                     paid_at,
                     payment_method,
                     notes
                 )
-                VALUES (?, NULL, ?, ?, ?, ?)
+                VALUES (?, NULL, ?, ?, ?, ?, ?)
             `,
             args: [
                 expenseId,
+                normalizePaymentType(
+                    body.initialPaymentType
+                ),
                 initialPaidAmountCents,
 
                 cleanText(
@@ -2027,7 +2473,11 @@ async function regenerateInstallments(
                     id,
                     total_amount_cents,
                     installment_count,
-                    due_date
+                    due_date,
+                    requires_signal,
+                    signal_type,
+                    signal_amount_cents,
+                    signal_percent
                 FROM party_expenses
                 WHERE id = ?
                 LIMIT 1
@@ -2127,10 +2577,43 @@ async function regenerateInstallments(
         expenseId,
 
         totalAmountCents:
-            Number(
-                expense
-                    .total_amount_cents
-                || 0
+            Math.max(
+                Number(
+                    expense
+                        .total_amount_cents
+                    || 0
+                )
+                - calculateSignalAmountCents({
+                    totalAmountCents:
+                        Number(
+                            expense
+                                .total_amount_cents
+                            || 0
+                        ),
+                    requiresSignal:
+                        Number(
+                            expense
+                                .requires_signal
+                            || 0
+                        ) === 1,
+                    signalType:
+                        normalizeSignalType(
+                            expense.signal_type
+                        ),
+                    signalAmountCents:
+                        Number(
+                            expense
+                                .signal_amount_cents
+                            || 0
+                        ),
+                    signalPercent:
+                        Number(
+                            expense
+                                .signal_percent
+                            || 0
+                        ),
+                }),
+                0,
             ),
 
         installmentCount,
@@ -2162,6 +2645,11 @@ async function addPayment(body) {
     const amountCents =
         parseMoneyToCents(
             body.amount
+        )
+
+    const paymentType =
+        normalizePaymentType(
+            body.paymentType
         )
 
     if (expenseId <= 0) {
@@ -2247,12 +2735,13 @@ async function addPayment(body) {
             INSERT INTO party_expense_payments (
                 expense_id,
                 installment_id,
+                payment_type,
                 amount_cents,
                 paid_at,
                 payment_method,
                 notes
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
             expenseId,
@@ -2260,6 +2749,10 @@ async function addPayment(body) {
             selectedInstallment
                 ?.id
             || null,
+
+            selectedInstallment
+                ? 'parcela'
+                : paymentType,
 
             amountCents,
 
@@ -2282,6 +2775,51 @@ async function addPayment(body) {
             selectedInstallment
                 ? `Pagamento registrado na ${selectedInstallment.description}.`
                 : 'Pagamento registrado.',
+    }
+}
+
+
+async function updateContractStatus(body) {
+    const expenseId =
+        parseInteger(
+            body.expenseId,
+            0,
+        )
+
+    const contractStatus =
+        String(
+            body.contractStatus
+            || ''
+        ) === 'cancelled'
+            ? 'cancelled'
+            : 'active'
+
+    if (expenseId <= 0) {
+        return {
+            error:
+                'Contrato inv?lido.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            UPDATE party_expenses
+            SET
+                contract_status = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        `,
+        args: [
+            contractStatus,
+            expenseId,
+        ],
+    })
+
+    return {
+        message:
+            contractStatus === 'cancelled'
+                ? 'Contrato cancelado e mantido no hist?rico.'
+                : 'Contrato reativado.',
     }
 }
 
@@ -2963,6 +3501,13 @@ export default async function handler(
             case 'addPayment':
                 result =
                     await addPayment(
+                        body
+                    )
+                break
+
+            case 'updateContractStatus':
+                result =
+                    await updateContractStatus(
                         body
                     )
                 break

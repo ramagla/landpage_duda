@@ -7,7 +7,7 @@
     "dev": "vite",
     "local": "npx -y node@20.19.0 local-dev-server.mjs",
     "build": "node scripts/run-with-node20.mjs ./node_modules/vite/bin/vite.js build",
-    "lint": "eslint .",
+    "lint": "node scripts/run-with-node20.mjs ./node_modules/eslint/bin/eslint.js .",
     "preview": "vite preview",
     "test": "node scripts/run-with-node20.mjs --test tests/integration.test.mjs"
   },
@@ -15,6 +15,7 @@
     "@libsql/client": "^0.17.4",
     "@rolldown/binding-linux-x64-gnu": "^1.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "echarts": "^6.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "vite": "^8.0.12"

@@ -9781,3 +9781,231 @@ html {
 }
 
 /* === GESTAO DA FESTA FASE 2 END === */
+
+/* Finance dashboard charts and contracts */
+.finance-tabs {
+    grid-template-columns: repeat(7, minmax(116px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.finance-charts-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.35fr) minmax(0, .85fr);
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.finance-chart-card,
+.finance-alert-strip,
+.finance-contract-card,
+.finance-contract-overview article {
+    border: 1px solid rgba(8, 120, 111, .13);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .95);
+    box-shadow: 0 14px 36px rgba(5, 76, 69, .055);
+}
+
+.finance-chart-card {
+    display: grid;
+    grid-template-rows: auto minmax(220px, 1fr);
+    min-height: 300px;
+    padding: 16px;
+}
+
+.finance-chart-card--wide {
+    min-width: 0;
+}
+
+.finance-chart {
+    width: 100%;
+    min-height: 230px;
+}
+
+.finance-chart--bar {
+    min-height: 260px;
+}
+
+.finance-empty--compact {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+}
+
+.finance-alert-strip {
+    display: grid;
+    grid-template-columns: minmax(180px, .42fr) 1fr;
+    gap: 14px;
+    margin-top: 12px;
+    padding: 16px;
+    background: #fffaf0;
+}
+
+.finance-alert-list {
+    display: grid;
+    gap: 8px;
+}
+
+.finance-alert-list article {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .78);
+}
+
+.finance-alert-list strong {
+    color: #693f08;
+}
+
+.finance-alert-list span,
+.finance-contract-flags span {
+    color: #667a76;
+    font-size: .78rem;
+    font-weight: 750;
+}
+
+.finance-contract-overview {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.finance-contract-overview article {
+    display: grid;
+    gap: 7px;
+    min-height: 92px;
+    padding: 14px;
+}
+
+.finance-contract-overview span,
+.finance-contract-metrics span {
+    color: #647d78;
+    font-size: .62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.finance-contract-overview strong {
+    color: #173f39;
+    font-size: 1.08rem;
+}
+
+.finance-contract-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.finance-contract-card {
+    padding: 16px;
+}
+
+.finance-contract-card--cancelled {
+    opacity: .72;
+    background: #f6f4f1;
+}
+
+.finance-contract-card > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.finance-contract-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.finance-contract-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.finance-contract-metrics > div {
+    display: grid;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #eef7f4;
+}
+
+.finance-contract-metrics strong {
+    color: #173f39;
+    font-size: .88rem;
+}
+
+.finance-contract-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.finance-contract-flags span {
+    padding: 7px 9px;
+    border-radius: 999px;
+    background: #f3f8f6;
+}
+
+.finance-status--aguardando_sinal,
+.finance-status--sinal_parcial {
+    background: #fff2ca;
+    color: #805f09;
+}
+
+.finance-status--sinal_pago {
+    background: #d9f6e9;
+    color: #087158;
+}
+
+.finance-status--sinal_vencido,
+.finance-status--cancelado {
+    background: #ffe0e0;
+    color: #a03e3e;
+}
+
+@media (max-width: 980px) {
+    .finance-charts-grid,
+    .finance-alert-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .finance-contract-overview,
+    .finance-contract-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .finance-contract-card > header {
+        display: grid;
+    }
+
+    .finance-contract-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .finance-tabs {
+        display: flex;
+    }
+
+    .finance-tab {
+        flex: 0 0 auto;
+        min-width: 116px;
+    }
+
+    .finance-chart-card {
+        min-height: 280px;
+    }
+
+    .finance-contract-overview,
+    .finance-contract-metrics {
+        grid-template-columns: 1fr;
+    }
+}
