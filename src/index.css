@@ -12595,6 +12595,21 @@ html {
     color: #765720;
 }
 
+/*
+ * Centraliza a cena sem depender de translateX.
+ * No Safari móvel, a combinação left: 50% + translateX(-50%) podia
+ * usar referências diferentes após a mudança da altura visual da tela.
+ */
+@media (max-width: 520px) {
+    .opening-gate .envelope-stage {
+        left: 0 !important;
+        right: 0 !important;
+        margin-right: auto !important;
+        margin-left: auto !important;
+        transform: translateY(-62px);
+    }
+}
+
 @media (max-width: 359px), (max-height: 740px) {
     .opening-gate__brand {
         top: 18px;
@@ -12623,8 +12638,6 @@ html {
     }
 
     .opening-gate .envelope-stage {
-        transform:
-            translateX(-50%)
-            translateY(-44px);
+        transform: translateY(-44px);
     }
 }
