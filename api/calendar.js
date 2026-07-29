@@ -1,3 +1,7 @@
+import {
+    EVENT,
+} from '../shared/event-config.js'
+
 function escapeIcsText(value) {
     return String(value || '')
         .replace(/\\/g, '\\\\')
@@ -17,9 +21,6 @@ export default function handler(req, res) {
             'Method Not Allowed'
         )
     }
-
-    const eventAddress =
-        'Rua Corumbataí, 100 - Vila Virgínia, Itaquaquecetuba - SP'
 
     const now = new Date()
         .toISOString()
@@ -43,27 +44,27 @@ export default function handler(req, res) {
         'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        'X-WR-CALNAME:16 anos da Duda',
+        `X-WR-CALNAME:${escapeIcsText(EVENT.title)}`,
 
         'BEGIN:VEVENT',
 
-        'UID:duda-16-20261114@dudanoibiza.com.br',
+        `UID:${EVENT.calendarUid}`,
 
         `DTSTAMP:${now}`,
 
-        'DTSTART:20261114T200000Z',
-        'DTEND:20261115T020000Z',
+        `DTSTART:${EVENT.utcStart}`,
+        `DTEND:${EVENT.utcEnd}`,
 
         `SUMMARY:${escapeIcsText(
-            '16 anos da Duda'
+            EVENT.title
         )}`,
 
         `LOCATION:${escapeIcsText(
-            eventAddress
+            EVENT.address
         )}`,
 
         `DESCRIPTION:${escapeIcsText(
-            'Aniversário de 16 anos da Duda no Quintal do Ibiza.'
+            EVENT.description
         )}`,
 
         'STATUS:CONFIRMED',

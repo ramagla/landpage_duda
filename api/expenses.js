@@ -341,8 +341,9 @@ function splitAmount(
 async function resolveSupplier({
     supplierId,
     supplierName,
+    database = getClient(),
 }) {
-    const db = getClient()
+    const db = database
 
     const parsedId =
         parseInteger(
@@ -430,8 +431,9 @@ async function generateInstallments({
     totalAmountCents,
     installmentCount,
     firstDueDate,
+    database = getClient(),
 }) {
-    const db = getClient()
+    const db = database
 
     await db.execute({
         sql: `
@@ -2161,6 +2163,7 @@ async function saveExpenseDocumentFromBody({
     expenseId,
     supplierId,
     description,
+    database = getClient(),
 }) {
     const documentUrl =
         cleanText(
@@ -2195,7 +2198,7 @@ async function saveExpenseDocumentFromBody({
             cleanText(
                 body.contractDocumentNotes
             ),
-    })
+    }, database)
 }
 
 
@@ -2342,7 +2345,7 @@ async function saveExpense(body) {
     ) {
         return {
             error:
-                'Informe um valor de sinal valido.',
+                'Informe um valor de sinal válido.',
         }
     }
 
@@ -2356,7 +2359,7 @@ async function saveExpense(body) {
     ) {
         return {
             error:
-                'O sinal deve ser maior que zero e nao pode superar o contrato.',
+                'O sinal deve ser maior que zero e não pode superar o contrato.',
         }
     }
 
@@ -2395,18 +2398,25 @@ async function saveExpense(body) {
             body.reservationConfirmed
         )
 
-    const supplier =
-        await resolveSupplier({
-            supplierId:
-                body.supplierId,
+    const transaction =
+        await db.transaction('write')
 
-            supplierName:
-                body.supplier,
-        })
+    try {
+        const supplier =
+            await resolveSupplier({
+                supplierId:
+                    body.supplierId,
 
-    if (id > 0) {
-        const paidResult =
-            await db.execute({
+                supplierName:
+                    body.supplier,
+
+                database:
+                    transaction,
+            })
+
+        if (id > 0) {
+            const paidResult =
+                await transaction.execute({
                 sql: `
                     SELECT
                         COALESCE(
@@ -2433,13 +2443,15 @@ async function saveExpense(body) {
             totalAmountCents
             < alreadyPaid
         ) {
+            await transaction.rollback()
+
             return {
                 error:
                     'O valor contratado não pode ficar abaixo do total já pago.',
             }
         }
 
-        await db.execute({
+            await transaction.execute({
             sql: `
                 UPDATE party_expenses
                 SET
@@ -2499,30 +2511,35 @@ async function saveExpense(body) {
             ],
         })
 
-        const documentResult =
-            await saveExpenseDocumentFromBody({
+            const documentResult =
+                await saveExpenseDocumentFromBody({
                 body,
                 expenseId:
                     id,
                 supplierId:
                     supplier.id,
                 description,
+                database:
+                    transaction,
             })
 
-        if (documentResult?.error) {
-            return documentResult
+            if (documentResult?.error) {
+                await transaction.rollback()
+                return documentResult
+            }
+
+            await transaction.commit()
+
+            return {
+                message:
+                    documentResult
+                        ? 'Despesa atualizada e documento cadastrado.'
+                        : 'Despesa atualizada.',
+            }
         }
 
-        return {
-            message:
-                documentResult
-                    ? 'Despesa atualizada e documento cadastrado.'
-                    : 'Despesa atualizada.',
-        }
-    }
-
-    const insertResult =
-        await db.execute({
+        const insertResult =
+            await transaction.execute({
             sql: `
                 INSERT INTO party_expenses (
                     description,
@@ -2581,33 +2598,35 @@ async function saveExpense(body) {
             ],
         })
 
-    const expenseId =
-        Number(
-            insertResult
-                .rows[0]
-                ?.id
-            || 0
-        )
+        const expenseId =
+            Number(
+                insertResult
+                    .rows[0]
+                    ?.id
+                || 0
+            )
 
-    if (!expenseId) {
-        throw new Error(
-            'Não foi possível identificar a nova despesa.'
-        )
-    }
+        if (!expenseId) {
+            throw new Error(
+                'Não foi possível identificar a nova despesa.'
+            )
+        }
 
-    await generateInstallments({
-        expenseId,
-        totalAmountCents:
-            installmentBaseAmountCents,
-        installmentCount,
-        firstDueDate:
-            dueDate,
-    })
+        await generateInstallments({
+            expenseId,
+            totalAmountCents:
+                installmentBaseAmountCents,
+            installmentCount,
+            firstDueDate:
+                dueDate,
+            database:
+                transaction,
+        })
 
-    if (
-        initialPaidAmountCents > 0
-    ) {
-        await db.execute({
+        if (
+            initialPaidAmountCents > 0
+        ) {
+            await transaction.execute({
             sql: `
                 INSERT INTO party_expense_payments (
                     expense_id,
@@ -2639,29 +2658,43 @@ async function saveExpense(body) {
                     body.initialPaymentNotes
                 ),
             ],
-        })
-    }
+            })
+        }
 
-    const documentResult =
-        await saveExpenseDocumentFromBody({
+        const documentResult =
+            await saveExpenseDocumentFromBody({
             body,
             expenseId,
             supplierId:
                 supplier.id,
             description,
+            database:
+                transaction,
         })
 
-    if (documentResult?.error) {
-        return documentResult
-    }
+        if (documentResult?.error) {
+            await transaction.rollback()
+            return documentResult
+        }
 
-    return {
-        message:
-            documentResult
-                ? 'Despesa e documento cadastrados.'
-                : initialPaidAmountCents > 0
-                    ? 'Despesa e pagamento inicial cadastrados.'
-                    : 'Despesa cadastrada.',
+        await transaction.commit()
+
+        return {
+            message:
+                documentResult
+                    ? 'Despesa e documento cadastrados.'
+                    : initialPaidAmountCents > 0
+                        ? 'Despesa e pagamento inicial cadastrados.'
+                        : 'Despesa cadastrada.',
+        }
+    } catch (error) {
+        try {
+            await transaction.rollback()
+        } catch {
+            // A transação pode já ter sido encerrada por commit/rollback.
+        }
+
+        throw error
     }
 }
 
@@ -2775,70 +2808,88 @@ async function regenerateInstallments(
         }
     }
 
-    await db.execute({
-        sql: `
-            UPDATE party_expenses
-            SET
-                installment_count = ?,
-                due_date = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
-        `,
-        args: [
-            installmentCount,
-            dueDate,
+    const transaction =
+        await db.transaction('write')
+
+    try {
+        await transaction.execute({
+            sql: `
+                UPDATE party_expenses
+                SET
+                    installment_count = ?,
+                    due_date = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                installmentCount,
+                dueDate,
+                expenseId,
+            ],
+        })
+
+        await generateInstallments({
             expenseId,
-        ],
-    })
 
-    await generateInstallments({
-        expenseId,
+            totalAmountCents:
+                Math.max(
+                    Number(
+                        expense
+                            .total_amount_cents
+                        || 0
+                    )
+                    - calculateSignalAmountCents({
+                        totalAmountCents:
+                            Number(
+                                expense
+                                    .total_amount_cents
+                                || 0
+                            ),
+                        requiresSignal:
+                            Number(
+                                expense
+                                    .requires_signal
+                                || 0
+                            ) === 1,
+                        signalType:
+                            normalizeSignalType(
+                                expense.signal_type
+                            ),
+                        signalAmountCents:
+                            Number(
+                                expense
+                                    .signal_amount_cents
+                                || 0
+                            ),
+                        signalPercent:
+                            Number(
+                                expense
+                                    .signal_percent
+                                || 0
+                            ),
+                    }),
+                    0,
+                ),
 
-        totalAmountCents:
-            Math.max(
-                Number(
-                    expense
-                        .total_amount_cents
-                    || 0
-                )
-                - calculateSignalAmountCents({
-                    totalAmountCents:
-                        Number(
-                            expense
-                                .total_amount_cents
-                            || 0
-                        ),
-                    requiresSignal:
-                        Number(
-                            expense
-                                .requires_signal
-                            || 0
-                        ) === 1,
-                    signalType:
-                        normalizeSignalType(
-                            expense.signal_type
-                        ),
-                    signalAmountCents:
-                        Number(
-                            expense
-                                .signal_amount_cents
-                            || 0
-                        ),
-                    signalPercent:
-                        Number(
-                            expense
-                                .signal_percent
-                            || 0
-                        ),
-                }),
-                0,
-            ),
+            installmentCount,
 
-        installmentCount,
+            firstDueDate:
+                dueDate,
 
-        firstDueDate:
-            dueDate,
-    })
+            database:
+                transaction,
+        })
+
+        await transaction.commit()
+    } catch (error) {
+        try {
+            await transaction.rollback()
+        } catch {
+            // A transação pode já ter sido encerrada.
+        }
+
+        throw error
+    }
 
     return {
         message:
@@ -2887,112 +2938,201 @@ async function addPayment(body) {
         }
     }
 
-    const current =
-        await getSummary()
+    const transaction =
+        await getClient()
+            .transaction('write')
 
-    const expense =
-        current.expenses.find(
-            (item) => (
-                item.id
-                === expenseId
-            )
-        )
+    try {
+        const expenseResult =
+            await transaction.execute({
+                sql: `
+                    SELECT
+                        e.id,
+                        e.total_amount_cents,
+                        COALESCE(
+                            SUM(p.amount_cents),
+                            0
+                        ) AS paid_amount_cents
+                    FROM party_expenses e
+                    LEFT JOIN party_expense_payments p
+                        ON p.expense_id = e.id
+                    WHERE e.id = ?
+                    GROUP BY
+                        e.id,
+                        e.total_amount_cents
+                    LIMIT 1
+                `,
+                args: [
+                    expenseId,
+                ],
+            })
 
-    if (!expense) {
-        return {
-            error:
-                'Despesa não encontrada.',
-        }
-    }
+        const expense =
+            expenseResult.rows[0]
 
-    if (
-        amountCents
-        > expense
-            .remainingAmountCents
-    ) {
-        return {
-            error:
-                'O pagamento ultrapassa o saldo da despesa.',
-        }
-    }
+        if (!expense) {
+            await transaction.rollback()
 
-    let selectedInstallment =
-        null
-
-    if (installmentId > 0) {
-        selectedInstallment =
-            expense.installments
-                .find(
-                    (installment) => (
-                        installment.id
-                        === installmentId
-                    )
-                )
-
-        if (!selectedInstallment) {
             return {
                 error:
-                    'Parcela não encontrada.',
+                    'Despesa não encontrada.',
             }
         }
+
+        const remainingAmountCents =
+            Math.max(
+                Number(
+                    expense.total_amount_cents
+                    || 0
+                )
+                - Number(
+                    expense.paid_amount_cents
+                    || 0
+                ),
+                0,
+            )
 
         if (
             amountCents
-            > selectedInstallment
-                .remainingAmountCents
+            > remainingAmountCents
         ) {
+            await transaction.rollback()
+
             return {
                 error:
-                    'O pagamento ultrapassa o saldo da parcela selecionada.',
+                    'O pagamento ultrapassa o saldo da despesa.',
             }
         }
-    }
 
-    await getClient().execute({
-        sql: `
-            INSERT INTO party_expense_payments (
-                expense_id,
-                installment_id,
-                payment_type,
-                amount_cents,
-                paid_at,
-                payment_method,
-                notes
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `,
-        args: [
-            expenseId,
+        let selectedInstallment =
+            null
 
-            selectedInstallment
-                ?.id
-            || null,
+        if (installmentId > 0) {
+            const installmentResult =
+                await transaction.execute({
+                    sql: `
+                        SELECT
+                            i.id,
+                            i.description,
+                            i.amount_cents,
+                            COALESCE(
+                                SUM(p.amount_cents),
+                                0
+                            ) AS paid_amount_cents
+                        FROM party_expense_installments i
+                        LEFT JOIN party_expense_payments p
+                            ON p.installment_id = i.id
+                        WHERE i.id = ?
+                          AND i.expense_id = ?
+                        GROUP BY
+                            i.id,
+                            i.description,
+                            i.amount_cents
+                        LIMIT 1
+                    `,
+                    args: [
+                        installmentId,
+                        expenseId,
+                    ],
+                })
 
-            selectedInstallment
-                ? 'parcela'
-                : paymentType,
+            selectedInstallment =
+                installmentResult.rows[0]
+                || null
 
-            amountCents,
+            if (!selectedInstallment) {
+                await transaction.rollback()
 
-            cleanText(
-                body.paidAt
-            ) || getTodayIso(),
+                return {
+                    error:
+                        'Parcela não encontrada.',
+                }
+            }
 
-            cleanText(
-                body.paymentMethod
-            ),
+            const installmentRemaining =
+                Math.max(
+                    Number(
+                        selectedInstallment
+                            .amount_cents
+                        || 0
+                    )
+                    - Number(
+                        selectedInstallment
+                            .paid_amount_cents
+                        || 0
+                    ),
+                    0,
+                )
 
-            cleanText(
-                body.notes
-            ),
-        ],
-    })
+            if (
+                amountCents
+                > installmentRemaining
+            ) {
+                await transaction.rollback()
 
-    return {
-        message:
-            selectedInstallment
-                ? `Pagamento registrado na ${selectedInstallment.description}.`
-                : 'Pagamento registrado.',
+                return {
+                    error:
+                        'O pagamento ultrapassa o saldo da parcela selecionada.',
+                }
+            }
+        }
+
+        await transaction.execute({
+            sql: `
+                INSERT INTO party_expense_payments (
+                    expense_id,
+                    installment_id,
+                    payment_type,
+                    amount_cents,
+                    paid_at,
+                    payment_method,
+                    notes
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            args: [
+                expenseId,
+
+                selectedInstallment
+                    ?.id
+                || null,
+
+                selectedInstallment
+                    ? 'parcela'
+                    : paymentType,
+
+                amountCents,
+
+                cleanText(
+                    body.paidAt
+                ) || getTodayIso(),
+
+                cleanText(
+                    body.paymentMethod
+                ),
+
+                cleanText(
+                    body.notes
+                ),
+            ],
+        })
+
+        await transaction.commit()
+
+        return {
+            message:
+                selectedInstallment
+                    ? `Pagamento registrado na ${selectedInstallment.description}.`
+                    : 'Pagamento registrado.',
+        }
+    } catch (error) {
+        try {
+            await transaction.rollback()
+        } catch {
+            // A transação pode já ter sido encerrada.
+        }
+
+        throw error
     }
 }
 
@@ -3015,7 +3155,7 @@ async function updateContractStatus(body) {
     if (expenseId <= 0) {
         return {
             error:
-                'Contrato inv?lido.',
+                'Contrato inválido.',
         }
     }
 
@@ -3036,7 +3176,7 @@ async function updateContractStatus(body) {
     return {
         message:
             contractStatus === 'cancelled'
-                ? 'Contrato cancelado e mantido no hist?rico.'
+                ? 'Contrato cancelado e mantido no histórico.'
                 : 'Contrato reativado.',
     }
 }
@@ -3058,29 +3198,53 @@ async function deleteExpense(body) {
 
     const db = getClient()
 
-    await db.execute({
-        sql: `
-            DELETE FROM party_expense_payments
-            WHERE expense_id = ?
-        `,
-        args: [id],
-    })
-
-    await db.execute({
-        sql: `
-            DELETE FROM party_expense_installments
-            WHERE expense_id = ?
-        `,
-        args: [id],
-    })
-
-    await db.execute({
-        sql: `
-            DELETE FROM party_expenses
-            WHERE id = ?
-        `,
-        args: [id],
-    })
+    await db.batch([
+        {
+            sql: `
+                UPDATE party_documents
+                SET
+                    payment_id = NULL,
+                    updated_at = datetime('now')
+                WHERE payment_id IN (
+                    SELECT id
+                    FROM party_expense_payments
+                    WHERE expense_id = ?
+                )
+            `,
+            args: [id],
+        },
+        {
+            sql: `
+                UPDATE party_documents
+                SET
+                    expense_id = NULL,
+                    updated_at = datetime('now')
+                WHERE expense_id = ?
+            `,
+            args: [id],
+        },
+        {
+            sql: `
+                DELETE FROM party_expense_payments
+                WHERE expense_id = ?
+            `,
+            args: [id],
+        },
+        {
+            sql: `
+                DELETE FROM party_expense_installments
+                WHERE expense_id = ?
+            `,
+            args: [id],
+        },
+        {
+            sql: `
+                DELETE FROM party_expenses
+                WHERE id = ?
+            `,
+            args: [id],
+        },
+    ], 'write')
 
     return {
         message:
@@ -3103,13 +3267,25 @@ async function deletePayment(body) {
         }
     }
 
-    await getClient().execute({
-        sql: `
-            DELETE FROM party_expense_payments
-            WHERE id = ?
-        `,
-        args: [id],
-    })
+    await getClient().batch([
+        {
+            sql: `
+                UPDATE party_documents
+                SET
+                    payment_id = NULL,
+                    updated_at = datetime('now')
+                WHERE payment_id = ?
+            `,
+            args: [id],
+        },
+        {
+            sql: `
+                DELETE FROM party_expense_payments
+                WHERE id = ?
+            `,
+            args: [id],
+        },
+    ], 'write')
 
     return {
         message:
@@ -3427,7 +3603,10 @@ async function deleteTimelineItem(body) {
 }
 
 
-async function saveDocument(body) {
+async function saveDocument(
+    body,
+    database = getClient(),
+) {
     const id =
         parseInteger(
             body.id,
@@ -3457,7 +3636,7 @@ async function saveDocument(body) {
     ) {
         return {
             error:
-                'Informe um link http ou https valido para o documento.',
+                'Informe um link http ou https válido para o documento.',
         }
     }
 
@@ -3487,7 +3666,7 @@ async function saveDocument(body) {
         ),
     ]
 
-    const db = getClient()
+    const db = database
 
     if (id > 0) {
         await db.execute({
@@ -3551,7 +3730,7 @@ async function deleteDocument(body) {
     if (id <= 0) {
         return {
             error:
-                'Documento invalido.',
+                'Documento inválido.',
         }
     }
 

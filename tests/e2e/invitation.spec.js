@@ -1,0 +1,223 @@
+import AxeBuilder from '@axe-core/playwright'
+import {
+    expect,
+    test,
+} from '@playwright/test'
+
+const OPENING_SESSION = {
+    invitationCode: '',
+    guest: {
+        id: 1,
+        name: 'Convidada de teste',
+        age: 30,
+        maxCompanions: 2,
+        companions: [
+            {
+                slot: 1,
+                name: 'Acompanhante teste',
+                age: 5,
+                attending: 'sim',
+            },
+            {
+                slot: 2,
+                name: '',
+                age: '',
+                attending: 'sim',
+            },
+        ],
+    },
+    whatsapp: '11999999999',
+    alreadyConfirmed: false,
+    rsvp: null,
+}
+
+async function blockExternalMedia(page) {
+    await page.route(
+        /youtube|googlevideo/,
+        (route) => route.abort(),
+    )
+}
+
+async function unlockInvitation(page) {
+    await page.addInitScript((openingSession) => {
+        window.sessionStorage.setItem(
+            'dudaInvitationUnlocked',
+            JSON.stringify(openingSession),
+        )
+    }, OPENING_SESSION)
+}
+
+test('a abertura móvel usa a nova identidade sem rolagem horizontal', async ({
+    page,
+}) => {
+    await blockExternalMedia(page)
+    await page.goto('/')
+
+    await expect(
+        page.getByText('Duda', { exact: true }),
+    ).toBeVisible()
+
+    const openingStyle =
+        await page.locator('.opening-gate__brand span')
+            .evaluate((element) => {
+                const style =
+                    getComputedStyle(element)
+
+                return {
+                    fontFamily:
+                        style.fontFamily,
+                    color:
+                        style.color,
+                }
+            })
+
+    expect(openingStyle.fontFamily)
+        .toContain('Parisienne')
+    expect(openingStyle.color)
+        .toBe('rgb(122, 31, 61)')
+
+    const overflow =
+        await page.evaluate(() => (
+            document.documentElement.scrollWidth
+            - document.documentElement.clientWidth
+        ))
+
+    expect(overflow)
+        .toBeLessThanOrEqual(1)
+
+    await expect(
+        page.locator('.opening-gate__balloon'),
+    ).toHaveAttribute(
+        'src',
+        '/media/balloon-16.webp',
+    )
+})
+
+test('o convite interno é simétrico e oferece calendário do iPhone', async ({
+    page,
+}) => {
+    await blockExternalMedia(page)
+    await unlockInvitation(page)
+    await page.goto('/')
+
+    const dateCard =
+        page.locator('.event-details > div')
+            .nth(0)
+    const timeCard =
+        page.locator('.event-details > div')
+            .nth(1)
+
+    await expect(dateCard)
+        .toBeVisible()
+    await expect(timeCard)
+        .toBeVisible()
+
+    const [dateBox, timeBox] =
+        await Promise.all([
+            dateCard.boundingBox(),
+            timeCard.boundingBox(),
+        ])
+
+    expect(
+        Math.abs(dateBox.y - timeBox.y),
+    ).toBeLessThanOrEqual(1)
+    expect(
+        Math.abs(dateBox.height - timeBox.height),
+    ).toBeLessThanOrEqual(1)
+
+    const calendarLink =
+        page.getByRole(
+            'link',
+            {
+                name: /Agenda do iPhone/i,
+            },
+        )
+
+    await expect(calendarLink)
+        .toBeVisible()
+    await expect(calendarLink)
+        .toHaveAttribute(
+            'href',
+            '/api/calendar?platform=ios',
+        )
+
+    await expect(
+        page.getByText(
+            'Como usamos seus dados',
+            {
+                exact: true,
+            },
+        ),
+    ).toBeVisible()
+})
+
+test('Android recebe o atalho do Google Agenda', async ({
+    browser,
+}) => {
+    const context =
+        await browser.newContext({
+            viewport: {
+                width: 390,
+                height: 844,
+            },
+            isMobile: true,
+            hasTouch: true,
+            userAgent:
+                'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+        })
+
+    const page =
+        await context.newPage()
+
+    await blockExternalMedia(page)
+    await unlockInvitation(page)
+    await page.goto('/')
+
+    const calendarLink =
+        page.getByRole(
+            'link',
+            {
+                name: /Google Agenda/i,
+            },
+        )
+
+    await expect(calendarLink)
+        .toBeVisible()
+    await expect(calendarLink)
+        .toHaveAttribute(
+            'href',
+            /calendar\.google\.com/,
+        )
+
+    await context.close()
+})
+
+test('a tela pública não apresenta violações graves de acessibilidade', async ({
+    page,
+}) => {
+    await blockExternalMedia(page)
+    await unlockInvitation(page)
+    await page.goto('/')
+
+    const results =
+        await new AxeBuilder({
+            page,
+        })
+            .withTags([
+                'wcag2a',
+                'wcag2aa',
+            ])
+            .analyze()
+
+    const seriousViolations =
+        results.violations
+            .filter(
+                (violation) => (
+                    violation.impact === 'serious'
+                    || violation.impact === 'critical'
+                ),
+            )
+
+    expect(seriousViolations)
+        .toEqual([])
+})

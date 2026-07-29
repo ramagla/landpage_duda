@@ -1097,6 +1097,108 @@ test(
         )
 
         await t.test(
+            'admin separa confirmação de presença real por check-in',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip:
+                                '10.0.43.1',
+
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'setGuestCheckin',
+                                guestId:
+                                    primaryGuest.id,
+                                attendeeKey:
+                                    'guest',
+                                checkedIn:
+                                    true,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const checkedGuest =
+                    result.data.guests.find(
+                        (guest) => (
+                            guest.id
+                            === primaryGuest.id
+                        ),
+                    )
+
+                assert.equal(
+                    checkedGuest.checkins.length,
+                    1,
+                )
+
+                assert.equal(
+                    checkedGuest
+                        .checkins[0]
+                        .attendeeKey,
+                    'guest',
+                )
+
+                assert.ok(
+                    result.data.totals
+                        .checkedIn >= 1,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip:
+                                '10.0.43.2',
+
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+
+                            body: {
+                                action:
+                                    'setGuestCheckin',
+                                guestId:
+                                    primaryGuest.id,
+                                attendeeKey:
+                                    'guest',
+                                checkedIn:
+                                    false,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.guests
+                        .find(
+                            (guest) => (
+                                guest.id
+                                === primaryGuest.id
+                            ),
+                        )
+                        .checkins.length,
+                    0,
+                )
+            },
+        )
+
+        await t.test(
             'admin permite cadastrar convidado sem idade',
             async () => {
                 const {

@@ -2,6 +2,12 @@ import {
     useMemo,
     useState,
 } from 'react'
+import {
+    EVENT,
+} from '../shared/event-config.js'
+import {
+    useDialogA11y,
+} from './use-dialog-a11y.js'
 
 
 const TYPES = {
@@ -66,9 +72,9 @@ const TEMPLATES = {
         '',
         'Falta só 1 mês para os 16 anos da Duda!',
         '',
-        'Data: 14/11/2026',
-        'Horário: 17h',
-        'Local: Quintal do Ibiza',
+        `Data: ${EVENT.dateShortDisplay}`,
+        `Horário: ${EVENT.timeDisplay}`,
+        `Local: ${EVENT.venue}`,
         '',
         'Seu convite e todas as informações estão aqui:',
         '{link}',
@@ -81,10 +87,10 @@ const TEMPLATES = {
         '',
         'Faltam apenas 10 dias para os 16 anos da Duda!',
         '',
-        'Data: 14/11/2026',
-        'Horário: a partir das 17h',
-        'Local: Quintal do Ibiza',
-        'Endereço: Rua Corumbataí, 100 - Vila Virgínia, Itaquaquecetuba - SP',
+        `Data: ${EVENT.dateShortDisplay}`,
+        `Horário: a partir das ${EVENT.timeDisplay}`,
+        `Local: ${EVENT.venue}`,
+        `Endereço: ${EVENT.address}`,
         '',
         'Confira seu convite:',
         '{link}',
@@ -189,6 +195,9 @@ export default function AdminCommunicationModal({
     onClose,
     onMarkSent,
 }) {
+    const dialogRef =
+        useDialogA11y(true, onClose)
+
     const [type, setType] =
         useState('convite_inicial')
 
@@ -347,6 +356,7 @@ export default function AdminCommunicationModal({
         >
             <section
                 className="communication-modal"
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="communication-title"

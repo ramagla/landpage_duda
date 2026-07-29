@@ -1,0 +1,40 @@
+name: Validar convite
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Validar código e integrações
+        run: |
+          npm run lint
+          npm run build
+          npm test
+
+      - name: Instalar navegador de teste
+        run: npx playwright install --with-deps chromium
+
+      - name: Testar interface móvel e acessibilidade
+        run: npm run test:e2e

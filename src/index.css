@@ -9091,8 +9091,15 @@ html {
         font-size: 2.45rem;
     }
 
-    .finance-logout {
+    .finance-header-actions,
+    .finance-logout,
+    .finance-backup {
         width: 100%;
+    }
+
+    .finance-header-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
     }
 
     .finance-tabs {
@@ -10322,6 +10329,24 @@ html {
     border-radius: 50%;
     background: rgba(255, 250, 242, .12);
     color: #fffaf2;
+    cursor: pointer;
+}
+
+.finance-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.finance-backup {
+    min-height: 42px;
+    padding: 8px 16px;
+    border: 1px solid rgba(8, 120, 111, .22);
+    border-radius: 9px;
+    background: #f1fbf8;
+    color: #08786f;
+    font: inherit;
+    font-weight: 850;
     cursor: pointer;
 }
 
@@ -12076,3 +12101,530 @@ html {
 }
 
 /* === AJUSTES MOBILE — END === */
+
+/* ======================================================================
+   ABERTURA — ROSÉ, VINHO E CHAMPANHE
+   Mantém a identidade interna sem alterar metadados ou ícones do site.
+   ====================================================================== */
+
+.opening-gate__brand span,
+.page-shell--revealed h1#invite-title .name-script {
+    font-family: "Parisienne", "Allura", cursive !important;
+    font-style: normal;
+    font-weight: 400 !important;
+    letter-spacing: -.035em !important;
+}
+
+.opening-gate {
+    background:
+        radial-gradient(circle at 50% 25%, rgba(255, 253, 248, .99), rgba(249, 232, 232, .94) 48%, rgba(235, 207, 214, .9) 100%),
+        #f6e8e7;
+}
+
+.opening-gate::before {
+    opacity: .23;
+    background-image:
+        radial-gradient(circle, rgba(111, 27, 55, .34) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(190, 147, 73, .42) 0 1px, transparent 1.5px);
+}
+
+.opening-gate__sparkles {
+    background:
+        radial-gradient(circle at 18% 34%, #c8919e 0 2px, transparent 3px),
+        radial-gradient(circle at 72% 18%, #d8ba7a 0 2px, transparent 3px),
+        radial-gradient(circle at 84% 66%, #ead1d7 0 1.5px, transparent 3px),
+        radial-gradient(circle at 28% 78%, #7c2946 0 1.5px, transparent 3px);
+    opacity: .66;
+}
+
+.opening-gate__brand p {
+    color: #6c2940;
+}
+
+.opening-gate__brand span {
+    color: #7a1f3d !important;
+    text-shadow:
+        0 1px 0 rgba(255, 250, 242, .98),
+        0 7px 22px rgba(91, 22, 46, .2) !important;
+}
+
+.opening-gate__brand small,
+.opening-gate__footer {
+    color: #5d3a43;
+}
+
+.opening-gate__disco {
+    mix-blend-mode: normal;
+    filter: saturate(.58) contrast(1.04);
+    box-shadow: 0 18px 36px rgba(82, 27, 46, .14);
+}
+
+.opening-gate__balloon {
+    filter:
+        contrast(1.05)
+        saturate(.72)
+        drop-shadow(0 16px 24px rgba(82, 27, 46, .14));
+}
+
+.opening-gate .envelope {
+    filter: drop-shadow(0 22px 34px rgba(92, 28, 50, .25));
+}
+
+.opening-gate .envelope__back {
+    background: linear-gradient(135deg, #b75f79, #87344f) !important;
+}
+
+.opening-gate .envelope__flap {
+    background: linear-gradient(180deg, #d8869c, #a94e69) !important;
+}
+
+.opening-gate .envelope__pocket--left {
+    background: linear-gradient(135deg, #bd6680, #98415d) !important;
+}
+
+.opening-gate .envelope__pocket--right {
+    background: linear-gradient(225deg, #b95f79, #903a56) !important;
+}
+
+.opening-gate .envelope__front {
+    background: linear-gradient(180deg, #d9869c, #a74d68) !important;
+}
+
+.opening-gate .envelope > span {
+    color: #fff4dc;
+}
+
+.access-card {
+    border-color: rgba(111, 27, 55, .18);
+    box-shadow: 0 24px 52px rgba(91, 22, 46, .18);
+}
+
+.access-card p,
+.access-card > small {
+    color: #73545c;
+}
+
+.access-card label span {
+    color: #6f1b37;
+}
+
+.access-card button {
+    background: #76203e;
+    box-shadow: 0 16px 30px rgba(111, 27, 55, .22);
+}
+
+.access-card button:not(:disabled):hover {
+    background: #5f1831;
+}
+
+.opening-gate--checking .access-card::after {
+    border-color: rgba(111, 27, 55, .16);
+    border-top-color: #76203e;
+}
+
+.opening-gate.opening-gate--intro .envelope__seal-hint {
+    border-color: rgba(111, 27, 55, .14);
+    background: rgba(255, 252, 246, .97);
+    color: #6f1b37 !important;
+}
+
+.opening-gate.opening-gate--intro .envelope__seal-hint strong,
+.opening-gate.opening-gate--intro .envelope__seal-hint small,
+.opening-gate.opening-gate--intro .envelope__seal-hint b {
+    color: #6f1b37 !important;
+}
+
+.opening-gate + .music-player .music-player__control {
+    border-color: rgba(111, 27, 55, .2);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 253, 248, .98),
+            rgba(246, 223, 227, .96)
+        );
+    color: #6f1b37;
+    box-shadow: 0 14px 34px rgba(91, 22, 46, .18);
+}
+
+.opening-gate + .music-player .music-player__control > span {
+    background:
+        linear-gradient(
+            135deg,
+            #8f2c4d,
+            #64172f
+        );
+}
+
+.route-loading {
+    display: grid;
+    min-height: 100dvh;
+    place-items: center;
+    padding: 24px;
+    background: #fbf6ef;
+    color: #6f1b37;
+    font-weight: 800;
+    text-align: center;
+}
+
+/* === ABERTURA — ROSÉ, VINHO E CHAMPANHE — END === */
+
+/* ======================================================================
+   ADMIN — RESPOSTAS RECENTES E CHECK-IN
+   ====================================================================== */
+
+.admin-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.admin-insight-grid > article {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid rgba(111, 27, 55, .13);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 14px 30px rgba(79, 25, 44, .07);
+}
+
+.admin-insight-grid header,
+.admin-checkin-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-insight-grid header span {
+    color: #6f1b37;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-insight-grid header strong {
+    color: #6f1b37;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.admin-insight-grid ul {
+    display: grid;
+    gap: 8px;
+    max-height: 220px;
+    margin: 14px 0 0;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+}
+
+.admin-insight-grid li {
+    display: grid;
+    gap: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(111, 27, 55, .08);
+    color: #38272d;
+    font-size: .84rem;
+    font-weight: 750;
+}
+
+.admin-insight-grid li small,
+.admin-insight-grid article > p {
+    color: #806b72;
+    font-size: .7rem;
+    font-weight: 600;
+}
+
+.admin-insight-grid article > p {
+    margin: 14px 0 0;
+}
+
+.admin-checkin-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.admin-checkin-heading {
+    align-items: center;
+}
+
+.admin-checkin-heading h2 {
+    margin-bottom: 6px;
+}
+
+.admin-checkin-heading p:last-child {
+    max-width: 680px;
+    margin: 0;
+    color: #715d64;
+}
+
+.admin-checkin-heading > strong {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #f6e7eb;
+    color: #6f1b37;
+    font-size: 1.05rem;
+}
+
+.admin-checkin-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-checkin-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(111, 27, 55, .12);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.admin-checkin-card--present {
+    border-color: rgba(44, 122, 79, .3);
+    background: #f1fbf5;
+}
+
+.admin-checkin-card > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.admin-checkin-card strong {
+    overflow: hidden;
+    color: #38272d;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-checkin-card small {
+    color: #806b72;
+    font-size: .7rem;
+}
+
+.admin-checkin-card button {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 1px solid #6f1b37;
+    border-radius: 11px;
+    background: #fff;
+    color: #6f1b37;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.admin-checkin-card--present button {
+    border-color: #28764c;
+    background: #28764c;
+    color: #fff;
+}
+
+.admin-checkin-card button:disabled {
+    cursor: wait;
+    opacity: .6;
+}
+
+.admin-checkin-empty {
+    margin: 0;
+    color: #806b72;
+    text-align: center;
+}
+
+@media (max-width: 860px) {
+    .admin-insight-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-insight-grid ul {
+        max-height: 160px;
+    }
+}
+
+@media (max-width: 700px) {
+    .admin-checkin-heading {
+        align-items: flex-start;
+    }
+
+    .admin-checkin-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-checkin-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-checkin-card button {
+        width: 100%;
+    }
+}
+
+/* === ADMIN — RESPOSTAS RECENTES E CHECK-IN — END === */
+
+/* ======================================================================
+   RSVP — RESUMO FINAL E PRIVACIDADE
+   ====================================================================== */
+
+.rsvp-confirmation-summary {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px;
+    border: 1px solid rgba(49, 122, 78, .24);
+    border-radius: 18px;
+    background: #f2fbf5;
+    box-shadow: 0 14px 28px rgba(40, 118, 76, .08);
+}
+
+.rsvp-confirmation-summary--declined {
+    border-color: rgba(111, 27, 55, .18);
+    background: #fff8f8;
+    box-shadow: 0 14px 28px rgba(111, 27, 55, .06);
+}
+
+.rsvp-confirmation-summary__icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: #28764c;
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 900;
+}
+
+.rsvp-confirmation-summary--declined .rsvp-confirmation-summary__icon {
+    background: #76203e;
+}
+
+.rsvp-confirmation-summary h3 {
+    margin: 2px 0 6px;
+    color: #401625;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.55rem;
+}
+
+.rsvp-confirmation-summary p {
+    margin: 0;
+    color: #654f57;
+    line-height: 1.45;
+}
+
+.rsvp-confirmation-summary ul {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rsvp-confirmation-summary li {
+    display: grid;
+    gap: 2px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .86);
+}
+
+.rsvp-confirmation-summary li strong {
+    color: #38272d;
+}
+
+.rsvp-confirmation-summary li span,
+.rsvp-confirmation-summary > div > small {
+    color: #7a666d;
+    font-size: .72rem;
+    font-weight: 650;
+}
+
+.privacy-notice {
+    border-top: 1px solid rgba(111, 27, 55, .12);
+    color: #715d64;
+    font-size: .72rem;
+}
+
+.privacy-notice summary {
+    width: max-content;
+    padding-top: 12px;
+    color: #6f1b37;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.privacy-notice p {
+    margin: 9px 0 0;
+    line-height: 1.5;
+}
+
+@media (max-width: 520px) {
+    .rsvp-confirmation-summary {
+        grid-template-columns: 40px minmax(0, 1fr);
+        gap: 11px;
+        padding: 16px 14px;
+    }
+
+    .rsvp-confirmation-summary__icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .rsvp-confirmation-summary h3 {
+        font-size: 1.3rem;
+    }
+}
+
+/* === RSVP — RESUMO FINAL E PRIVACIDADE — END === */
+
+/* Contraste mínimo para textos pequenos da experiência pública. */
+.page-shell--revealed .venue-card a {
+    color: #842a47;
+}
+
+.page-shell--revealed .message-sender > span {
+    color: #765720;
+}
+
+@media (max-width: 359px), (max-height: 740px) {
+    .opening-gate__brand {
+        top: 18px;
+    }
+
+    .opening-gate__brand p {
+        margin-bottom: 5px;
+        font-size: .68rem;
+    }
+
+    .opening-gate__balloon {
+        width: 126px;
+        margin-bottom: -45px;
+    }
+
+    .opening-gate__brand span {
+        font-size: 3.7rem;
+        line-height: .78;
+    }
+
+    .opening-gate__brand small {
+        width: min(250px, 78vw);
+        margin-top: 4px;
+        font-size: .76rem;
+        line-height: 1.22;
+    }
+
+    .opening-gate .envelope-stage {
+        transform:
+            translateX(-50%)
+            translateY(-44px);
+    }
+}

@@ -5,6 +5,9 @@ import {
 } from 'react'
 
 import FinanceChart from './FinanceChart.jsx'
+import {
+    useDialogA11y,
+} from './use-dialog-a11y.js'
 
 
 const STATUS_LABELS = {
@@ -71,7 +74,7 @@ const DOCUMENT_TYPES = [
     },
     {
         value: 'orcamento',
-        label: 'Orcamento',
+        label: 'Orçamento',
     },
     {
         value: 'comprovante',
@@ -87,7 +90,7 @@ const DOCUMENT_TYPES = [
     },
     {
         value: 'cardapio',
-        label: 'Cardapio',
+        label: 'Cardápio',
     },
     {
         value: 'outros',
@@ -228,6 +231,18 @@ export default function ExpensesPage() {
         documentModal,
         setDocumentModal,
     ] = useState(null)
+
+    const documentDialogRef =
+        useDialogA11y(
+            Boolean(documentModal),
+            () => setDocumentModal(null),
+        )
+
+    const paymentDialogRef =
+        useDialogA11y(
+            Boolean(paymentExpense),
+            () => setPaymentExpense(null),
+        )
 
     const [search, setSearch] =
         useState('')
@@ -572,6 +587,58 @@ export default function ExpensesPage() {
         setMessage('')
     }
 
+    function handleFinanceBackup() {
+        if (!data) {
+            return
+        }
+
+        const exportedAt =
+            new Date()
+                .toISOString()
+
+        const fileDate =
+            exportedAt.slice(0, 10)
+
+        const blob =
+            new Blob(
+                [
+                    JSON.stringify(
+                        {
+                            format:
+                                'duda-finance-backup-v1',
+                            exportedAt,
+                            data,
+                        },
+                        null,
+                        2,
+                    ),
+                ],
+                {
+                    type:
+                        'application/json;charset=utf-8',
+                },
+            )
+
+        const url =
+            URL.createObjectURL(blob)
+
+        const anchor =
+            document.createElement('a')
+
+        anchor.href = url
+        anchor.download =
+            `backup-financeiro-duda-${fileDate}.json`
+
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        URL.revokeObjectURL(url)
+
+        setMessage(
+            'Cópia de segurança financeira exportada.',
+        )
+    }
+
 
     async function handleBudget(
         event,
@@ -783,7 +850,7 @@ export default function ExpensesPage() {
     ) {
         const question =
             contractStatus === 'cancelled'
-                ? 'Cancelar este contrato? Ele ficara no historico e saira dos totais ativos.'
+                ? 'Cancelar este contrato? Ele ficará no histórico e sairá dos totais ativos.'
                 : 'Reativar este contrato nos totais ativos?'
 
         if (!window.confirm(question)) {
@@ -1717,21 +1784,37 @@ export default function ExpensesPage() {
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    className="finance-logout"
-                    onClick={
-                        handleLogout
-                    }
-                >
-                    Sair
-                </button>
+                <div className="finance-header-actions">
+                    <button
+                        type="button"
+                        className="finance-backup"
+                        onClick={handleFinanceBackup}
+                    >
+                        Exportar backup
+                    </button>
+
+                    <button
+                        type="button"
+                        className="finance-logout"
+                        onClick={
+                            handleLogout
+                        }
+                    >
+                        Sair
+                    </button>
+                </div>
             </header>
 
 
-            <nav className="finance-tabs">
+            <nav
+                className="finance-tabs"
+                role="tablist"
+                aria-label="Áreas da gestão da festa"
+            >
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'dashboard'}
                     className={
                         activeTab === 'dashboard'
                             ? 'finance-tab finance-tab--active'
@@ -1748,6 +1831,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'expenses'}
                     className={
                         activeTab === 'expenses'
                             ? 'finance-tab finance-tab--active'
@@ -1764,6 +1849,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'contracts'}
                     className={
                         activeTab === 'contracts'
                             ? 'finance-tab finance-tab--active'
@@ -1780,6 +1867,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'documents'}
                     className={
                         activeTab === 'documents'
                             ? 'finance-tab finance-tab--active'
@@ -1796,6 +1885,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'suppliers'}
                     className={
                         activeTab === 'suppliers'
                             ? 'finance-tab finance-tab--active'
@@ -1812,6 +1903,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'checklist'}
                     className={
                         activeTab === 'checklist'
                             ? 'finance-tab finance-tab--active'
@@ -1828,6 +1921,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'timeline'}
                     className={
                         activeTab === 'timeline'
                             ? 'finance-tab finance-tab--active'
@@ -1844,6 +1939,8 @@ export default function ExpensesPage() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'shopping'}
                     className={
                         activeTab === 'shopping'
                             ? 'finance-tab finance-tab--active'
@@ -2196,7 +2293,7 @@ export default function ExpensesPage() {
                                                 ? ` vence em ${dateBr(expense.signalDueDate)}`
                                                 : ''}
                                             {!expense.reservationConfirmed
-                                                ? ' ? Reserva nao confirmada'
+                                                ? ' • Reserva não confirmada'
                                                 : ''}
                                         </span>
                                     </article>
@@ -2438,7 +2535,7 @@ export default function ExpensesPage() {
                                         </div>
 
                                         <small>
-                                            {[expense.supplier, expense.category].filter(Boolean).join(' ? ') || 'Sem fornecedor'}
+                                            {[expense.supplier, expense.category].filter(Boolean).join(' • ') || 'Sem fornecedor'}
                                         </small>
                                     </div>
 
@@ -2505,7 +2602,7 @@ export default function ExpensesPage() {
                                             ? `Reserva confirmada${expense.reservationConfirmedAt
                                                 ? ` em ${dateBr(expense.reservationConfirmedAt)}`
                                                 : ''}`
-                                            : 'Reserva nao confirmada'}
+                                            : 'Reserva não confirmada'}
                                     </span>
 
                                     <span>Parcelas: {expense.installments.length || 0}</span>
@@ -2533,7 +2630,7 @@ export default function ExpensesPage() {
                             <div>
                                 <p className="panel-kicker">Arquivos e links</p>
                                 <h2>Documentos da festa</h2>
-                                <p>Cadastre links seguros para contratos, comprovantes, recibos e orcamentos.</p>
+                                <p>Cadastre links seguros para contratos, comprovantes, recibos e orçamentos.</p>
                             </div>
 
                             <button
@@ -2565,7 +2662,7 @@ export default function ExpensesPage() {
                                     <small>
                                         {[document.expenseDescription, document.supplierName, dateBr(document.documentDate)]
                                             .filter(Boolean)
-                                            .join(' ? ')}
+                                            .join(' • ')}
                                     </small>
 
                                     {document.notes ? (
@@ -2867,7 +2964,7 @@ export default function ExpensesPage() {
                                     }
                                 >
                                     <option value="nao">
-                                        Nao
+                                        Não
                                     </option>
 
                                     <option value="sim">
@@ -2962,7 +3059,7 @@ export default function ExpensesPage() {
                                     }
                                 >
                                     <option value="nao">
-                                        Nao
+                                        Não
                                     </option>
 
                                     <option value="sim">
@@ -2988,7 +3085,7 @@ export default function ExpensesPage() {
 
                             <label className="finance-field finance-field--wide">
                                 <span>
-                                    Observacao do sinal
+                                    Observação do sinal
                                 </span>
 
                                 <input
@@ -3062,13 +3159,13 @@ export default function ExpensesPage() {
                                 />
 
                                 <small>
-                                    Cole aqui o link do contrato, comprovante ou recibo. O arquivo deve ficar no Drive/OneDrive/Dropbox com permissao controlada.
+                                    Cole aqui o link do contrato, comprovante ou recibo. O arquivo deve ficar no Drive/OneDrive/Dropbox com permissão controlada.
                                 </small>
                             </label>
 
                             <label className="finance-field finance-field--wide">
                                 <span>
-                                    Observacao do anexo
+                                    Observação do anexo
                                 </span>
 
                                 <input
@@ -3080,12 +3177,12 @@ export default function ExpensesPage() {
                             {!editing ? (
                                 <>
                                     <div className="finance-form-divider finance-form-divider--payment">
-                                        Pagamento ja realizado
+                                        Pagamento já realizado
                                     </div>
 
                                     <label className="finance-field">
                                         <span>
-                                            Valor ja pago
+                                            Valor já pago
                                         </span>
 
                                         <input
@@ -3130,7 +3227,7 @@ export default function ExpensesPage() {
                                                         }
                                                     >
                                                         {method
-                                                            || 'Nao informado'}
+                                                            || 'Não informado'}
                                                     </option>
                                                 )
                                             )}
@@ -3161,7 +3258,7 @@ export default function ExpensesPage() {
 
                                     <label className="finance-field">
                                         <span>
-                                            Observa??o do pagamento
+                                            Observação do pagamento
                                         </span>
 
                                         <input
@@ -3178,7 +3275,7 @@ export default function ExpensesPage() {
 
                                     <label className="finance-field">
                                         <span>
-                                            Valor ja pago
+                                            Valor já pago
                                         </span>
 
                                         <input
@@ -3194,7 +3291,7 @@ export default function ExpensesPage() {
 
                                     <label className="finance-field">
                                         <span>
-                                            ?ltimo pagamento
+                                            Último pagamento
                                         </span>
 
                                         <input
@@ -3219,7 +3316,7 @@ export default function ExpensesPage() {
                                                 editing
                                                     .payments?.[0]
                                                     ?.paymentMethod
-                                                || 'Nao informado'
+                                                || 'Não informado'
                                             }
                                             readOnly
                                         />
@@ -3227,7 +3324,7 @@ export default function ExpensesPage() {
 
                                     <label className="finance-field">
                                         <span>
-                                            Observa??o do pagamento
+                                            Observação do pagamento
                                         </span>
 
                                         <input
@@ -3238,7 +3335,7 @@ export default function ExpensesPage() {
                                                 || ''
                                             }
                                             readOnly
-                                            placeholder="Sem observa??o"
+                                            placeholder="Sem observação"
                                         />
                                     </label>
 
@@ -3577,7 +3674,7 @@ export default function ExpensesPage() {
 
                                                     <div>
                                                         <span>
-                                                            Saldo ap?s entrada
+                                                            Saldo após entrada
                                                         </span>
 
                                                         <strong>
@@ -5250,17 +5347,23 @@ export default function ExpensesPage() {
 
             {documentModal ? (
                 <div className="finance-modal-backdrop">
-                    <section className="finance-modal">
+                    <section
+                        className="finance-modal"
+                        ref={documentDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="finance-document-modal-title"
+                    >
                         <header>
                             <div>
                                 <p className="panel-kicker">Documento</p>
-                                <h2>
+                                <h2 id="finance-document-modal-title">
                                     {documentModal.document
                                         ? 'Editar documento'
                                         : 'Anexar contrato/documento'}
                                 </h2>
                                 <p>
-                                    Informe um link seguro para o arquivo. Upload direto ficara para quando houver storage configurado.
+                                    Informe um link seguro para o arquivo. Upload direto ficará para quando houver storage configurado.
                                 </p>
                             </div>
 
@@ -5270,7 +5373,7 @@ export default function ExpensesPage() {
                                 onClick={() => setDocumentModal(null)}
                                 aria-label="Fechar"
                             >
-                                ?
+                                ×
                             </button>
                         </header>
 
@@ -5350,7 +5453,7 @@ export default function ExpensesPage() {
                                     required
                                 />
                                 <small>
-                                    Use um link de Drive/OneDrive/Dropbox ou storage com permissao controlada.
+                                    Use um link de Drive/OneDrive/Dropbox ou storage com permissão controlada.
                                 </small>
                             </label>
 
@@ -5361,7 +5464,7 @@ export default function ExpensesPage() {
                             ) : null}
 
                             <label className="finance-field finance-field--full">
-                                <span>Observacao</span>
+                                <span>Observação</span>
                                 <textarea
                                     name="notes"
                                     rows="3"
@@ -5384,14 +5487,20 @@ export default function ExpensesPage() {
 
             {paymentExpense ? (
                 <div className="finance-modal-backdrop">
-                    <section className="finance-modal">
+                    <section
+                        className="finance-modal"
+                        ref={paymentDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="finance-payment-modal-title"
+                    >
                         <header>
                             <div>
                                 <p className="panel-kicker">
                                     Pagamento
                                 </p>
 
-                                <h2>
+                                <h2 id="finance-payment-modal-title">
                                     {paymentExpense.description}
                                 </h2>
 

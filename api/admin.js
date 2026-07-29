@@ -136,6 +136,16 @@ async function getSummary() {
         ORDER BY sent_at DESC, id DESC
     `)
 
+    const checkinsResult = await getClient().execute(`
+        SELECT
+            invited_guest_id,
+            attendee_key,
+            attendee_name,
+            checked_in_at
+        FROM guest_checkins
+        ORDER BY checked_in_at DESC, id DESC
+    `)
+
     const companionsByRsvp = new Map()
     for (const row of companionsResult.rows) {
         const key = Number(row.rsvp_id)
@@ -161,6 +171,26 @@ async function getSummary() {
     }
 
     const communicationsByGuest = new Map()
+    const checkinsByGuest = new Map()
+
+    for (const row of checkinsResult.rows) {
+        const guestId = Number(
+            row.invited_guest_id
+        )
+
+        if (!checkinsByGuest.has(guestId)) {
+            checkinsByGuest.set(
+                guestId,
+                [],
+            )
+        }
+
+        checkinsByGuest.get(guestId).push({
+            attendeeKey: row.attendee_key,
+            attendeeName: row.attendee_name,
+            checkedInAt: row.checked_in_at,
+        })
+    }
 
     for (const row of communicationsResult.rows) {
         const guestId = Number(
@@ -209,6 +239,9 @@ async function getSummary() {
             communications:
                 communicationsByGuest.get(id)
                 || {},
+            checkins:
+                checkinsByGuest.get(id)
+                || [],
         }
     })
 
@@ -244,6 +277,10 @@ async function getSummary() {
         } else {
             summary.pending += 1 + maxCompanions
         }
+
+        summary.checkedIn +=
+            guest.checkins.length
+
         return summary
     }, {
         invited: 0,
@@ -254,6 +291,7 @@ async function getSummary() {
         buffet: 0,
         invitesSent: 0,
         invitesNotSent: 0,
+        checkedIn: 0,
     })
 
     return {
@@ -547,6 +585,145 @@ async function findGuestIdByInviteCode(inviteCode) {
     return Number(result.rows[0]?.id || 0)
 }
 
+async function setGuestCheckin(body) {
+    const guestId = Number.parseInt(
+        String(body.guestId || ''),
+        10,
+    )
+
+    const attendeeKey =
+        cleanText(body.attendeeKey)
+
+    if (
+        !Number.isInteger(guestId)
+        || guestId <= 0
+        || !/^guest$|^companion:\d+$/.test(attendeeKey)
+    ) {
+        return {
+            error:
+                'Pessoa inválida para o controle de presença.',
+        }
+    }
+
+    const guestResult =
+        await getClient().execute({
+            sql: `
+                SELECT
+                    g.guest_name,
+                    r.id AS rsvp_id,
+                    r.attending
+                FROM invited_guests g
+                LEFT JOIN rsvps r
+                    ON r.invited_guest_id = g.id
+                WHERE g.id = ?
+                LIMIT 1
+            `,
+            args: [
+                guestId,
+            ],
+        })
+
+    const guest =
+        guestResult.rows[0]
+
+    if (
+        !guest
+        || guest.attending !== 'sim'
+    ) {
+        return {
+            error:
+                'Somente presenças confirmadas podem fazer check-in.',
+        }
+    }
+
+    let attendeeName =
+        guest.guest_name
+
+    if (attendeeKey.startsWith('companion:')) {
+        const companionSlot =
+            Number.parseInt(
+                attendeeKey.split(':')[1],
+                10,
+            )
+
+        const companionResult =
+            await getClient().execute({
+                sql: `
+                    SELECT companion_name
+                    FROM rsvp_companions
+                    WHERE rsvp_id = ?
+                      AND companion_slot = ?
+                      AND COALESCE(attending, 'sim') = 'sim'
+                    LIMIT 1
+                `,
+                args: [
+                    Number(guest.rsvp_id),
+                    companionSlot,
+                ],
+            })
+
+        if (!companionResult.rows[0]) {
+            return {
+                error:
+                    'Acompanhante confirmado não encontrado.',
+            }
+        }
+
+        attendeeName =
+            companionResult
+                .rows[0]
+                .companion_name
+    }
+
+    const checkedIn =
+        body.checkedIn === true
+
+    if (checkedIn) {
+        await getClient().execute({
+            sql: `
+                INSERT INTO guest_checkins (
+                    invited_guest_id,
+                    attendee_key,
+                    attendee_name,
+                    checked_in_at
+                )
+                VALUES (?, ?, ?, datetime('now'))
+                ON CONFLICT (
+                    invited_guest_id,
+                    attendee_key
+                )
+                DO UPDATE SET
+                    attendee_name = excluded.attendee_name,
+                    checked_in_at = datetime('now')
+            `,
+            args: [
+                guestId,
+                attendeeKey,
+                attendeeName,
+            ],
+        })
+    } else {
+        await getClient().execute({
+            sql: `
+                DELETE FROM guest_checkins
+                WHERE invited_guest_id = ?
+                  AND attendee_key = ?
+            `,
+            args: [
+                guestId,
+                attendeeKey,
+            ],
+        })
+    }
+
+    return {
+        message:
+            checkedIn
+                ? `Entrada de ${attendeeName} registrada.`
+                : `Entrada de ${attendeeName} removida.`,
+    }
+}
+
 async function deleteGuest(body) {
     const id = Number.parseInt(String(body.id || ''), 10)
     if (!Number.isInteger(id) || id <= 0) return { error: 'Convidado invalido.' }
@@ -557,29 +734,39 @@ async function deleteGuest(body) {
     })
     if (!exists.rows[0]) return { error: 'Convidado nao encontrado.' }
 
-    await getClient().execute({
-        sql: `
-            DELETE FROM rsvp_companions
-            WHERE rsvp_id IN (SELECT id FROM rsvps WHERE invited_guest_id = ?)
-        `,
-        args: [id],
-    })
-    await getClient().execute({
-        sql: 'DELETE FROM rsvps WHERE invited_guest_id = ?',
-        args: [id],
-    })
-    await getClient().execute({
-        sql: 'DELETE FROM guest_companions WHERE invited_guest_id = ?',
-        args: [id],
-    })
-    await getClient().execute({
-        sql: 'DELETE FROM guest_communications WHERE invited_guest_id = ?',
-        args: [id],
-    })
-    await getClient().execute({
-        sql: 'DELETE FROM invited_guests WHERE id = ?',
-        args: [id],
-    })
+    await getClient().batch([
+        {
+            sql: `
+                DELETE FROM rsvp_companions
+                WHERE rsvp_id IN (
+                    SELECT id
+                    FROM rsvps
+                    WHERE invited_guest_id = ?
+                )
+            `,
+            args: [id],
+        },
+        {
+            sql: 'DELETE FROM rsvps WHERE invited_guest_id = ?',
+            args: [id],
+        },
+        {
+            sql: 'DELETE FROM guest_companions WHERE invited_guest_id = ?',
+            args: [id],
+        },
+        {
+            sql: 'DELETE FROM guest_communications WHERE invited_guest_id = ?',
+            args: [id],
+        },
+        {
+            sql: 'DELETE FROM guest_checkins WHERE invited_guest_id = ?',
+            args: [id],
+        },
+        {
+            sql: 'DELETE FROM invited_guests WHERE id = ?',
+            args: [id],
+        },
+    ], 'write')
 
     return { message: `Convidado ${exists.rows[0].guest_name} excluido.` }
 }
@@ -702,6 +889,30 @@ export default async function handler(request, response) {
             if (saved.error) return response.status(400).json({ error: saved.error })
             const summary = await getSummary()
             return response.status(200).json({ message: saved.message, ...summary })
+        }
+
+        if (body.action === 'setGuestCheckin') {
+            const checked =
+                await setGuestCheckin(body)
+
+            if (checked.error) {
+                return response
+                    .status(400)
+                    .json({
+                        error: checked.error,
+                    })
+            }
+
+            const summary =
+                await getSummary()
+
+            return response
+                .status(200)
+                .json({
+                    message:
+                        checked.message,
+                    ...summary,
+                })
         }
 
         if (body.action === 'unmarkCommunication') {

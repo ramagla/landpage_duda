@@ -9,20 +9,22 @@
     "build": "node scripts/run-with-node20.mjs ./node_modules/vite/bin/vite.js build",
     "lint": "node scripts/run-with-node20.mjs ./node_modules/eslint/bin/eslint.js .",
     "preview": "vite preview",
-    "test": "node scripts/run-with-node20.mjs --test tests/integration.test.mjs"
+    "test": "node scripts/run-with-node20.mjs --test tests/integration.test.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
-    "@rolldown/binding-linux-x64-gnu": "^1.2.0",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@vitejs/plugin-react": "^6.0.4",
     "echarts": "^6.1.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "vite": "^8.0.12"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^8.1.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.3.0",
+    "@playwright/test": "^1.54.1",
+    "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",

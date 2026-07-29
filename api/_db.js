@@ -191,6 +191,22 @@ export async function ensureSchema() {
             `)
 
             await db.execute(`
+                CREATE TABLE IF NOT EXISTS guest_checkins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invited_guest_id INTEGER NOT NULL,
+                    attendee_key TEXT NOT NULL,
+                    attendee_name TEXT NOT NULL,
+                    checked_in_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(invited_guest_id, attendee_key)
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS guest_checkins_guest_index
+                ON guest_checkins (invited_guest_id)
+            `)
+
+            await db.execute(`
                 CREATE TABLE IF NOT EXISTS birthday_messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,

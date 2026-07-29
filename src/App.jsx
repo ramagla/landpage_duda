@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+    Suspense,
+    lazy,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import AdminCommunicationModal from './AdminCommunicationModal.jsx'
-import ExpensesPage from './ExpensesPage.jsx'
 import {
     createGuestsPdf,
     createGuestsXlsx,
@@ -15,13 +21,17 @@ import {
     RSVP_DEADLINE_DISPLAY,
     isRsvpClosedAt,
 } from '../shared/rsvp-deadline.js'
+import {
+    EVENT,
+    GOOGLE_CALENDAR_URL,
+    MAP_URL,
+    WAZE_URL,
+} from '../shared/event-config.js'
 
-const EVENT_DATE_ISO = '2026-11-14T17:00:00-03:00'
-const EVENT_ADDRESS = 'Rua Corumbataí, 100 - Vila Virgínia, Itaquaquecetuba - SP'
-const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(EVENT_ADDRESS)}`
-const WAZE_URL = `https://waze.com/ul?q=${encodeURIComponent(EVENT_ADDRESS)}&navigate=yes`
-const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
-const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
+const ExpensesPage = lazy(
+    () => import('./ExpensesPage.jsx'),
+)
+
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 
 /*
@@ -31,7 +41,7 @@ const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const DUDA_PHOTOS = [
     {
         id: 'paris',
-        src: '/duda-photo.png',
+        src: '/media/duda-photo.webp',
         alt: 'Duda em frente à Torre Eiffel',
         objectPosition: 'center 28%',
     },
@@ -66,16 +76,6 @@ function getYoutubePlayerUrl(autoplay = false) {
 const PIX_KEY = '56765986898'
 const PIX_NAME = 'Maria Eduarda Almeida Araujo'
 const PIX_COPY_PASTE = '00020101021226330014br.gov.bcb.pix0111567659868985204000053039865802BR5921MARIA EDUARDA ALMEIDA6015ITAQUAQUECETUBA62100506DUDA166304E334'
-
-const GOOGLE_CALENDAR_URL = (
-    'https://calendar.google.com/calendar/render'
-    + '?action=TEMPLATE'
-    + `&text=${encodeURIComponent('16 anos da Duda')}`
-    + '&dates=20261114T200000Z/20261115T020000Z'
-    + `&details=${encodeURIComponent('Aniversário de 16 anos da Duda no Quintal do Ibiza.')}`
-    + `&location=${encodeURIComponent(EVENT_ADDRESS)}`
-    + '&ctz=America%2FSao_Paulo'
-)
 
 async function copyTextToClipboard(value) {
     const textValue = String(value || '').trim()
@@ -600,7 +600,7 @@ function InvitationQuickActions() {
 }
 
 function Countdown() {
-    const targetDate = useMemo(() => new Date(EVENT_DATE_ISO), [])
+    const targetDate = useMemo(() => new Date(EVENT.startsAt), [])
     const [time, setTime] = useState(() => formatCountdown(targetDate))
 
     useEffect(() => {
@@ -746,13 +746,32 @@ function RsvpForm({
     const [guest, setGuest] = useState(initialGuest)
     const [companions, setCompanions] = useState(() => (initialGuest?.companions || []).map(createCompanion))
     const [alreadyConfirmed, setAlreadyConfirmed] = useState(Boolean(initialAlreadyConfirmed))
+    const [confirmationVisible, setConfirmationVisible] = useState(Boolean(initialAlreadyConfirmed))
+    const confirmationRef = useRef(null)
     const rsvpClosed = isRsvpClosed()
     const formLocked = rsvpClosed
+
+    useEffect(() => {
+        if (
+            submitStatus === 'success'
+            && confirmationVisible
+        ) {
+            confirmationRef.current
+                ?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                })
+        }
+    }, [
+        confirmationVisible,
+        submitStatus,
+    ])
 
     function resetGuest() {
         setGuest(null)
         setCompanions([])
         setAlreadyConfirmed(false)
+        setConfirmationVisible(false)
         setAttending('sim')
         setSubmitStatus('idle')
         onGuestCleared?.()
@@ -764,6 +783,8 @@ function RsvpForm({
     }
 
     function updateCompanion(id, field, value) {
+        setConfirmationVisible(false)
+
         setCompanions((current) => current.map((companion) => (
             companion.id === id ? { ...companion, [field]: value } : companion
         )))
@@ -789,6 +810,7 @@ function RsvpForm({
             onGuestResolved?.(data.guest)
             setCompanions((data.guest.companions || []).map(createCompanion))
             setAlreadyConfirmed(Boolean(data.alreadyConfirmed))
+            setConfirmationVisible(Boolean(data.alreadyConfirmed))
             setAttending(
                 data.rsvp?.attending === 'nao'
                     ? 'nao'
@@ -808,6 +830,7 @@ function RsvpForm({
 
     function handleAttendingChange(value) {
         setAttending(value)
+        setConfirmationVisible(false)
     }
 
     async function handleSubmit(event) {
@@ -855,6 +878,7 @@ function RsvpForm({
             }
 
             setAlreadyConfirmed(true)
+            setConfirmationVisible(true)
             setMessage(
                 data.message
                 || 'Resposta salva com carinho.'
@@ -1019,6 +1043,83 @@ function RsvpForm({
                 </form>
             ) : null}
 
+            {guest && confirmationVisible ? (
+                <section
+                    className={
+                        attending === 'sim'
+                            ? 'rsvp-confirmation-summary'
+                            : 'rsvp-confirmation-summary rsvp-confirmation-summary--declined'
+                    }
+                    ref={confirmationRef}
+                    role="status"
+                    aria-live="polite"
+                    aria-labelledby="rsvp-confirmation-title"
+                >
+                    <span className="rsvp-confirmation-summary__icon" aria-hidden="true">
+                        {attending === 'sim' ? '✓' : '–'}
+                    </span>
+
+                    <div>
+                        <p className="panel-kicker">
+                            Resposta registrada
+                        </p>
+
+                        <h3 id="rsvp-confirmation-title">
+                            {attending === 'sim'
+                                ? 'Presença confirmada!'
+                                : 'Sentiremos sua falta'}
+                        </h3>
+
+                        {attending === 'sim' ? (
+                            <>
+                                <p>
+                                    Confira quem está confirmado neste convite:
+                                </p>
+
+                                <ul>
+                                    <li>
+                                        <strong>{guest.name}</strong>
+                                        <span>Convidado principal</span>
+                                    </li>
+
+                                    {companions
+                                        .filter(
+                                            (companion) => (
+                                                companion.attending
+                                                !== 'nao'
+                                                && companion.name.trim()
+                                            ),
+                                        )
+                                        .map((companion) => (
+                                            <li key={companion.id}>
+                                                <strong>{companion.name}</strong>
+                                                <span>
+                                                    Acompanhante
+                                                    {companion.age !== ''
+                                                        ? ` · ${companion.age} anos`
+                                                        : ''}
+                                                </span>
+                                            </li>
+                                        ))}
+                                </ul>
+
+                                <small>
+                                    {EVENT.dateDisplay}
+                                    {' · '}
+                                    {EVENT.timeDisplay}
+                                    {' · '}
+                                    {EVENT.venue}
+                                </small>
+                            </>
+                        ) : (
+                            <p>
+                                A resposta de que você não irá foi salva. Se mudar de ideia antes do prazo, ainda é possível alterar.
+                            </p>
+                        )}
+                    </div>
+                </section>
+            ) : null}
+
             {message ? (
                 <p
                     className={`form-message form-message--${lookupStatus === 'error' || submitStatus === 'error' ? 'error' : 'success'}`}
@@ -1028,6 +1129,13 @@ function RsvpForm({
                     {message}
                 </p>
             ) : null}
+
+            <details className="privacy-notice">
+                <summary>Como usamos seus dados</summary>
+                <p>
+                    Nome, telefone, idade e confirmação são usados somente para organizar a festa e a lista do buffet. Para corrigir ou remover seus dados, fale com o Rafael.
+                </p>
+            </details>
         </div>
     )
 }
@@ -2493,6 +2601,127 @@ function AdminPage() {
         }
     }
 
+    const pendingGuests =
+        (data?.guests || [])
+            .filter(
+                (guestItem) => (
+                    guestItem.status
+                    === 'pendente'
+                ),
+            )
+
+    const viewedGuests =
+        (data?.guests || [])
+            .filter(
+                (guestItem) => (
+                    guestItem.status
+                    === 'visualizou'
+                ),
+            )
+
+    const recentlyConfirmedGuests =
+        (data?.guests || [])
+            .filter(
+                (guestItem) => (
+                    guestItem.status === 'sim'
+                    && guestItem.confirmedAt
+                ),
+            )
+            .sort(
+                (first, second) => (
+                    new Date(second.confirmedAt)
+                    - new Date(first.confirmedAt)
+                ),
+            )
+            .slice(0, 8)
+
+    const confirmedAttendees =
+        (data?.guests || [])
+            .filter(
+                (guestItem) => (
+                    guestItem.status
+                    === 'sim'
+                ),
+            )
+            .flatMap((guestItem) => {
+                const checkinByKey =
+                    new Map(
+                        (guestItem.checkins || [])
+                            .map((checkin) => [
+                                checkin.attendeeKey,
+                                checkin,
+                            ]),
+                    )
+
+                return [
+                    {
+                        guestId: guestItem.id,
+                        attendeeKey: 'guest',
+                        attendeeName: guestItem.name,
+                        invitationName: guestItem.name,
+                        checkin:
+                            checkinByKey.get('guest')
+                            || null,
+                    },
+                    ...(guestItem.companions || [])
+                        .filter(
+                            (companion) => (
+                                companion.attending
+                                !== 'nao'
+                            ),
+                        )
+                        .map((companion) => {
+                            const attendeeKey =
+                                `companion:${companion.slot}`
+
+                            return {
+                                guestId: guestItem.id,
+                                attendeeKey,
+                                attendeeName:
+                                    companion.name,
+                                invitationName:
+                                    guestItem.name,
+                                checkin:
+                                    checkinByKey
+                                        .get(attendeeKey)
+                                    || null,
+                            }
+                        }),
+                ]
+            })
+
+    async function handleGuestCheckin(
+        attendee,
+    ) {
+        try {
+            const checkedIn =
+                !attendee.checkin
+
+            const result =
+                await callAdmin({
+                    action:
+                        'setGuestCheckin',
+                    guestId:
+                        attendee.guestId,
+                    attendeeKey:
+                        attendee.attendeeKey,
+                    checkedIn,
+                })
+
+            setMessage(
+                result.message
+                || (
+                    checkedIn
+                        ? 'Entrada registrada.'
+                        : 'Entrada removida.'
+                ),
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(error.message)
+        }
+    }
+
     return (
         <main className="admin-shell">
             <section className="confirm-panel admin-login" aria-labelledby="admin-title">
@@ -2604,6 +2833,169 @@ function AdminPage() {
                             <span>Mensagens</span>
                             <strong>{data.messages?.length || 0}</strong>
                         </div>
+
+                        <div className="admin-summary__checkin">
+                            <span>Presentes na festa</span>
+                            <strong>{data.totals.checkedIn || 0}</strong>
+                        </div>
+                    </section>
+
+                    <section
+                        className="admin-insight-grid"
+                        aria-label="Acompanhamento das respostas"
+                    >
+                        <article>
+                            <header>
+                                <span>Faltam responder</span>
+                                <strong>{pendingGuests.length}</strong>
+                            </header>
+
+                            <ul>
+                                {pendingGuests
+                                    .slice(0, 8)
+                                    .map((guestItem) => (
+                                        <li key={guestItem.id}>
+                                            {guestItem.name}
+                                        </li>
+                                    ))}
+                            </ul>
+
+                            {pendingGuests.length === 0 ? (
+                                <p>Todos já responderam.</p>
+                            ) : null}
+                        </article>
+
+                        <article>
+                            <header>
+                                <span>Visualizaram</span>
+                                <strong>{viewedGuests.length}</strong>
+                            </header>
+
+                            <ul>
+                                {viewedGuests
+                                    .slice(0, 8)
+                                    .map((guestItem) => (
+                                        <li key={guestItem.id}>
+                                            <span>{guestItem.name}</span>
+                                            <small>
+                                                {formatAdminAccessDate(
+                                                    guestItem.lastAccessAt,
+                                                )}
+                                            </small>
+                                        </li>
+                                    ))}
+                            </ul>
+
+                            {viewedGuests.length === 0 ? (
+                                <p>Ninguém está aguardando resposta após visualizar.</p>
+                            ) : null}
+                        </article>
+
+                        <article>
+                            <header>
+                                <span>Confirmaram recentemente</span>
+                                <strong>{recentlyConfirmedGuests.length}</strong>
+                            </header>
+
+                            <ul>
+                                {recentlyConfirmedGuests
+                                    .map((guestItem) => (
+                                        <li key={guestItem.id}>
+                                            <span>{guestItem.name}</span>
+                                            <small>
+                                                {formatAdminAccessDate(
+                                                    guestItem.confirmedAt,
+                                                )}
+                                            </small>
+                                        </li>
+                                    ))}
+                            </ul>
+
+                            {recentlyConfirmedGuests.length === 0 ? (
+                                <p>Ainda não há confirmações.</p>
+                            ) : null}
+                        </article>
+                    </section>
+
+                    <section
+                        className="confirm-panel admin-checkin-panel"
+                        aria-labelledby="admin-checkin-title"
+                    >
+                        <div className="admin-checkin-heading">
+                            <div>
+                                <p className="panel-kicker">
+                                    Presença real
+                                </p>
+
+                                <h2 id="admin-checkin-title">
+                                    Check-in da festa
+                                </h2>
+
+                                <p>
+                                    A confirmação indica quem pretende ir; o check-in registra quem realmente chegou.
+                                </p>
+                            </div>
+
+                            <strong>
+                                {data.totals.checkedIn || 0}
+                                {' / '}
+                                {confirmedAttendees.length}
+                            </strong>
+                        </div>
+
+                        <div className="admin-checkin-list">
+                            {confirmedAttendees.map(
+                                (attendee) => (
+                                    <article
+                                        className={
+                                            attendee.checkin
+                                                ? 'admin-checkin-card admin-checkin-card--present'
+                                                : 'admin-checkin-card'
+                                        }
+                                        key={`${attendee.guestId}-${attendee.attendeeKey}`}
+                                    >
+                                        <div>
+                                            <strong>
+                                                {attendee.attendeeName}
+                                            </strong>
+
+                                            {attendee.attendeeKey !== 'guest' ? (
+                                                <small>
+                                                    Convite de {attendee.invitationName}
+                                                </small>
+                                            ) : null}
+
+                                            {attendee.checkin ? (
+                                                <small>
+                                                    Entrada: {formatAdminAccessDate(
+                                                        attendee.checkin.checkedInAt,
+                                                    )}
+                                                </small>
+                                            ) : null}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            aria-pressed={Boolean(attendee.checkin)}
+                                            onClick={() => (
+                                                handleGuestCheckin(attendee)
+                                            )}
+                                            disabled={status === 'loading'}
+                                        >
+                                            {attendee.checkin
+                                                ? '✓ Presente'
+                                                : 'Registrar entrada'}
+                                        </button>
+                                    </article>
+                                ),
+                            )}
+                        </div>
+
+                        {confirmedAttendees.length === 0 ? (
+                            <p className="admin-checkin-empty">
+                                As pessoas confirmadas aparecerão aqui.
+                            </p>
+                        ) : null}
                     </section>
 
                     <section
@@ -3613,12 +4005,12 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
     return (
         <main className={`opening-gate opening-gate--${stage}`} aria-label="Abertura do convite da Duda">
             <div className="opening-gate__sparkles" aria-hidden="true" />
-            <img className="opening-gate__disco opening-gate__disco--left" src="/disco-ball.jpg" alt="" aria-hidden="true" />
-            <img className="opening-gate__disco opening-gate__disco--right" src="/disco-ball.jpg" alt="" aria-hidden="true" />
+            <img className="opening-gate__disco opening-gate__disco--left" src="/media/disco-ball.webp" alt="" aria-hidden="true" />
+            <img className="opening-gate__disco opening-gate__disco--right" src="/media/disco-ball.webp" alt="" aria-hidden="true" />
 
             <section className="opening-gate__brand" aria-hidden="true">
                 <p>Sweet birthday</p>
-                <img className="opening-gate__balloon" src="/balloon-16-transparent.png" alt="" />
+                <img className="opening-gate__balloon" src="/media/balloon-16.webp" alt="" />
                 <span>Duda</span>
                 <small>Uma tarde para brilhar, dançar e guardar na memória.</small>
             </section>
@@ -3660,7 +4052,9 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     >
                         {isChecking ? 'Consultando...' : isUnlocked ? 'Convite liberado' : 'Abrir meu convite'}
                     </button>
-                    <small>{isUnlocked ? 'Toque para entrar no convite completo.' : 'O número será usado somente para localizar e confirmar este convite.'}</small>
+                    <small>{isUnlocked
+                        ? 'Toque para entrar no convite completo.'
+                        : 'Privacidade: o número será usado somente para localizar e confirmar este convite.'}</small>
                     {message ? <p className="form-message form-message--error">{message}</p> : null}
                     </form>
                 </div>
@@ -3681,13 +4075,13 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     >
                         <img
                             className={`envelope__seal-img envelope__seal-img--intact${sealBroken ? ' envelope__seal-img--hidden-by-state' : ''}`}
-                            src="/selo.png"
+                            src="/media/selo.webp"
                             alt=""
                         />
 
                         <img
                             className={`envelope__seal-img envelope__seal-img--broken${sealBroken ? ' envelope__seal-img--visible-by-state' : ''}`}
-                            src="/selo-rompido.png"
+                            src="/media/selo-rompido.webp"
                             alt=""
                         />
 
@@ -3790,9 +4184,9 @@ function LandingPage() {
                                 guardar para sempre.
                             </p>
                             <p className="hero-date">
-                                <span>14 · 11 · 2026</span>
+                                <span>{EVENT.dateCompactDisplay}</span>
                                 <span aria-hidden="true">—</span>
-                                <span>17h</span>
+                                <span>{EVENT.timeDisplay}</span>
                             </p>
                         </div>
                     </header>
@@ -3837,11 +4231,11 @@ function LandingPage() {
                         >
                             <div>
                                 <span>Data</span>
-                                <strong>14 de novembro de 2026</strong>
+                                <strong>{EVENT.dateDisplay}</strong>
                             </div>
                             <div>
                                 <span>Horário</span>
-                                <strong>17h</strong>
+                                <strong>{EVENT.timeDisplay}</strong>
                             </div>
                         </div>
 
@@ -3849,15 +4243,15 @@ function LandingPage() {
                             <img src="/quintal-ibiza-logo.jpg" alt="Logo oficial do Quintal do Ibiza" />
                             <div>
                                 <span>Local da festa</span>
-                                <strong>Quintal do Ibiza</strong>
-                                <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+                                <strong>{EVENT.venue}</strong>
+                                <a href={EVENT.venueInstagramUrl} target="_blank" rel="noreferrer">
                                     @quintaldoibizaoficial
                                 </a>
                             </div>
                         </div>
 
                         <p className="address">
-                            {EVENT_ADDRESS}
+                            {EVENT.address}
                         </p>
 
                         <div
@@ -3936,7 +4330,7 @@ function LandingPage() {
 
                     <a
                         className="duda-instagram-card"
-                        href={DUDA_INSTAGRAM_URL}
+                        href={EVENT.dudaInstagramUrl}
                         target="_blank"
                         rel="noreferrer"
                     >
@@ -4009,7 +4403,7 @@ function LandingPage() {
                     <footer className="invitation-footer">
                         <span>D</span>
                         <p>Com carinho, Duda</p>
-                        <small>14 · 11 · 2026</small>
+                        <small>{EVENT.dateCompactDisplay}</small>
                     </footer>
                 </div>
             </main>
@@ -4031,7 +4425,17 @@ function App() {
     }
 
     if (pathname === '/despesas') {
-        return <ExpensesPage />
+        return (
+            <Suspense
+                fallback={(
+                    <main className="route-loading" role="status">
+                        Carregando painel financeiro...
+                    </main>
+                )}
+            >
+                <ExpensesPage />
+            </Suspense>
+        )
     }
 
     return <LandingPage />
