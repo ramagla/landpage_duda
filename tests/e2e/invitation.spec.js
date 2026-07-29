@@ -74,7 +74,7 @@ test('a abertura móvel usa a nova identidade sem rolagem horizontal', async ({
     expect(openingStyle.fontFamily)
         .toContain('Parisienne')
     expect(openingStyle.color)
-        .toBe('rgb(122, 31, 61)')
+        .toBe('rgb(0, 112, 106)')
 
     const overflow =
         await page.evaluate(() => (
@@ -90,6 +90,13 @@ test('a abertura móvel usa a nova identidade sem rolagem horizontal', async ({
     ).toHaveAttribute(
         'src',
         '/media/balloon-16.webp',
+    )
+
+    await expect(
+        page.locator('meta[property="og:image"]'),
+    ).toHaveAttribute(
+        'content',
+        'https://www.dudanoibiza.com.br/og-convite-duda-v2.jpg',
     )
 })
 

@@ -10164,18 +10164,18 @@ html {
    ====================================================================== */
 
 .page-shell--revealed {
-    --invite-wine: #681f35;
-    --invite-wine-deep: #421322;
-    --invite-rose: #b86a7f;
-    --invite-rose-soft: #ead0d7;
-    --invite-champagne: #d8b77b;
-    --invite-gold: #b9914c;
-    --invite-ivory: #fffaf2;
-    --invite-paper: #fffdf9;
-    --invite-ink: #34262a;
-    --invite-muted: #76666b;
-    --invite-line: rgba(104, 31, 53, .14);
-    --invite-shadow: 0 18px 54px rgba(66, 19, 34, .11);
+    --invite-wine: #086c67;
+    --invite-wine-deep: #034b48;
+    --invite-rose: #56bdb2;
+    --invite-rose-soft: #cdebe4;
+    --invite-champagne: #e3c58f;
+    --invite-gold: #bd9654;
+    --invite-ivory: #fff9ed;
+    --invite-paper: #fffdf7;
+    --invite-ink: #173c39;
+    --invite-muted: #55706d;
+    --invite-line: rgba(8, 108, 103, .16);
+    --invite-shadow: 0 18px 54px rgba(3, 75, 72, .12);
 
     position: relative;
     display: grid;
@@ -10195,9 +10195,9 @@ html {
     align-items: start;
     color: var(--invite-ink);
     background:
-        radial-gradient(circle at 12% 7%, rgba(216, 183, 123, .22), transparent 24rem),
-        radial-gradient(circle at 94% 38%, rgba(184, 106, 127, .16), transparent 25rem),
-        linear-gradient(180deg, #f7e9e8 0%, #fffaf2 38%, #f5e8e7 100%);
+        radial-gradient(circle at 12% 7%, rgba(227, 197, 143, .28), transparent 24rem),
+        radial-gradient(circle at 94% 38%, rgba(86, 189, 178, .20), transparent 25rem),
+        linear-gradient(180deg, #dff3ed 0%, #fff9ed 38%, #e8f4ef 100%);
     font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     isolation: isolate;
 }
@@ -10231,8 +10231,8 @@ html {
     position: relative !important;
     top: auto !important;
     min-width: 0;
-    border: 1px solid rgba(104, 31, 53, .10);
-    background: rgba(255, 253, 249, .96);
+    border: 1px solid rgba(8, 108, 103, .11);
+    background: rgba(255, 253, 247, .96);
     box-shadow: var(--invite-shadow);
 }
 
@@ -10313,8 +10313,8 @@ html {
     padding: 5px;
     border: 1px solid rgba(255, 250, 242, .28);
     border-radius: 999px;
-    background: rgba(49, 12, 25, .44);
-    box-shadow: 0 10px 28px rgba(24, 4, 11, .16);
+    background: rgba(3, 75, 72, .52);
+    box-shadow: 0 10px 28px rgba(2, 54, 51, .18);
     backdrop-filter: blur(10px);
     transform: translateX(-50%);
 }
@@ -12103,8 +12103,8 @@ html {
 /* === AJUSTES MOBILE — END === */
 
 /* ======================================================================
-   ABERTURA — ROSÉ, VINHO E CHAMPANHE
-   Mantém a identidade interna sem alterar metadados ou ícones do site.
+   ABERTURA — TURQUESA, CHAMPANHE E PRATA
+   Derivada da arte compartilhada no WhatsApp, sem alterar essa imagem.
    ====================================================================== */
 
 .opening-gate__brand span,
@@ -12117,141 +12117,141 @@ html {
 
 .opening-gate {
     background:
-        radial-gradient(circle at 50% 25%, rgba(255, 253, 248, .99), rgba(249, 232, 232, .94) 48%, rgba(235, 207, 214, .9) 100%),
-        #f6e8e7;
+        radial-gradient(circle at 50% 25%, rgba(255, 251, 240, .99), rgba(226, 245, 238, .95) 48%, rgba(188, 231, 223, .92) 100%),
+        #dff3ed;
 }
 
 .opening-gate::before {
-    opacity: .23;
+    opacity: .30;
     background-image:
-        radial-gradient(circle, rgba(111, 27, 55, .34) 0 1px, transparent 1.5px),
-        radial-gradient(circle, rgba(190, 147, 73, .42) 0 1px, transparent 1.5px);
+        radial-gradient(circle, rgba(8, 108, 103, .34) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(189, 150, 84, .44) 0 1px, transparent 1.5px);
 }
 
 .opening-gate__sparkles {
     background:
-        radial-gradient(circle at 18% 34%, #c8919e 0 2px, transparent 3px),
-        radial-gradient(circle at 72% 18%, #d8ba7a 0 2px, transparent 3px),
-        radial-gradient(circle at 84% 66%, #ead1d7 0 1.5px, transparent 3px),
-        radial-gradient(circle at 28% 78%, #7c2946 0 1.5px, transparent 3px);
-    opacity: .66;
+        radial-gradient(circle at 18% 34%, #55c7bb 0 2px, transparent 3px),
+        radial-gradient(circle at 72% 18%, #d9bd86 0 2px, transparent 3px),
+        radial-gradient(circle at 84% 66%, #d9dfdc 0 1.5px, transparent 3px),
+        radial-gradient(circle at 28% 78%, #08716b 0 1.5px, transparent 3px);
+    opacity: .72;
 }
 
 .opening-gate__brand p {
-    color: #6c2940;
+    color: #086c67;
 }
 
 .opening-gate__brand span {
-    color: #7a1f3d !important;
+    color: #00706a !important;
     text-shadow:
-        0 1px 0 rgba(255, 250, 242, .98),
-        0 7px 22px rgba(91, 22, 46, .2) !important;
+        0 1px 0 rgba(255, 251, 240, .98),
+        0 7px 22px rgba(3, 75, 72, .20) !important;
 }
 
 .opening-gate__brand small,
 .opening-gate__footer {
-    color: #5d3a43;
+    color: #315e5a;
 }
 
 .opening-gate__disco {
     mix-blend-mode: normal;
-    filter: saturate(.58) contrast(1.04);
-    box-shadow: 0 18px 36px rgba(82, 27, 46, .14);
+    filter: saturate(.70) contrast(1.06);
+    box-shadow: 0 18px 36px rgba(3, 75, 72, .14);
 }
 
 .opening-gate__balloon {
     filter:
-        contrast(1.05)
-        saturate(.72)
-        drop-shadow(0 16px 24px rgba(82, 27, 46, .14));
+        contrast(1.06)
+        saturate(.82)
+        drop-shadow(0 16px 24px rgba(3, 75, 72, .14));
 }
 
 .opening-gate .envelope {
-    filter: drop-shadow(0 22px 34px rgba(92, 28, 50, .25));
+    filter: drop-shadow(0 22px 34px rgba(3, 75, 72, .25));
 }
 
 .opening-gate .envelope__back {
-    background: linear-gradient(135deg, #b75f79, #87344f) !important;
+    background: linear-gradient(135deg, #65d4c7, #159a93) !important;
 }
 
 .opening-gate .envelope__flap {
-    background: linear-gradient(180deg, #d8869c, #a94e69) !important;
+    background: linear-gradient(180deg, #a9e9df, #43bfb3) !important;
 }
 
 .opening-gate .envelope__pocket--left {
-    background: linear-gradient(135deg, #bd6680, #98415d) !important;
+    background: linear-gradient(135deg, #55cbbd, #0d8d87) !important;
 }
 
 .opening-gate .envelope__pocket--right {
-    background: linear-gradient(225deg, #b95f79, #903a56) !important;
+    background: linear-gradient(225deg, #5fd1c3, #0b817c) !important;
 }
 
 .opening-gate .envelope__front {
-    background: linear-gradient(180deg, #d9869c, #a74d68) !important;
+    background: linear-gradient(180deg, #8de1d5, #20a79f) !important;
 }
 
 .opening-gate .envelope > span {
-    color: #fff4dc;
+    color: #fff3d4;
 }
 
 .access-card {
-    border-color: rgba(111, 27, 55, .18);
-    box-shadow: 0 24px 52px rgba(91, 22, 46, .18);
+    border-color: rgba(8, 108, 103, .18);
+    box-shadow: 0 24px 52px rgba(3, 75, 72, .18);
 }
 
 .access-card p,
 .access-card > small {
-    color: #73545c;
+    color: #55706d;
 }
 
 .access-card label span {
-    color: #6f1b37;
+    color: #086c67;
 }
 
 .access-card button {
-    background: #76203e;
-    box-shadow: 0 16px 30px rgba(111, 27, 55, .22);
+    background: #075f5b;
+    box-shadow: 0 16px 30px rgba(8, 108, 103, .22);
 }
 
 .access-card button:not(:disabled):hover {
-    background: #5f1831;
+    background: #034b48;
 }
 
 .opening-gate--checking .access-card::after {
-    border-color: rgba(111, 27, 55, .16);
-    border-top-color: #76203e;
+    border-color: rgba(8, 108, 103, .16);
+    border-top-color: #075f5b;
 }
 
 .opening-gate.opening-gate--intro .envelope__seal-hint {
-    border-color: rgba(111, 27, 55, .14);
-    background: rgba(255, 252, 246, .97);
-    color: #6f1b37 !important;
+    border-color: rgba(8, 108, 103, .16);
+    background: rgba(255, 251, 240, .97);
+    color: #086c67 !important;
 }
 
 .opening-gate.opening-gate--intro .envelope__seal-hint strong,
 .opening-gate.opening-gate--intro .envelope__seal-hint small,
 .opening-gate.opening-gate--intro .envelope__seal-hint b {
-    color: #6f1b37 !important;
+    color: #086c67 !important;
 }
 
 .opening-gate + .music-player .music-player__control {
-    border-color: rgba(111, 27, 55, .2);
+    border-color: rgba(8, 108, 103, .20);
     background:
         linear-gradient(
             135deg,
-            rgba(255, 253, 248, .98),
-            rgba(246, 223, 227, .96)
+            rgba(255, 251, 240, .98),
+            rgba(214, 240, 233, .96)
         );
-    color: #6f1b37;
-    box-shadow: 0 14px 34px rgba(91, 22, 46, .18);
+    color: #086c67;
+    box-shadow: 0 14px 34px rgba(3, 75, 72, .18);
 }
 
 .opening-gate + .music-player .music-player__control > span {
     background:
         linear-gradient(
             135deg,
-            #8f2c4d,
-            #64172f
+            #0b817a,
+            #034b48
         );
 }
 
@@ -12260,13 +12260,13 @@ html {
     min-height: 100dvh;
     place-items: center;
     padding: 24px;
-    background: #fbf6ef;
-    color: #6f1b37;
+    background: #fff9ed;
+    color: #086c67;
     font-weight: 800;
     text-align: center;
 }
 
-/* === ABERTURA — ROSÉ, VINHO E CHAMPANHE — END === */
+/* === ABERTURA — TURQUESA, CHAMPANHE E PRATA — END === */
 
 /* ======================================================================
    ADMIN — RESPOSTAS RECENTES E CHECK-IN
