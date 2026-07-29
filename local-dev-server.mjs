@@ -86,6 +86,7 @@ async function handleApi(request, response, url) {
         'admin',
         'admin-login',
         'admin-logout',
+        'admin-preview-session',
         'calendar',
         'cron-backup',
         'expenses',

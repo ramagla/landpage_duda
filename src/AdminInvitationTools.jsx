@@ -441,12 +441,11 @@ function GalleryPanel({
     )
 }
 
-function PreviewPanel({ config }) {
-    const photo =
-        config.photos.find(
-            (item) => item.isPrimary,
-        )
-        || config.photos[0]
+function PreviewPanel() {
+    const [device, setDevice] =
+        useState('desktop')
+    const [frameVersion, setFrameVersion] =
+        useState(0)
 
     return (
         <section
@@ -462,8 +461,8 @@ function PreviewPanel({ config }) {
                         Prévia do convite
                     </h2>
                     <p>
-                        Esta prévia usa as configurações e a foto principal
-                        que estão publicadas.
+                        Esta é a página pública completa. Role dentro da
+                        moldura para conferir todas as seções.
                     </p>
                 </div>
 
@@ -477,47 +476,74 @@ function PreviewPanel({ config }) {
                 </a>
             </header>
 
-            <div className="admin-invitation-preview">
-                <div className="admin-invitation-preview__photo">
-                    <img
-                        src={photo?.src}
-                        alt={photo?.alt || ''}
-                        style={{
-                            objectPosition:
-                                photo?.objectPosition
-                                || 'center',
-                        }}
-                    />
-                    <span />
+            <div className="admin-preview-toolbar">
+                <div
+                    role="group"
+                    aria-label="Tamanho da prévia"
+                >
+                    <button
+                        className={
+                            device === 'desktop'
+                                ? 'is-active'
+                                : undefined
+                        }
+                        type="button"
+                        onClick={() => setDevice('desktop')}
+                        aria-pressed={device === 'desktop'}
+                    >
+                        Computador
+                    </button>
+                    <button
+                        className={
+                            device === 'mobile'
+                                ? 'is-active'
+                                : undefined
+                        }
+                        type="button"
+                        onClick={() => setDevice('mobile')}
+                        aria-pressed={device === 'mobile'}
+                    >
+                        Celular
+                    </button>
                 </div>
 
-                <div className="admin-invitation-preview__copy">
-                    <small>Save the date</small>
-                    <strong>{config.settings.age}</strong>
-                    <h3>{config.settings.celebrantName}</h3>
-                    <p>{config.settings.tagline}</p>
-                    <b>
-                        {config.event.dateCompactDisplay}
-                        {' — '}
-                        {config.event.timeDisplay}
-                    </b>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => (
+                        setFrameVersion(
+                            (value) => value + 1,
+                        )
+                    )}
+                >
+                    Atualizar prévia
+                </button>
             </div>
 
-            <dl className="admin-preview-details">
-                <div>
-                    <dt>Local</dt>
-                    <dd>{config.settings.venue}</dd>
+            <div
+                className={
+                    device === 'mobile'
+                        ? 'admin-live-preview admin-live-preview--mobile'
+                        : 'admin-live-preview'
+                }
+            >
+                <div className="admin-live-preview__browser">
+                    <span />
+                    <span />
+                    <span />
+                    <strong>
+                        dudanoibiza.com.br
+                    </strong>
                 </div>
-                <div>
-                    <dt>Prazo de confirmação</dt>
-                    <dd>{config.rsvp.deadlineDisplay}</dd>
-                </div>
-                <div>
-                    <dt>Dress code</dt>
-                    <dd>{config.settings.dressCode}</dd>
-                </div>
-            </dl>
+
+                <iframe
+                    key={frameVersion}
+                    title="Prévia completa do convite"
+                    src="/?adminPreview=1"
+                    loading="eager"
+                    sandbox="allow-same-origin allow-scripts"
+                    referrerPolicy="same-origin"
+                />
+            </div>
         </section>
     )
 }
@@ -1063,7 +1089,7 @@ export default function AdminInvitationTools({
             ) : null}
 
             {activeSection === 'preview' ? (
-                <PreviewPanel config={config} />
+                <PreviewPanel />
             ) : null}
 
             {activeSection === 'comunicacao' ? (

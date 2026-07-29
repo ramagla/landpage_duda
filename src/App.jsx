@@ -313,6 +313,16 @@ function getInvitationCode() {
     return new URLSearchParams(window.location.search).get('convite') || ''
 }
 
+function isAdminPreviewMode() {
+    if (typeof window === 'undefined') {
+        return false
+    }
+
+    return new URLSearchParams(
+        window.location.search,
+    ).get('adminPreview') === '1'
+}
+
 
 const OPENING_SESSION_KEY = 'dudaInvitationUnlocked'
 
@@ -4528,7 +4538,27 @@ function OpeningInvitationGate({
 }
 
 function LandingPage() {
-    const [openingData, setOpeningData] = useState(() => readOpeningSession())
+    const adminPreview =
+        useMemo(
+            () => isAdminPreviewMode(),
+            [],
+        )
+
+    const [previewAccess, setPreviewAccess] =
+        useState(
+            adminPreview
+                ? 'checking'
+                : 'ready',
+        )
+
+    const [openingData, setOpeningData] =
+        useState(
+            () => (
+                adminPreview
+                    ? null
+                    : readOpeningSession()
+            ),
+        )
     const [musicStarted, setMusicStarted] = useState(false)
     const [
         invitationConfig,
@@ -4574,6 +4604,93 @@ function LandingPage() {
         }
     }, [])
 
+    useEffect(() => {
+        if (!adminPreview) {
+            return undefined
+        }
+
+        let cancelled = false
+
+        fetch(
+            '/api/admin-preview-session',
+            {
+                method: 'GET',
+                credentials:
+                    'same-origin',
+                cache: 'no-store',
+            },
+        )
+            .then(readApiJson)
+            .then(() => {
+                if (cancelled) return
+
+                setOpeningData({
+                    invitationCode: '',
+                    guest: {
+                        id: 0,
+                        name:
+                            'Convidado de prévia',
+                        age: '',
+                        maxCompanions: 0,
+                        companions: [],
+                    },
+                    whatsapp:
+                        '11999999999',
+                    alreadyConfirmed:
+                        false,
+                    rsvp: null,
+                    preview: true,
+                })
+
+                setPreviewAccess('ready')
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setPreviewAccess('denied')
+                }
+            })
+
+        function preventPreviewNavigation(
+            event,
+        ) {
+            if (
+                event.target
+                    ?.closest?.('form, a')
+            ) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+        }
+
+        document.addEventListener(
+            'click',
+            preventPreviewNavigation,
+            true,
+        )
+
+        document.addEventListener(
+            'submit',
+            preventPreviewNavigation,
+            true,
+        )
+
+        return () => {
+            cancelled = true
+
+            document.removeEventListener(
+                'click',
+                preventPreviewNavigation,
+                true,
+            )
+
+            document.removeEventListener(
+                'submit',
+                preventPreviewNavigation,
+                true,
+            )
+        }
+    }, [adminPreview])
+
     function handleUnlocked(data) {
         setOpeningData(data)
     }
@@ -4604,6 +4721,31 @@ function LandingPage() {
         })
     }
 
+    if (
+        adminPreview
+        && previewAccess === 'checking'
+    ) {
+        return (
+            <main
+                className="route-loading"
+                role="status"
+            >
+                Carregando convite completo...
+            </main>
+        )
+    }
+
+    if (
+        adminPreview
+        && previewAccess === 'denied'
+    ) {
+        return (
+            <main className="route-loading">
+                Entre novamente no painel para visualizar a prévia.
+            </main>
+        )
+    }
+
     if (!openingData) {
         return (
             <>
@@ -4626,7 +4768,21 @@ function LandingPage() {
 
     return (
         <>
-            <main className="page-shell page-shell--revealed">
+            <main
+                className={
+                    adminPreview
+                        ? 'page-shell page-shell--revealed page-shell--admin-preview'
+                        : 'page-shell page-shell--revealed'
+                }
+            >
+                {adminPreview ? (
+                    <div
+                        className="admin-preview-notice"
+                        role="status"
+                    >
+                        Modo de prévia — ações e formulários estão desativados
+                    </div>
+                ) : null}
                 <section className="invite-card" aria-labelledby="invite-title">
                     <header className="invitation-hero">
                         <InvitationPhotoCarousel

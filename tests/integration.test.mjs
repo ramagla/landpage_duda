@@ -1131,6 +1131,48 @@ test(
         )
 
         await t.test(
+            'prévia completa exige sessão administrativa',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/admin-preview-session',
+                        {
+                            method: 'GET',
+                            ip: '10.0.0.43',
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    401,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/admin-preview-session',
+                        {
+                            method: 'GET',
+                            ip: '10.0.0.44',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.authorized,
+                    true,
+                )
+            },
+        )
+
+        await t.test(
             'admin publica configurações e gerencia a galeria',
             async () => {
                 let result =

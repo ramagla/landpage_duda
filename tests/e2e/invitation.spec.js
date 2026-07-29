@@ -313,6 +313,19 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
         }),
     )
 
+    await page.route(
+        '**/api/admin-preview-session',
+        (route) => route.fulfill({
+            status: 200,
+            contentType:
+                'application/json',
+            body:
+                JSON.stringify({
+                    authorized: true,
+                }),
+        }),
+    )
+
     await page.goto('/admin')
 
     await expect(
@@ -378,6 +391,70 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
             ),
         ).toBeVisible()
     }
+
+    await page
+        .getByRole(
+            'button',
+            {
+                name:
+                    'Galeria',
+                exact: true,
+            },
+        )
+        .click()
+
+    const uploadStyle =
+        await page
+            .locator('.admin-upload-photo')
+            .evaluate((element) => {
+                const labelStyle =
+                    getComputedStyle(element)
+                const textStyle =
+                    getComputedStyle(
+                        element.querySelector('span'),
+                    )
+
+                return {
+                    background:
+                        labelStyle.backgroundColor,
+                    color:
+                        textStyle.color,
+                    text:
+                        element.textContent.trim(),
+                }
+            })
+
+    expect(uploadStyle.text)
+        .toContain('Adicionar foto')
+    expect(uploadStyle.background)
+        .toBe('rgb(8, 116, 111)')
+    expect(uploadStyle.color)
+        .toBe('rgb(255, 255, 255)')
+
+    await page
+        .getByRole(
+            'button',
+            {
+                name:
+                    'Prévia',
+                exact: true,
+            },
+        )
+        .click()
+
+    await expect(
+        page
+            .frameLocator(
+                'iframe[title="Prévia completa do convite"]',
+            )
+            .getByRole(
+                'heading',
+                {
+                    name:
+                        'Nosso encontro',
+                },
+            ),
+    ).toBeVisible()
 
     await page
         .getByRole(

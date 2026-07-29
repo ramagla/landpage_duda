@@ -13359,3 +13359,27 @@ html {
         box-shadow: none;
     }
 }
+
+.page-shell--admin-preview {
+    padding-top: 3rem;
+}
+
+.admin-preview-notice {
+    position: fixed;
+    z-index: 100;
+    top: .65rem;
+    left: 50%;
+    width: max-content;
+    max-width: calc(100% - 1rem);
+    padding: .55rem .8rem;
+    border: 1px solid rgba(245, 219, 165, .35);
+    border-radius: 999px;
+    color: #fff6dc;
+    background: rgba(5, 79, 78, .94);
+    box-shadow: 0 10px 25px rgba(5, 52, 54, .2);
+    font-size: .72rem;
+    font-weight: 800;
+    text-align: center;
+    transform: translateX(-50%);
+    backdrop-filter: blur(10px);
+}
