@@ -15,6 +15,9 @@ import test from 'node:test'
 import {
     detectCalendarPlatform,
 } from '../src/calendar-platform.js'
+import {
+    queueOfflineCheckin,
+} from '../src/admin-offline-checkins.js'
 
 
 const ROOT = fileURLToPath(
@@ -86,6 +89,37 @@ process.env.ALLOW_LEGACY_INVITE_CODES =
 
 process.env.RSVP_TEST_NOW =
     TEST_RSVP_NOW
+
+test(
+    'fila offline mantém apenas a última alteração de cada pessoa',
+    () => {
+        let queue =
+            queueOfflineCheckin(
+                [],
+                {
+                    guestId: 10,
+                    attendeeKey: 'guest',
+                    checkedIn: true,
+                },
+            )
+
+        queue =
+            queueOfflineCheckin(
+                queue,
+                {
+                    guestId: 10,
+                    attendeeKey: 'guest',
+                    checkedIn: false,
+                },
+            )
+
+        assert.equal(queue.length, 1)
+        assert.equal(
+            queue[0].checkedIn,
+            false,
+        )
+    },
+)
 
 
 const {
@@ -1251,6 +1285,197 @@ test(
                                 originalSettings,
                         },
                     },
+                )
+            },
+        )
+
+        await t.test(
+            'admin cria backup e registra histórico de alterações',
+            async () => {
+                const result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.50',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {
+                                action:
+                                    'createEventBackup',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.ok(
+                    result.data.backups.length >= 1,
+                )
+
+                assert.ok(
+                    result.data.auditLog.some(
+                        (item) => (
+                            item.action
+                            === 'createEventBackup'
+                        ),
+                    ),
+                )
+
+                const cron =
+                    await requestJson(
+                        '/api/cron-backup',
+                        {
+                            method: 'GET',
+                            ip: '10.0.0.51',
+                        },
+                    )
+
+                assert.equal(
+                    cron.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    cron.data.ok,
+                    true,
+                )
+            },
+        )
+
+        await t.test(
+            'admin alerta e permite confirmar possível duplicidade',
+            async () => {
+                const payload = {
+                    action:
+                        'saveGuest',
+                    guestName:
+                        'Possível duplicado',
+                    inviteCode:
+                        'possivel-duplicado',
+                    age: 28,
+                    whatsapp:
+                        primaryGuest.phone,
+                    maxCompanions: 0,
+                    presetCompanions: [],
+                }
+
+                let result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.52',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: payload,
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    400,
+                )
+
+                assert.equal(
+                    result.data
+                        .requiresDuplicateConfirmation,
+                    false,
+                )
+
+                assert.equal(
+                    result.data
+                        .duplicate
+                        .sameWhatsapp,
+                    true,
+                )
+
+                payload.guestName =
+                    primaryGuest.name
+                payload.whatsapp =
+                    '11987654321'
+
+                result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.53',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: payload,
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    400,
+                )
+
+                assert.equal(
+                    result.data
+                        .requiresDuplicateConfirmation,
+                    true,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.54',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {
+                                ...payload,
+                                allowDuplicate: true,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const duplicate =
+                    result.data.guests.find(
+                        (guest) => (
+                            guest.inviteCode
+                            === 'possivel-duplicado'
+                        ),
+                    )
+
+                assert.ok(duplicate)
+
+                const deleted =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.55',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {
+                                action:
+                                    'deleteGuest',
+                                id:
+                                    duplicate.id,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    deleted.response.status,
+                    200,
                 )
             },
         )

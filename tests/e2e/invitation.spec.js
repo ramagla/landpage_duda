@@ -265,18 +265,41 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
 }) => {
     const adminData = {
         totals: {
-            invited: 0,
-            confirmed: 0,
+            invited: 1,
+            confirmed: 1,
             declined: 0,
             pending: 0,
             viewed: 0,
-            buffet: 0,
-            invitesSent: 0,
+            buffet: 1,
+            invitesSent: 1,
             invitesNotSent: 0,
             checkedIn: 0,
         },
-        guests: [],
+        guests: [
+            {
+                id: 1,
+                name:
+                    'Convidada confirmada',
+                inviteCode: 'confirmada',
+                inviteToken: 'a'.repeat(64),
+                age: 30,
+                whatsapp:
+                    '11999999999',
+                maxCompanions: 0,
+                status: 'sim',
+                buffetCount: 1,
+                companions: [],
+                presetCompanions: [],
+                communications: {
+                    convite_inicial:
+                        '2026-07-29 12:00:00',
+                },
+                checkins: [],
+            },
+        ],
         messages: [],
+        auditLog: [],
+        backups: [],
     }
 
     await page.route(
@@ -298,6 +321,26 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
             {
                 name:
                     'Menu principal do painel',
+            },
+        ),
+    ).toBeVisible()
+
+    await expect(
+        page.getByRole(
+            'heading',
+            {
+                name:
+                    'Saúde do evento',
+            },
+        ),
+    ).toBeVisible()
+
+    await expect(
+        page.getByRole(
+            'heading',
+            {
+                name:
+                    'Backups',
             },
         ),
     ).toBeVisible()
@@ -335,6 +378,49 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
             ),
         ).toBeVisible()
     }
+
+    await page
+        .getByRole(
+            'button',
+            {
+                name:
+                    'Relatórios',
+                exact: true,
+            },
+        )
+        .click()
+
+    await expect(
+        page.getByText(
+            'Adultos confirmados',
+            {
+                exact: true,
+            },
+        ),
+    ).toBeVisible()
+
+    await page.context().setOffline(true)
+
+    await page
+        .getByRole(
+            'button',
+            {
+                name:
+                    'Registrar entrada',
+            },
+        )
+        .click()
+
+    await expect(
+        page.getByText(
+            '1 alteração aguardando internet',
+            {
+                exact: true,
+            },
+        ),
+    ).toBeVisible()
+
+    await page.context().setOffline(false)
 
     const overflow =
         await page.evaluate(() => (

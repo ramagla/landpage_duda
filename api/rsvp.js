@@ -16,6 +16,9 @@ import {
 import {
     getInvitationConfig,
 } from './_invitation-config.js'
+import {
+    recordAdminAudit,
+} from './_admin-audit.js'
 
 import {
     enforceRateLimit,
@@ -408,6 +411,25 @@ export default async function handler(request, response) {
         if (attending === 'sim' && companions.length > 0) {
             await saveCompanions(rsvpId, companions)
         }
+
+        await recordAdminAudit({
+            action:
+                wasUpdated
+                    ? 'rsvp_updated'
+                    : 'rsvp_created',
+            entityType: 'rsvp',
+            entityId: rsvpId,
+            label:
+                lookup.guest.guest_name,
+            actor: 'guest',
+            details: {
+                attending,
+                companions:
+                    confirmedCompanionCount,
+                buffet:
+                    buffetCount,
+            },
+        })
 
         let message
 

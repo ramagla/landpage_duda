@@ -12,6 +12,11 @@ import {
 import {
     getCalendarPlatform,
 } from './calendar-platform.js'
+import {
+    queueOfflineCheckin,
+    readOfflineCheckins,
+    storeOfflineCheckins,
+} from './admin-offline-checkins.js'
 
 import {
     RSVP_CLOSED_MESSAGE,
@@ -1522,8 +1527,25 @@ function AdminPage() {
     const [refreshing, setRefreshing] = useState(false)
     const [communicationModalOpen, setCommunicationModalOpen] = useState(false)
     const [activeAdminSection, setActiveAdminSection] = useState('resumo')
+    const [
+        offlineCheckins,
+        setOfflineCheckins,
+    ] = useState(readOfflineCheckins)
+    const [syncingOffline, setSyncingOffline] =
+        useState(false)
     const adminRefreshRef = useRef(null)
     const lastAutoRefreshAtRef = useRef(0)
+    const offlineCheckinsRef =
+        useRef(offlineCheckins)
+
+    useEffect(() => {
+        offlineCheckinsRef.current =
+            offlineCheckins
+
+        storeOfflineCheckins(
+            offlineCheckins,
+        )
+    }, [offlineCheckins])
 
     useEffect(() => {
         let cancelled = false
@@ -1599,10 +1621,16 @@ function AdminPage() {
         }
 
         if (!response.ok) {
-            throw new Error(
+            const requestError =
+                new Error(
                 body?.error
                 || 'Nao foi possivel abrir o painel.'
             )
+
+            requestError.details =
+                body || {}
+
+            throw requestError
         }
 
         setData(body)
@@ -1802,18 +1830,61 @@ function AdminPage() {
             }
         })
 
+        const payload = {
+            action: 'saveGuest',
+            id: form.get('id'),
+            guestName: form.get('guestName'),
+            inviteCode: form.get('inviteCode'),
+            age: form.get('age'),
+            whatsapp: form.get('whatsapp'),
+            maxCompanions,
+            presetCompanions,
+        }
+
         try {
-            const result = await callAdmin({
-                action: 'saveGuest',
-                id: form.get('id'),
-                guestName: form.get('guestName'),
-                inviteCode: form.get('inviteCode'),
-                age: form.get('age'),
-                whatsapp: form.get('whatsapp'),
-                maxCompanions,
-                presetCompanions,
-            })
-            setMessage(result.message || 'Convidado salvo.')
+            let result
+
+            try {
+                result =
+                    await callAdmin(payload)
+            } catch (error) {
+                if (
+                    !error.details
+                        ?.requiresDuplicateConfirmation
+                ) {
+                    throw error
+                }
+
+                const duplicateName =
+                    error.details
+                        .duplicate
+                        ?.name
+                    || 'outro convidado'
+
+                const confirmed =
+                    window.confirm(
+                        `Já existe um cadastro para ${duplicateName}. Deseja salvar este convidado mesmo assim?`,
+                    )
+
+                if (!confirmed) {
+                    setStatus('error')
+                    setMessage(
+                        'Cadastro cancelado para evitar duplicidade.',
+                    )
+                    return
+                }
+
+                result =
+                    await callAdmin({
+                        ...payload,
+                        allowDuplicate: true,
+                    })
+            }
+
+            setMessage(
+                result.message
+                || 'Convidado salvo.',
+            )
             setEditing(null)
             setAdminCompanionCount(0)
             formElement.reset()
@@ -2774,20 +2845,116 @@ function AdminPage() {
     async function handleGuestCheckin(
         attendee,
     ) {
-        try {
-            const checkedIn =
-                !attendee.checkin
+        const checkedIn =
+            !attendee.checkin
 
+        const payload = {
+            action:
+                'setGuestCheckin',
+            guestId:
+                attendee.guestId,
+            attendeeKey:
+                attendee.attendeeKey,
+            attendeeName:
+                attendee.attendeeName,
+            checkedIn,
+        }
+
+        function applyOptimisticCheckin() {
+            setData((current) => {
+                if (!current) return current
+
+                const guests =
+                    current.guests.map(
+                        (guest) => {
+                            if (
+                                guest.id
+                                !== attendee.guestId
+                            ) {
+                                return guest
+                            }
+
+                            const remaining =
+                                (guest.checkins || [])
+                                    .filter(
+                                        (item) => (
+                                            item.attendeeKey
+                                            !== attendee.attendeeKey
+                                        ),
+                                    )
+
+                            return {
+                                ...guest,
+                                checkins:
+                                    checkedIn
+                                        ? [
+                                            ...remaining,
+                                            {
+                                                attendeeKey:
+                                                    attendee.attendeeKey,
+                                                attendeeName:
+                                                    attendee.attendeeName,
+                                                checkedInAt:
+                                                    new Date()
+                                                        .toISOString(),
+                                                pendingSync:
+                                                    true,
+                                            },
+                                        ]
+                                        : remaining,
+                            }
+                        },
+                    )
+
+                return {
+                    ...current,
+                    guests,
+                    totals: {
+                        ...current.totals,
+                        checkedIn:
+                            Math.max(
+                                Number(
+                                    current.totals
+                                        .checkedIn
+                                    || 0,
+                                )
+                                + (
+                                    checkedIn
+                                        ? 1
+                                        : -1
+                                ),
+                                0,
+                            ),
+                    },
+                }
+            })
+        }
+
+        function saveForLater() {
+            setOfflineCheckins(
+                (current) => (
+                    queueOfflineCheckin(
+                        current,
+                        payload,
+                    )
+                ),
+            )
+
+            applyOptimisticCheckin()
+            setStatus('success')
+            setMessage(
+                `${attendee.attendeeName}: alteração salva neste aparelho e será sincronizada quando a internet voltar.`,
+            )
+        }
+
+        if (!navigator.onLine) {
+            saveForLater()
+            return
+        }
+
+        try {
             const result =
-                await callAdmin({
-                    action:
-                        'setGuestCheckin',
-                    guestId:
-                        attendee.guestId,
-                    attendeeKey:
-                        attendee.attendeeKey,
-                    checkedIn,
-                })
+                await callAdmin(payload)
 
             setMessage(
                 result.message
@@ -2798,10 +2965,83 @@ function AdminPage() {
                 ),
             )
         } catch (error) {
+            if (!error.details) {
+                saveForLater()
+                return
+            }
+
             setStatus('error')
             setMessage(error.message)
         }
     }
+
+    async function syncOfflineCheckins() {
+        const queued =
+            offlineCheckinsRef.current
+
+        if (
+            syncingOffline
+            || !navigator.onLine
+            || queued.length === 0
+        ) {
+            return
+        }
+
+        setSyncingOffline(true)
+
+        try {
+            let latest = null
+
+            for (const item of queued) {
+                latest =
+                    await callAdmin({
+                        action:
+                            'setGuestCheckin',
+                        guestId:
+                            item.guestId,
+                        attendeeKey:
+                            item.attendeeKey,
+                        checkedIn:
+                            item.checkedIn,
+                    })
+            }
+
+            setOfflineCheckins([])
+
+            if (latest) {
+                setData(latest)
+            }
+
+            setMessage(
+                `${queued.length} alteração${queued.length === 1 ? '' : 'ões'} de check-in sincronizada${queued.length === 1 ? '' : 's'}.`,
+            )
+        } catch (error) {
+            setStatus('error')
+            setMessage(
+                `Ainda não foi possível sincronizar: ${error.message}`,
+            )
+        } finally {
+            setSyncingOffline(false)
+        }
+    }
+
+    useEffect(() => {
+        function handleOnline() {
+            syncOfflineCheckins()
+        }
+
+        window.addEventListener(
+            'online',
+            handleOnline,
+        )
+
+        return () => {
+            window.removeEventListener(
+                'online',
+                handleOnline,
+            )
+        }
+    })
 
     return (
         <main className="admin-shell">
@@ -3049,6 +3289,39 @@ function AdminPage() {
                             </strong>
                         </div>
 
+                        {offlineCheckins.length > 0 ? (
+                            <div
+                                className="admin-offline-sync"
+                                role="status"
+                            >
+                                <div>
+                                    <strong>
+                                        {offlineCheckins.length}
+                                        {' '}
+                                        {offlineCheckins.length === 1
+                                            ? 'alteração aguardando internet'
+                                            : 'alterações aguardando internet'}
+                                    </strong>
+                                    <span>
+                                        Os registros estão protegidos neste aparelho.
+                                    </span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={syncOfflineCheckins}
+                                    disabled={
+                                        syncingOffline
+                                        || !navigator.onLine
+                                    }
+                                >
+                                    {syncingOffline
+                                        ? 'Sincronizando...'
+                                        : 'Sincronizar agora'}
+                                </button>
+                            </div>
+                        ) : null}
+
                         <div className="admin-checkin-list">
                             {confirmedAttendees.map(
                                 (attendee) => (
@@ -3076,6 +3349,9 @@ function AdminPage() {
                                                     Entrada: {formatAdminAccessDate(
                                                         attendee.checkin.checkedInAt,
                                                     )}
+                                                    {attendee.checkin.pendingSync
+                                                        ? ' · aguardando sincronização'
+                                                        : ''}
                                                 </small>
                                             ) : null}
                                         </div>

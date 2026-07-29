@@ -6,6 +6,14 @@ import {
     getInvitationConfig,
     saveInvitationSettings,
 } from './_invitation-config.js'
+import {
+    listAdminAudit,
+    recordAdminAudit,
+} from './_admin-audit.js'
+import {
+    createEventBackup,
+    listEventBackups,
+} from './_event-backup.js'
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -80,6 +88,10 @@ async function refreshRsvpCounts() {
 }
 async function getSummary() {
     await refreshRsvpCounts()
+
+    await createEventBackup({
+        source: 'admin',
+    }).catch(() => null)
 
     const guestsResult = await getClient().execute(`
         SELECT
@@ -301,6 +313,14 @@ async function getSummary() {
     const invitationConfig =
         await getInvitationConfig()
 
+    const [
+        auditLog,
+        backups,
+    ] = await Promise.all([
+        listAdminAudit(80),
+        listEventBackups(10),
+    ])
+
     return {
         totals,
         guests,
@@ -314,6 +334,8 @@ async function getSummary() {
             createdAt: row.created_at,
         })),
         invitationConfig,
+        auditLog,
+        backups,
     }
 }
 
@@ -729,6 +751,10 @@ async function setGuestCheckin(body) {
             checkedIn
                 ? `Entrada de ${attendeeName} registrada.`
                 : `Entrada de ${attendeeName} removida.`,
+        entityId:
+            `${guestId}:${attendeeKey}`,
+        label: attendeeName,
+        checkedIn,
     }
 }
 
@@ -776,7 +802,13 @@ async function deleteGuest(body) {
         },
     ], 'write')
 
-    return { message: `Convidado ${exists.rows[0].guest_name} excluido.` }
+    return {
+        message:
+            `Convidado ${exists.rows[0].guest_name} excluido.`,
+        entityId: id,
+        label:
+            exists.rows[0].guest_name,
+    }
 }
 
 async function saveGuest(body) {
@@ -794,6 +826,71 @@ async function saveGuest(body) {
     if (age !== null && (age < 0 || age > 120)) return { error: 'Idade do convidado invalida.' }
     if (whatsapp && !/^\d{10,11}$/.test(whatsapp)) return { error: 'WhatsApp invalido. Use DDD + numero.' }
     if (presetValidation.error) return { error: presetValidation.error }
+
+    if (body.allowDuplicate !== true) {
+        const duplicate =
+            await getClient().execute({
+                sql: `
+                    SELECT
+                        id,
+                        guest_name,
+                        whatsapp_digits
+                    FROM invited_guests
+                    WHERE id != ?
+                      AND (
+                        LOWER(TRIM(guest_name))
+                            = LOWER(TRIM(?))
+                        OR (
+                            ? != ''
+                            AND whatsapp_digits = ?
+                        )
+                      )
+                    ORDER BY
+                        CASE
+                            WHEN whatsapp_digits = ?
+                            THEN 0
+                            ELSE 1
+                        END,
+                        id
+                    LIMIT 1
+                `,
+                args: [
+                    Number.isInteger(id)
+                        ? id
+                        : 0,
+                    name,
+                    whatsapp,
+                    whatsapp,
+                    whatsapp,
+                ],
+            })
+
+        if (duplicate.rows[0]) {
+            const item =
+                duplicate.rows[0]
+            const sameWhatsapp =
+                Boolean(
+                    whatsapp
+                    && item.whatsapp_digits
+                        === whatsapp,
+                )
+
+            return {
+                error:
+                    sameWhatsapp
+                        ? `O WhatsApp informado já pertence a ${item.guest_name}. Edite o cadastro existente ou use outro número.`
+                        : `Possível duplicidade: ${item.guest_name} já está cadastrado. Confirme para salvar mesmo assim.`,
+                requiresDuplicateConfirmation:
+                    !sameWhatsapp,
+                duplicate: {
+                    id: Number(item.id),
+                    name:
+                        item.guest_name,
+                    sameWhatsapp,
+                },
+            }
+        }
+    }
 
     let guestId = id
 
@@ -867,7 +964,18 @@ async function saveGuest(body) {
     await savePresetCompanions(guestId, presetValidation.companions)
     await syncConfirmedCompanions(guestId, age, presetValidation.companions)
 
-    return { message: Number.isInteger(id) && id > 0 ? 'Convidado atualizado.' : 'Convidado salvo.' }
+    return {
+        message:
+            Number.isInteger(id) && id > 0
+                ? 'Convidado atualizado.'
+                : 'Convidado salvo.',
+        entityId: guestId,
+        label: name,
+        operation:
+            Number.isInteger(id) && id > 0
+                ? 'updated'
+                : 'created',
+    }
 }
 
 function parsePhotoId(value) {
@@ -1175,6 +1283,21 @@ export default async function handler(request, response) {
                 () => reorderInvitationPhotos(body),
             deleteInvitationPhoto:
                 () => deleteInvitationPhoto(body),
+            createEventBackup:
+                async () => {
+                    const result =
+                        await createEventBackup({
+                            source: 'manual',
+                            force: true,
+                        })
+
+                    return {
+                        message:
+                            'Backup completo criado com sucesso.',
+                        backup:
+                            result.backup,
+                    }
+                },
         }
 
         if (
@@ -1192,6 +1315,30 @@ export default async function handler(request, response) {
                     })
             }
 
+            await recordAdminAudit({
+                action: body.action,
+                entityType:
+                    body.action
+                        === 'createEventBackup'
+                        ? 'backup'
+                        : body.action
+                            .includes('Photo')
+                            ? 'photo'
+                            : 'invitation',
+                entityId:
+                    body.photoId
+                    || result.backup?.id
+                    || '',
+                label:
+                    body.action
+                        === 'createEventBackup'
+                        ? 'Backup manual'
+                        : body.action
+                            === 'saveInvitationSettings'
+                            ? 'Configurações do convite'
+                            : 'Galeria do convite',
+            })
+
             return response
                 .status(200)
                 .json({
@@ -1202,7 +1349,31 @@ export default async function handler(request, response) {
 
         if (body.action === 'saveGuest') {
             const saved = await saveGuest(body)
-            if (saved.error) return response.status(400).json({ error: saved.error })
+            if (saved.error) {
+                return response
+                    .status(400)
+                    .json({
+                        error: saved.error,
+                        requiresDuplicateConfirmation:
+                            saved.requiresDuplicateConfirmation
+                            || false,
+                        duplicate:
+                            saved.duplicate
+                            || null,
+                    })
+            }
+
+            await recordAdminAudit({
+                action:
+                    saved.operation
+                        === 'created'
+                        ? 'guest_created'
+                        : 'guest_updated',
+                entityType: 'guest',
+                entityId: saved.entityId,
+                label: saved.label,
+            })
+
             const summary = await getSummary()
             return response.status(200).json({ message: saved.message, ...summary })
         }
@@ -1218,6 +1389,18 @@ export default async function handler(request, response) {
                         error: checked.error,
                     })
             }
+
+            await recordAdminAudit({
+                action:
+                    checked.checkedIn
+                        ? 'checkin_added'
+                        : 'checkin_removed',
+                entityType: 'checkin',
+                entityId:
+                    checked.entityId,
+                label:
+                    checked.label,
+            })
 
             const summary =
                 await getSummary()
@@ -1282,6 +1465,16 @@ export default async function handler(request, response) {
         if (body.action === 'deleteGuest') {
             const deleted = await deleteGuest(body)
             if (deleted.error) return response.status(400).json({ error: deleted.error })
+
+            await recordAdminAudit({
+                action: 'guest_deleted',
+                entityType: 'guest',
+                entityId:
+                    deleted.entityId,
+                label:
+                    deleted.label,
+            })
+
             const summary = await getSummary()
             return response.status(200).json({ message: deleted.message, ...summary })
         }

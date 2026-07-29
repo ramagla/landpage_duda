@@ -292,6 +292,44 @@ export async function ensureSchema() {
                 )
             `)
 
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS admin_audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT,
+                    label TEXT,
+                    actor TEXT NOT NULL DEFAULT 'admin',
+                    details_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS admin_audit_created_index
+                ON admin_audit_log (
+                    created_at DESC,
+                    id DESC
+                )
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS event_backups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    backup_date TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'automatic',
+                    snapshot_json TEXT NOT NULL,
+                    table_counts_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE UNIQUE INDEX IF NOT EXISTS event_backups_daily_unique
+                ON event_backups (backup_date)
+                WHERE source != 'manual'
+            `)
+
             /*
              * Gestao financeira da festa.
              *

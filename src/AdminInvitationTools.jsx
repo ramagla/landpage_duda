@@ -8,6 +8,7 @@ import {
     DEFAULT_INVITATION_CONFIG,
     buildInvitationConfig,
 } from '../shared/invitation-config.js'
+import AdminHealthOverview from './AdminHealthOverview.jsx'
 
 const ADMIN_SECTIONS = [
     ['resumo', 'Resumo', '⌂'],
@@ -678,6 +679,22 @@ function ReportsPanel({
                 ),
             )
 
+        const confirmedPeople =
+            people.filter(
+                (person) => (
+                    person.attending
+                ),
+            )
+
+        const confirmedKnownAge =
+            confirmedPeople.filter(
+                (person) => (
+                    person.age !== ''
+                    && person.age !== null
+                    && person.age !== undefined
+                ),
+            )
+
         return {
             childrenUpTo6:
                 knownAge.filter(
@@ -687,8 +704,34 @@ function ReportsPanel({
                 knownAge.filter(
                     (person) => Number(person.age) > 6,
                 ).length,
+            youth:
+                knownAge.filter(
+                    (person) => (
+                        Number(person.age) >= 7
+                        && Number(person.age) < 18
+                    ),
+                ).length,
+            adults:
+                knownAge.filter(
+                    (person) => Number(person.age) >= 18,
+                ).length,
             withoutAge:
                 people.length - knownAge.length,
+            confirmedChildren:
+                confirmedKnownAge.filter(
+                    (person) => Number(person.age) <= 6,
+                ).length,
+            confirmedAbove6:
+                confirmedKnownAge.filter(
+                    (person) => Number(person.age) > 6,
+                ).length,
+            confirmedAdults:
+                confirmedKnownAge.filter(
+                    (person) => Number(person.age) >= 18,
+                ).length,
+            confirmedWithoutAge:
+                confirmedPeople.length
+                - confirmedKnownAge.length,
             confirmed:
                 data.totals.confirmed,
             declined:
@@ -747,16 +790,40 @@ function ReportsPanel({
                     <strong>{report.buffet}</strong>
                 </article>
                 <article>
-                    <span>Até 6 anos</span>
+                    <span>Até 6 anos — total</span>
                     <strong>{report.childrenUpTo6}</strong>
                 </article>
                 <article>
-                    <span>Acima de 6 anos</span>
+                    <span>7 a 17 anos — total</span>
+                    <strong>{report.youth}</strong>
+                </article>
+                <article>
+                    <span>Adultos — total</span>
+                    <strong>{report.adults}</strong>
+                </article>
+                <article>
+                    <span>Acima de 6 — total</span>
                     <strong>{report.above6}</strong>
                 </article>
                 <article>
-                    <span>Sem idade</span>
+                    <span>Sem idade — total</span>
                     <strong>{report.withoutAge}</strong>
+                </article>
+                <article>
+                    <span>Crianças confirmadas</span>
+                    <strong>{report.confirmedChildren}</strong>
+                </article>
+                <article>
+                    <span>Acima de 6 confirmados</span>
+                    <strong>{report.confirmedAbove6}</strong>
+                </article>
+                <article>
+                    <span>Adultos confirmados</span>
+                    <strong>{report.confirmedAdults}</strong>
+                </article>
+                <article>
+                    <span>Confirmados sem idade</span>
+                    <strong>{report.confirmedWithoutAge}</strong>
                 </article>
                 <article>
                     <span>Presentes no dia</span>
@@ -980,6 +1047,13 @@ export default function AdminInvitationTools({
                 activeSection={activeSection}
                 onChange={onSectionChange}
             />
+
+            {activeSection === 'resumo' ? (
+                <AdminHealthOverview
+                    data={data}
+                    onAdminAction={onAdminAction}
+                />
+            ) : null}
 
             {activeSection === 'galeria' ? (
                 <GalleryPanel
