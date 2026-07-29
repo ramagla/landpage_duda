@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Parisienne&family=Playfair+Display:wght@600;700;800&display=swap');
 
 :root {
     color: #17211f;
@@ -11853,3 +11853,32 @@ html {
 }
 
 /* === ADMIN EXPORTACAO PDF / XLSX — END === */
+
+/* ======================================================================
+   ASSINATURA DUDA — ABERTURA E CONVITE
+   ====================================================================== */
+
+.opening-gate__brand span,
+.page-shell--revealed h1#invite-title .name-script {
+    font-family: "Parisienne", "Allura", cursive !important;
+    font-weight: 400 !important;
+    font-style: normal;
+    letter-spacing: -.035em !important;
+    -webkit-text-stroke: 0 !important;
+}
+
+.opening-gate__brand span {
+    color: #6b1f39 !important;
+    text-shadow:
+        0 1px 0 rgba(255, 250, 242, .96),
+        0 5px 16px rgba(63, 12, 30, .22) !important;
+}
+
+.page-shell--revealed h1#invite-title .name-script {
+    color: #fff4dc !important;
+    text-shadow:
+        0 2px 1px rgba(53, 13, 27, .72),
+        0 9px 30px rgba(31, 5, 14, .46) !important;
+}
+
+/* === ASSINATURA DUDA — END === */
