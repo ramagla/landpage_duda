@@ -2174,6 +2174,125 @@ test(
 )
 
 
+test(
+    'exportacao da lista de convidados gera PDF e XLSX validos',
+    async () => {
+        const {
+            createGuestsPdf,
+            createGuestsXlsx,
+            guestMatchesAgeFilter,
+        } = await import(
+            `../src/admin-guest-export.js?test=${Date.now()}`
+        )
+
+        const guestWithChild = {
+            name: 'Convidado Teste',
+            age: 30,
+            companions: [
+                {
+                    name: 'Criança Teste',
+                    age: 6,
+                },
+            ],
+        }
+
+        assert.equal(
+            guestMatchesAgeFilter(
+                guestWithChild,
+                'ate6',
+            ),
+            true,
+        )
+
+        assert.equal(
+            guestMatchesAgeFilter(
+                guestWithChild,
+                'acima6',
+            ),
+            true,
+        )
+
+        assert.equal(
+            guestMatchesAgeFilter(
+                {
+                    age: '',
+                    companions: [],
+                },
+                'sem_idade',
+            ),
+            true,
+        )
+
+        const columns = [
+            {
+                key: 'name',
+                label: 'Nome',
+                xlsxWidth: 28,
+                pdfWidth: 220,
+            },
+            {
+                key: 'status',
+                label: 'Status',
+                xlsxWidth: 16,
+                pdfWidth: 120,
+            },
+            {
+                key: 'children',
+                label: 'Crianças até 6 anos',
+                xlsxWidth: 30,
+                pdfWidth: 300,
+            },
+        ]
+
+        const rows = [
+            {
+                name: 'José da Silva',
+                status: 'Confirmou',
+                children: 'Lívia (6)',
+            },
+        ]
+
+        const xlsx =
+            createGuestsXlsx({
+                columns,
+                rows,
+            })
+
+        assert.deepEqual(
+            Array.from(
+                xlsx.slice(0, 4),
+            ),
+            [
+                0x50,
+                0x4B,
+                0x03,
+                0x04,
+            ],
+        )
+
+        const pdf =
+            createGuestsPdf({
+                title:
+                    'Lista de convidados',
+                subtitle:
+                    'Teste automatizado',
+                filterDescription:
+                    'Status: Confirmou',
+                columns,
+                rows,
+            })
+
+        assert.equal(
+            new TextDecoder()
+                .decode(
+                    pdf.slice(0, 8),
+                ),
+            '%PDF-1.4',
+        )
+    },
+)
+
+
 test.after(async () => {
     await stopServer()
 

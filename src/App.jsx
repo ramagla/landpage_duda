@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AdminCommunicationModal from './AdminCommunicationModal.jsx'
 import ExpensesPage from './ExpensesPage.jsx'
+import {
+    createGuestsPdf,
+    createGuestsXlsx,
+    guestMatchesAgeFilter,
+} from './admin-guest-export.js'
 
 import {
     RSVP_CLOSED_MESSAGE,
@@ -1214,6 +1219,7 @@ function AdminPage() {
     const [messageSearch, setMessageSearch] = useState('')
     const [guestSearch, setGuestSearch] = useState('')
     const [guestStatusFilter, setGuestStatusFilter] = useState('todos')
+    const [guestAgeFilter, setGuestAgeFilter] = useState('todos')
     const [lastUpdatedAt, setLastUpdatedAt] = useState('')
     const [refreshing, setRefreshing] = useState(false)
     const [communicationModalOpen, setCommunicationModalOpen] = useState(false)
@@ -1904,7 +1910,16 @@ function AdminPage() {
             || guestItem.status === guestStatusFilter
         )
 
-        if (!matchesStatus) {
+        const matchesAge =
+            guestMatchesAgeFilter(
+                guestItem,
+                guestAgeFilter,
+            )
+
+        if (
+            !matchesStatus
+            || !matchesAge
+        ) {
             return false
         }
 
@@ -1932,7 +1947,358 @@ function AdminPage() {
         )
     })
 
-    function handleExportGuests() {
+    function getGuestAgeFilterLabel(
+        filterValue,
+    ) {
+        if (filterValue === 'ate6') {
+            return 'Crianças até 6 anos'
+        }
+
+        if (filterValue === 'acima6') {
+            return 'Maiores de 6 anos'
+        }
+
+        if (filterValue === 'sem_idade') {
+            return 'Sem idade informada'
+        }
+
+        return 'Todas as idades'
+    }
+
+    function formatCompanionForExport(
+        companion,
+        answered,
+    ) {
+        const name = String(
+            companion?.name || '',
+        ).trim()
+
+        const age = (
+            companion?.age === ''
+            || companion?.age === null
+            || companion?.age === undefined
+        )
+            ? 'idade não informada'
+            : `${companion.age} anos`
+
+        if (!answered) {
+            return [
+                name,
+                age,
+                'pré-cadastrado',
+            ]
+                .filter(Boolean)
+                .join(' - ')
+        }
+
+        return [
+            name,
+            age,
+            companion.attending === 'nao'
+                ? 'não vai'
+                : 'vai',
+            companion.countsBuffet
+                ? 'buffet: sim'
+                : 'buffet: não',
+        ]
+            .filter(Boolean)
+            .join(' - ')
+    }
+
+    function getChildrenUpToSix(
+        guestItem,
+    ) {
+        const children = []
+
+        const mainAge =
+            guestItem.age === ''
+                ? null
+                : Number(
+                    guestItem.age,
+                )
+
+        if (
+            Number.isFinite(mainAge)
+            && mainAge <= 6
+        ) {
+            children.push(
+                `${guestItem.name} (${mainAge})`,
+            )
+        }
+
+        const companions = (
+            guestItem.companions?.length > 0
+                ? guestItem.companions
+                : guestItem.presetCompanions
+        ) || []
+
+        for (const companion of companions) {
+            if (
+                companion.age === ''
+                || companion.age === null
+                || companion.age === undefined
+            ) {
+                continue
+            }
+
+            const age =
+                Number(companion.age)
+
+            if (
+                Number.isFinite(age)
+                && age <= 6
+            ) {
+                children.push(
+                    `${companion.name || 'Acompanhante'} (${age})`,
+                )
+            }
+        }
+
+        return children.join(' | ')
+    }
+
+    const guestExportColumns = [
+        {
+            key: 'name',
+            label: 'Nome',
+            xlsxWidth: 28,
+            pdfWidth: 136,
+        },
+        {
+            key: 'age',
+            label: 'Idade',
+            xlsxWidth: 10,
+            pdfWidth: 44,
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            xlsxWidth: 16,
+            pdfWidth: 72,
+        },
+        {
+            key: 'whatsapp',
+            label: 'WhatsApp',
+            xlsxWidth: 20,
+            pdfWidth: 96,
+        },
+        {
+            key: 'companionsConfirmed',
+            label: 'Acomp. confirmados',
+            xlsxWidth: 18,
+            pdfWidth: 54,
+        },
+        {
+            key: 'companionsAllowed',
+            label: 'Acomp. liberados',
+            xlsxWidth: 18,
+            pdfWidth: 54,
+        },
+        {
+            key: 'buffet',
+            label: 'Buffet',
+            xlsxWidth: 11,
+            pdfWidth: 46,
+        },
+        {
+            key: 'childrenUpToSix',
+            label: 'Crianças até 6 anos',
+            xlsxWidth: 30,
+            pdfWidth: 126,
+            pdfLines: 3,
+        },
+        {
+            key: 'declineReason',
+            label: 'Motivo da ausência',
+            xlsxWidth: 32,
+        },
+        {
+            key: 'firstAccess',
+            label: 'Primeiro acesso',
+            xlsxWidth: 20,
+        },
+        {
+            key: 'lastAccess',
+            label: 'Último acesso',
+            xlsxWidth: 20,
+        },
+        {
+            key: 'accessCount',
+            label: 'Quantidade de acessos',
+            xlsxWidth: 20,
+        },
+        {
+            key: 'confirmedAt',
+            label: 'Primeira resposta',
+            xlsxWidth: 20,
+        },
+        {
+            key: 'companionDetails',
+            label: 'Detalhes dos acompanhantes',
+            xlsxWidth: 55,
+            pdfWidth: 244,
+            pdfLines: 5,
+        },
+        {
+            key: 'inviteLink',
+            label: 'Link do convite',
+            xlsxWidth: 58,
+        },
+    ]
+
+    const guestExportRows =
+        filteredGuests.map(
+            (guestItem) => {
+                const answeredCompanions = (
+                    guestItem.companions
+                    || []
+                )
+
+                const companionDetails = (
+                    answeredCompanions.length > 0
+                        ? answeredCompanions
+                            .map((item) => (
+                                formatCompanionForExport(
+                                    item,
+                                    true,
+                                )
+                            ))
+                        : (
+                            guestItem.presetCompanions
+                            || []
+                        ).map((item) => (
+                            formatCompanionForExport(
+                                item,
+                                false,
+                            )
+                        ))
+                ).join(' | ')
+
+                return {
+                    name:
+                        guestItem.name,
+                    age:
+                        guestItem.age,
+                    status:
+                        getGuestStatusLabel(
+                            guestItem.status,
+                        ),
+                    declineReason:
+                        guestItem.declineReason || '',
+                    whatsapp:
+                        formatWhatsapp(
+                            guestItem.whatsapp,
+                        ),
+                    companionsConfirmed:
+                        guestItem.companionsCount,
+                    companionsAllowed:
+                        guestItem.maxCompanions,
+                    buffet:
+                        guestItem.buffetCount,
+                    childrenUpToSix:
+                        getChildrenUpToSix(
+                            guestItem,
+                        ),
+                    firstAccess:
+                        formatAdminAccessDate(
+                            guestItem.firstAccessAt,
+                        ),
+                    lastAccess:
+                        formatAdminAccessDate(
+                            guestItem.lastAccessAt,
+                        ),
+                    accessCount:
+                        guestItem.accessCount || 0,
+                    confirmedAt:
+                        formatAdminAccessDate(
+                            guestItem.confirmedAt,
+                        ),
+                    companionDetails,
+                    inviteLink:
+                        getGuestInviteUrl(
+                            guestItem,
+                        ),
+                }
+            },
+        )
+
+    function downloadAdminExport(
+        content,
+        type,
+        filename,
+    ) {
+        const blob = new Blob(
+            [content],
+            { type },
+        )
+
+        const url =
+            URL.createObjectURL(blob)
+
+        const link =
+            document.createElement('a')
+
+        link.href = url
+        link.download = filename
+
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+    }
+
+    function getGuestExportDescription() {
+        const statusLabel =
+            guestStatusFilter === 'todos'
+                ? 'Todos os status'
+                : getGuestStatusLabel(
+                    guestStatusFilter,
+                )
+
+        const parts = [
+            `Status: ${statusLabel}`,
+            `Idade: ${getGuestAgeFilterLabel(guestAgeFilter)}`,
+        ]
+
+        if (guestSearch.trim()) {
+            parts.push(
+                `Busca: ${guestSearch.trim()}`,
+            )
+        }
+
+        return parts.join(' · ')
+    }
+
+    function getGuestExportFilename(
+        extension,
+    ) {
+        const date =
+            new Date()
+                .toISOString()
+                .slice(0, 10)
+
+        const statusPart =
+            guestStatusFilter === 'todos'
+                ? 'todos'
+                : guestStatusFilter
+
+        const agePart =
+            guestAgeFilter === 'todos'
+                ? 'todas-idades'
+                : guestAgeFilter
+                    .replace('_', '-')
+
+        return (
+            'convidados-duda'
+            + `-${statusPart}`
+            + `-${agePart}`
+            + `-${date}.${extension}`
+        )
+    }
+
+    function confirmGuestExport(
+        format,
+    ) {
         if (filteredGuests.length === 0) {
             setStatus('error')
 
@@ -1943,168 +2309,71 @@ function AdminPage() {
             return
         }
 
-        const escapeCsv = (value) => (
-            `"${String(value ?? '').replaceAll('"', '""')}"`
-        )
+        try {
+            const filterDescription =
+                getGuestExportDescription()
 
-        function formatCompanionForCsv(
-            companion,
-            answered,
-        ) {
-            const name = String(
-                companion?.name || ''
-            ).trim()
+            if (format === 'pdf') {
+                const pdfColumns =
+                    guestExportColumns
+                        .filter(
+                            (column) => (
+                                column.pdfWidth
+                            ),
+                        )
 
-            const age = (
-                companion?.age === ''
-                || companion?.age === null
-                || companion?.age === undefined
-            )
-                ? 'idade não informada'
-                : `${companion.age} anos`
+                const pdf =
+                    createGuestsPdf({
+                        title:
+                            'Lista de convidados — 16 anos da Duda',
+                        subtitle:
+                            'Relatório gerado pelo painel administrativo',
+                        filterDescription,
+                        columns:
+                            pdfColumns,
+                        rows:
+                            guestExportRows,
+                    })
 
-            if (!answered) {
-                return [
-                    name,
-                    age,
-                    'pré-cadastrado',
-                ]
-                    .filter(Boolean)
-                    .join(' - ')
+                downloadAdminExport(
+                    pdf,
+                    'application/pdf',
+                    getGuestExportFilename(
+                        'pdf',
+                    ),
+                )
+            } else if (format === 'xlsx') {
+                const xlsx =
+                    createGuestsXlsx({
+                        columns:
+                            guestExportColumns,
+                        rows:
+                            guestExportRows,
+                        sheetName:
+                            'Convidados',
+                    })
+
+                downloadAdminExport(
+                    xlsx,
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    getGuestExportFilename(
+                        'xlsx',
+                    ),
+                )
             }
 
-            return [
-                name,
-                age,
-                companion.attending === 'nao'
-                    ? 'não vai'
-                    : 'vai',
-                companion.countsBuffet
-                    ? 'buffet: sim'
-                    : 'buffet: não',
-            ]
-                .filter(Boolean)
-                .join(' - ')
-        }
+            setStatus('success')
 
-        const rows = [
-            [
-                'Nome',
-                'Idade',
-                'Status',
-                'Motivo da ausência',
-                'WhatsApp',
-                'Acompanhantes confirmados',
-                'Acompanhantes liberados',
-                'Buffet',
-                'Primeiro acesso',
-                'Último acesso',
-                'Quantidade de acessos',
-                'Primeira resposta',
-                'Detalhes dos acompanhantes',
-                'Link do convite',
-            ],
-
-            ...filteredGuests.map((guestItem) => {
-                const answeredCompanions = (
-                    guestItem.companions
-                    || []
-                )
-
-                const companionDetails = (
-                    answeredCompanions.length > 0
-                        ? answeredCompanions
-                            .map((item) => (
-                                formatCompanionForCsv(
-                                    item,
-                                    true,
-                                )
-                            ))
-                        : (
-                            guestItem.presetCompanions
-                            || []
-                        ).map((item) => (
-                            formatCompanionForCsv(
-                                item,
-                                false,
-                            )
-                        ))
-                ).join(' | ')
-
-                return [
-                    guestItem.name,
-                    guestItem.age,
-                    getGuestStatusLabel(
-                        guestItem.status,
-                    ),
-                    guestItem.declineReason || '',
-                    formatWhatsapp(
-                        guestItem.whatsapp,
-                    ),
-                    guestItem.companionsCount,
-                    guestItem.maxCompanions,
-                    guestItem.buffetCount,
-                    formatAdminAccessDate(
-                        guestItem.firstAccessAt,
-                    ),
-                    formatAdminAccessDate(
-                        guestItem.lastAccessAt,
-                    ),
-                    guestItem.accessCount || 0,
-                    formatAdminAccessDate(
-                        guestItem.confirmedAt,
-                    ),
-                    companionDetails,
-                    getGuestInviteUrl(
-                        guestItem,
-                    ),
-                ]
-            }),
-        ]
-
-        const csv = '\uFEFF' + rows
-            .map(
-                (row) => row
-                    .map(escapeCsv)
-                    .join(';')
+            setMessage(
+                `${filteredGuests.length} convite${filteredGuests.length === 1 ? '' : 's'} exportado${filteredGuests.length === 1 ? '' : 's'} em ${format.toUpperCase()}.`
             )
-            .join('\r\n')
-
-        const blob = new Blob(
-            [csv],
-            {
-                type:
-                    'text/csv;charset=utf-8',
-            },
-        )
-
-        const url = URL.createObjectURL(
-            blob,
-        )
-
-        const link = document.createElement(
-            'a',
-        )
-
-        link.href = url
-        link.download = 'convidados-duda.csv'
-
-        document.body.appendChild(
-            link,
-        )
-
-        link.click()
-        link.remove()
-
-        URL.revokeObjectURL(
-            url,
-        )
-
-        setStatus('success')
-
-        setMessage(
-            `${filteredGuests.length} convidado${filteredGuests.length === 1 ? '' : 's'} exportado${filteredGuests.length === 1 ? '' : 's'}.`
-        )
+        } catch (error) {
+            setStatus('error')
+            setMessage(
+                error.message
+                || 'Não foi possível gerar o arquivo.',
+            )
+        }
     }
 
     return (
@@ -2364,6 +2633,35 @@ function AdminPage() {
                                 </select>
                             </label>
 
+                            <label className="admin-guest-age-filter">
+                                <span>Faixa etária no convite</span>
+
+                                <select
+                                    value={guestAgeFilter}
+                                    onChange={(event) => (
+                                        setGuestAgeFilter(
+                                            event.target.value
+                                        )
+                                    )}
+                                >
+                                    <option value="todos">
+                                        Todas as idades
+                                    </option>
+
+                                    <option value="ate6">
+                                        Crianças até 6 anos
+                                    </option>
+
+                                    <option value="acima6">
+                                        Maiores de 6 anos
+                                    </option>
+
+                                    <option value="sem_idade">
+                                        Sem idade informada
+                                    </option>
+                                </select>
+                            </label>
+
                             <button
                                 className="admin-communication-launch"
                                 type="button"
@@ -2374,16 +2672,44 @@ function AdminPage() {
                                 ◉ Disparar lembretes
                             </button>
 
-                            <button
-                                className="admin-export-guests"
-                                type="button"
-                                onClick={handleExportGuests}
-                                disabled={
-                                    filteredGuests.length === 0
-                                }
+                            <div
+                                className="admin-export-group"
+                                aria-label="Baixar lista filtrada"
                             >
-                                Exportar CSV
-                            </button>
+                                <span>Baixar lista filtrada</span>
+
+                                <div>
+                                    <button
+                                        className="admin-export-guests admin-export-guests--pdf"
+                                        type="button"
+                                        onClick={() => (
+                                            confirmGuestExport(
+                                                'pdf'
+                                            )
+                                        )}
+                                        disabled={
+                                            filteredGuests.length === 0
+                                        }
+                                    >
+                                        PDF
+                                    </button>
+
+                                    <button
+                                        className="admin-export-guests admin-export-guests--xlsx"
+                                        type="button"
+                                        onClick={() => (
+                                            confirmGuestExport(
+                                                'xlsx'
+                                            )
+                                        )}
+                                        disabled={
+                                            filteredGuests.length === 0
+                                        }
+                                    >
+                                        XLSX
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <p className="admin-guests-filter-result">
@@ -2399,7 +2725,11 @@ function AdminPage() {
                                 {data.guests.length}
                             </strong>
                             {' '}
-                            convidados
+                            convites
+                            {' · '}
+                            {getGuestAgeFilterLabel(
+                                guestAgeFilter
+                            )}
                         </p>
 
                         <div className="admin-mobile-guests">
