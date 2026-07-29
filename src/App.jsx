@@ -377,6 +377,50 @@ function saveOpeningSession(data) {
     )
 }
 
+function InviteIcon({ name }) {
+    const paths = {
+        calendar: (
+            <>
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 10h18" />
+            </>
+        ),
+        check: <path d="m5 12 4 4L19 6" />,
+        gift: (
+            <>
+                <rect x="3" y="9" width="18" height="12" rx="2" />
+                <path d="M12 9v12M3 13h18M7.5 9C5 9 4 7.6 4 6.3 4 5 5 4 6.3 4 9 4 12 9 12 9s3-5 5.7-5C16 4 17 5 17 6.3 17 7.6 16 9 13.5 9" />
+            </>
+        ),
+        heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />,
+        map: (
+            <>
+                <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z" />
+                <path d="M9 3v15M15 6v15" />
+            </>
+        ),
+        message: <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />,
+        navigation: <path d="m3 11 19-9-9 19-2-8Z" />,
+        pin: (
+            <>
+                <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                <circle cx="12" cy="10" r="2.5" />
+            </>
+        ),
+    }
+
+    return (
+        <svg
+            className="invite-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+        >
+            {paths[name] || paths.heart}
+        </svg>
+    )
+}
+
 function InvitationQuickActions() {
     return (
         <section
@@ -388,7 +432,8 @@ function InvitationQuickActions() {
                 type="button"
                 onClick={() => scrollToSection('confirmar-presenca')}
             >
-                ✓ Confirmar / alterar presença
+                <InviteIcon name="check" />
+                <span>Confirmar presença</span>
             </button>
 
             <div className="hero-quick-actions__grid">
@@ -397,7 +442,7 @@ function InvitationQuickActions() {
                     type="button"
                     onClick={() => scrollToSection('local-evento')}
                 >
-                    <span aria-hidden="true">⌖</span>
+                    <InviteIcon name="pin" />
                     <span>Local</span>
                 </button>
 
@@ -406,7 +451,7 @@ function InvitationQuickActions() {
                     type="button"
                     onClick={() => scrollToSection('presentes')}
                 >
-                    <span aria-hidden="true">🎁</span>
+                    <InviteIcon name="gift" />
                     <span>Presente</span>
                 </button>
 
@@ -415,7 +460,7 @@ function InvitationQuickActions() {
                     type="button"
                     onClick={() => scrollToSection('mensagem-duda')}
                 >
-                    <span aria-hidden="true">♡</span>
+                    <InviteIcon name="message" />
                     <span>Mensagem</span>
                 </button>
             </div>
@@ -425,8 +470,8 @@ function InvitationQuickActions() {
                 type="button"
                 onClick={() => scrollToSection('confirmar-presenca')}
             >
-                <span>Explore o convite</span>
-                <strong aria-hidden="true">⌄</strong>
+                <span>Ver todos os detalhes</span>
+                <strong aria-hidden="true">↓</strong>
             </button>
         </section>
     )
@@ -442,7 +487,7 @@ function Countdown() {
     }, [targetDate])
 
     return (
-        <section className="countdown" aria-label="Contagem regressiva para o aniversario">
+        <section className="countdown" aria-label="Contagem regressiva para o aniversário">
             {[
                 ['dias', time.days],
                 ['horas', time.hours],
@@ -725,7 +770,7 @@ function RsvpForm({
                     <div className="guest-found-card">
                         <span>Convite liberado</span>
                         <strong>{guest.name}</strong>
-                        <small>{guest.maxCompanions === 0 ? 'Sem acompanhantes.' : `Ate ${guest.maxCompanions} acompanhante${guest.maxCompanions === 1 ? '' : 's'} neste convite.`}</small>
+                        <small>{guest.maxCompanions === 0 ? 'Sem acompanhantes.' : `Até ${guest.maxCompanions} acompanhante${guest.maxCompanions === 1 ? '' : 's'} neste convite.`}</small>
                     </div>
 
                     {rsvpClosed ? (
@@ -852,7 +897,15 @@ function RsvpForm({
                 </form>
             ) : null}
 
-            {message ? <p className={`form-message form-message--${lookupStatus === 'error' || submitStatus === 'error' ? 'error' : 'success'}`}>{message}</p> : null}
+            {message ? (
+                <p
+                    className={`form-message form-message--${lookupStatus === 'error' || submitStatus === 'error' ? 'error' : 'success'}`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    {message}
+                </p>
+            ) : null}
         </div>
     )
 }
@@ -899,9 +952,21 @@ function GiftPanel() {
             </h2>
 
             <p>
-                Sugestões: perfume, acessórios femininos,
-                cremes e maquiagem. Quem preferir também pode
-                enviar um Pix para a Duda escolher algo especial.
+                Sua presença já é o maior presente. Se quiser
+                levar um carinho, estas são algumas ideias que
+                combinam com a Duda.
+            </p>
+
+            <div className="gift-suggestions" aria-label="Ideias de presente">
+                <span>Perfume</span>
+                <span>Acessórios</span>
+                <span>Cremes</span>
+                <span>Maquiagem</span>
+            </div>
+
+            <p className="pix-intro">
+                Se preferir, você também pode enviar um Pix para
+                ela escolher algo especial.
             </p>
 
             <div className="pix-card">
@@ -3257,137 +3322,222 @@ function LandingPage() {
     return (
         <>
             <main className="page-shell page-shell--revealed">
-            <section className="invite-card" aria-labelledby="invite-title">
-                <div className="disco-cluster" aria-hidden="true">
-                    <img className="disco-image disco-image--small" src="/disco-ball.jpg" alt="" />
-                    <img className="disco-image disco-image--medium" src="/disco-ball.jpg" alt="" />
-                    <img className="disco-image disco-image--small" src="/disco-ball.jpg" alt="" />
-                </div>
-                <img className="disco-image disco-image--hero" src="/disco-ball.jpg" alt="" aria-hidden="true" />
-                <div className="sparkle sparkle--one" aria-hidden="true" />
-                <div className="sparkle sparkle--two" aria-hidden="true" />
+                <section className="invite-card" aria-labelledby="invite-title">
+                    <header className="invitation-hero">
+                        <div className="invitation-hero__photo">
+                            <img
+                                src="/duda-photo.png"
+                                alt="Duda em frente à Torre Eiffel"
+                            />
+                        </div>
 
-                <div className="hero-copy">
-                    <p className="eyebrow">Sweet birthday</p>
-                    <h1 id="invite-title">
-                        <img className="balloon-age" src="/balloon-16-transparent.png" alt="16 anos" />
-                        <span className="name-script">Duda</span>
-                    </h1>
-                    <p className="tagline">Uma tarde para brilhar, dançar e guardar na memória.</p>
-                </div>
+                        <div className="invitation-hero__veil" aria-hidden="true" />
 
-                <Countdown />
+                        <div className="invitation-hero__copy">
+                            <p className="eyebrow">Save the date</p>
+                            <h1 id="invite-title">
+                                <span className="hero-age">16</span>
+                                <span className="name-script">Duda</span>
+                            </h1>
+                            <p className="tagline">
+                                Uma tarde para celebrar, dançar e
+                                guardar para sempre.
+                            </p>
+                            <p className="hero-date">
+                                <span>14 · 11 · 2026</span>
+                                <span aria-hidden="true">—</span>
+                                <span>17h</span>
+                            </p>
+                        </div>
+                    </header>
+
+                    <div className="invitation-welcome">
+                        <p className="invitation-welcome__kicker">
+                            Este convite é para você
+                        </p>
+                        <p>
+                            <strong>{activeGuest.name}</strong>, quero
+                            você por perto para transformar esse dia
+                            em uma lembrança linda.
+                        </p>
+                    </div>
+
+                    <div className="invitation-countdown">
+                        <p>Falta pouco para a festa</p>
+                        <Countdown />
+                    </div>
+
                     <InvitationQuickActions />
 
-                <div
-                    id="local-evento"
-                    className="event-details"
-                    aria-label="Informações do aniversário"
-                >
-                    <p>14 de novembro de 2026</p>
-                    <p>17h</p>
+                    <section
+                        id="local-evento"
+                        className="invitation-section event-section"
+                        aria-labelledby="event-title"
+                    >
+                        <div className="section-heading">
+                            <span className="section-heading__icon">
+                                <InviteIcon name="pin" />
+                            </span>
+                            <div>
+                                <p className="panel-kicker">Onde e quando</p>
+                                <h2 id="event-title">Nosso encontro</h2>
+                            </div>
+                        </div>
+
+                        <div
+                            className="event-details"
+                            aria-label="Informações do aniversário"
+                        >
+                            <div>
+                                <span>Data</span>
+                                <strong>14 de novembro de 2026</strong>
+                            </div>
+                            <div>
+                                <span>Horário</span>
+                                <strong>17h</strong>
+                            </div>
+                        </div>
+
+                        <div className="venue-card">
+                            <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
+                            <div>
+                                <span>Local da festa</span>
+                                <strong>Quintal do Ibiza</strong>
+                                <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+                                    @quintaldoibizaoficial
+                                </a>
+                            </div>
+                        </div>
+
+                        <p className="address">
+                            {EVENT_ADDRESS}
+                        </p>
+
+                        <div
+                            className="event-action-grid"
+                            aria-label="Como chegar e salvar o evento"
+                        >
+                            <a
+                                className="event-action-button"
+                                href={MAP_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <InviteIcon name="map" />
+                                <span>Google Maps</span>
+                            </a>
+
+                            <a
+                                className="event-action-button"
+                                href={WAZE_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <InviteIcon name="navigation" />
+                                <span>Waze</span>
+                            </a>
+
+                            <button
+                                className="event-action-button"
+                                type="button"
+                                onClick={openCalendarEvent}
+                            >
+                                <InviteIcon name="calendar" />
+                                <span>Adicionar à agenda</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section className="invitation-section style-section" aria-labelledby="style-title">
+                        <div>
+                            <p className="panel-kicker">Para entrar no clima</p>
+                            <h2 id="style-title">Dress code</h2>
+                            <p>Vista-se para uma tarde especial.</p>
+                        </div>
+                        <div className="dress-code">
+                            <strong>Apenas um pedido</strong>
+                            <span>Não vir de verde nem azul.</span>
+                        </div>
+                    </section>
 
                     <a
-                        href={MAP_URL}
+                        className="duda-instagram-card"
+                        href={DUDA_INSTAGRAM_URL}
                         target="_blank"
                         rel="noreferrer"
                     >
-                        Quintal do Ibiza
+                        <span>D</span>
+                        <div>
+                            <small>Acompanhe a Duda</small>
+                            <strong>@mariizsq_</strong>
+                        </div>
+                        <span className="instagram-arrow" aria-hidden="true">↗</span>
                     </a>
-                </div>
-
-                <p className="address">
-                    {EVENT_ADDRESS}
-                </p>
-
-                <div
-                    className="event-action-grid"
-                    aria-label="Como chegar e salvar o evento"
-                >
-                    <a
-                        className="event-action-button"
-                        href={MAP_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        <span aria-hidden="true">⌖</span>
-                        Google Maps
-                    </a>
-
-                    <a
-                        className="event-action-button"
-                        href={WAZE_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        <span aria-hidden="true">➤</span>
-                        Waze
-                    </a>
-
-                    <button
-                        className="event-action-button"
-                        type="button"
-                        onClick={openCalendarEvent}
-                    >
-                        <span aria-hidden="true">＋</span>
-                        Adicionar à agenda
-                    </button>
-                </div>
-
-                <div className="venue-card">
-                    <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
-                    <div>
-                        <strong>Quintal do Ibiza</strong>
-                        <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">@quintaldoibizaoficial</a>
-                    </div>
-                </div>
-
-                <div className="photo-frame">
-                    <img src="/duda-photo.png" alt="Foto da Duda" />
-                </div>
-
-                <p className="invite-text">{activeGuest.name}, a Duda quer você por perto para transformar esse dia em uma lembranca linda.</p>
-
-                <div className="duda-instagram-card">
-                    <span>D</span>
-                    <div>
-                        <strong>Duda no Instagram</strong>
-                        <a href={DUDA_INSTAGRAM_URL} target="_blank" rel="noreferrer">@mariizsq_</a>
-                    </div>
-                </div>
-
-                <div className="dress-code"><strong>Dress code</strong><span>Não vir de verde nem azul.</span></div>
-            </section>
-
-            <div className="side-stack">
-                <section id="confirmar-presenca" className="confirm-panel" aria-labelledby="confirm-title">
-                    <p className="panel-kicker">{isRsvpClosed()
-                        ? 'Prazo de confirmação encerrado'
-                        : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
-                    <h2 id="confirm-title">Oi, {activeGuest.name}</h2>
-                    <p>Confira os nomes liberados e confirme a presença deste convite.</p>
-                    <RsvpForm
-                        initialGuest={activeGuest}
-                        initialWhatsapp={openingData.whatsapp}
-                        initialAlreadyConfirmed={openingData.alreadyConfirmed}
-                        initialRsvp={openingData.rsvp}
-                        onGuestResolved={handleGuestResolved}
-                        onRsvpSaved={handleRsvpSaved}
-                    />
                 </section>
 
-                <GiftPanel />
+                <div className="side-stack">
+                    <section
+                        id="confirmar-presenca"
+                        className="confirm-panel rsvp-panel"
+                        aria-labelledby="confirm-title"
+                    >
+                        <div className="section-heading">
+                            <span className="section-heading__icon">
+                                <InviteIcon name="check" />
+                            </span>
+                            <div>
+                                <p className="panel-kicker">{isRsvpClosed()
+                                    ? 'Prazo de confirmação encerrado'
+                                    : `Confirme até ${RSVP_DEADLINE_DISPLAY}`}</p>
+                                <h2 id="confirm-title">Você vem, {activeGuest.name}?</h2>
+                            </div>
+                        </div>
+                        <p className="panel-intro">
+                            Confira os nomes deste convite e conte
+                            para a Duda quem estará na festa.
+                        </p>
+                        <RsvpForm
+                            initialGuest={activeGuest}
+                            initialWhatsapp={openingData.whatsapp}
+                            initialAlreadyConfirmed={openingData.alreadyConfirmed}
+                            initialRsvp={openingData.rsvp}
+                            onGuestResolved={handleGuestResolved}
+                            onRsvpSaved={handleRsvpSaved}
+                        />
+                    </section>
 
-                <section id="mensagem-duda" className="confirm-panel message-panel" aria-labelledby="message-title">
-                    <p className="panel-kicker">Carinho para guardar</p>
-                    <h2 id="message-title">Deixe sua mensagem</h2>
-                    <p>Escreva uma mensagem de parabéns para a Duda receber junto com as confirmações.</p>
-                    <BirthdayMessageForm
-                        guest={activeGuest}
-                        invitationCode={getInvitationCode()}
-                    />
-                </section>
-            </div>
+                    <GiftPanel />
+
+                    <section
+                        id="mensagem-duda"
+                        className="confirm-panel message-panel"
+                        aria-labelledby="message-title"
+                    >
+                        <div className="section-heading">
+                            <span className="section-heading__icon">
+                                <InviteIcon name="heart" />
+                            </span>
+                            <div>
+                                <p className="panel-kicker">Carinho para guardar</p>
+                                <h2 id="message-title">Uma mensagem para a Duda</h2>
+                            </div>
+                        </div>
+                        <p className="panel-intro">
+                            Escreva algumas palavras para ela receber
+                            junto com as confirmações.
+                        </p>
+                        <BirthdayMessageForm
+                            guest={activeGuest}
+                            invitationCode={getInvitationCode()}
+                        />
+                    </section>
+
+                    <footer className="invitation-footer">
+                        <span>D</span>
+                        <p>Com carinho, Duda</p>
+                        <small>14 · 11 · 2026</small>
+                    </footer>
+                </div>
             </main>
 
             <MusicPlayer enabled={musicStarted} />
