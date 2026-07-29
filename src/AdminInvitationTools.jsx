@@ -173,6 +173,15 @@ function AdminNavigation({
                 <span aria-hidden="true">R$</span>
                 Financeiro
             </a>
+
+            <a
+                href="/presenca"
+                target="_blank"
+                rel="noreferrer"
+            >
+                <span aria-hidden="true">✓</span>
+                Presença
+            </a>
         </nav>
     )
 }
@@ -272,11 +281,18 @@ function GalleryPanel({
                     </h2>
                     <p>
                         Adicione até 10 fotos. O site comprime cada imagem e
-                        cria o carrossel automaticamente.
+                        cria o carrossel com troca automática a cada
+                        5 segundos.
                     </p>
                 </div>
 
                 <label className="admin-upload-photo">
+                    <span
+                        className="admin-upload-photo__icon"
+                        aria-hidden="true"
+                    >
+                        +
+                    </span>
                     <span>
                         {uploading
                             ? 'Processando...'
@@ -296,6 +312,24 @@ function GalleryPanel({
                     {message}
                 </p>
             ) : null}
+
+            <div className="admin-gallery-summary">
+                <div>
+                    <strong>
+                        {photos.length}
+                        {' '}
+                        de 10 fotos
+                    </strong>
+                    <span>
+                        no carrossel do convite
+                    </span>
+                </div>
+
+                <p>
+                    Todas as fotos abaixo aparecem no carrossel. A foto
+                    principal abre primeiro; use as setas para alterar a ordem.
+                </p>
+            </div>
 
             <div className="admin-gallery-grid">
                 {photos.map((photo, index) => (
@@ -317,6 +351,10 @@ function GalleryPanel({
                                     Foto principal
                                 </strong>
                             ) : null}
+
+                            <span className="admin-gallery-position">
+                                {index + 1}
+                            </span>
                         </div>
 
                         <form
@@ -350,7 +388,9 @@ function GalleryPanel({
                             </label>
 
                             <label>
-                                <span>Enquadramento</span>
+                                <span>
+                                    Posição da foto no carrossel
+                                </span>
                                 <select
                                     name="objectPosition"
                                     defaultValue={
@@ -358,22 +398,28 @@ function GalleryPanel({
                                     }
                                 >
                                     <option value="center 20%">
-                                        Mais para cima
+                                        Mostrar mais a parte de cima
                                     </option>
                                     <option value="center 35%">
-                                        Centro superior
+                                        Um pouco acima do centro
                                     </option>
                                     <option value="center">
-                                        Centralizado
+                                        Mostrar o centro da foto
                                     </option>
                                     <option value="center 65%">
-                                        Mais para baixo
+                                        Mostrar mais a parte de baixo
                                     </option>
                                 </select>
+
+                                <small>
+                                    Define qual parte fica visível quando
+                                    o carrossel recorta a foto para preencher
+                                    a tela.
+                                </small>
                             </label>
 
                             <button type="submit">
-                                Salvar enquadramento
+                                Salvar descrição e posição
                             </button>
                         </form>
 
@@ -404,7 +450,9 @@ function GalleryPanel({
                                         photo.id,
                                 })}
                             >
-                                Tornar principal
+                                {photo.isPrimary
+                                    ? 'Foto principal'
+                                    : 'Tornar principal'}
                             </button>
                             <button
                                 className="admin-gallery-delete"
@@ -429,6 +477,13 @@ function GalleryPanel({
                         </div>
                     </article>
                 ))}
+
+                {photos.length === 0 ? (
+                    <p className="admin-tool-empty">
+                        Nenhuma foto no carrossel. Clique em “Adicionar foto”
+                        para começar.
+                    </p>
+                ) : null}
             </div>
 
             {photos.length === 0 ? (
@@ -458,23 +513,39 @@ function PreviewPanel() {
                         Conferência antes do envio
                     </p>
                     <h2 id="admin-preview-title">
-                        Prévia do convite
+                        Convite real aberto
                     </h2>
                     <p>
-                        Esta é a página pública completa. Role dentro da
-                        moldura para conferir todas as seções.
+                        Esta é a mesma página que o convidado recebe, já
+                        aberta. Role dentro da prévia para conferir todas
+                        as seções.
                     </p>
                 </div>
 
                 <a
                     className="admin-open-public-preview"
-                    href="/"
+                    href="/?adminPreview=1"
                     target="_blank"
                     rel="noreferrer"
                 >
-                    Abrir convite real ↗
+                    Ver em tela cheia ↗
                 </a>
             </header>
+
+            <div className="admin-real-preview-note">
+                <span aria-hidden="true">
+                    ✓
+                </span>
+
+                <p>
+                    <strong>
+                        Prévia real e segura
+                    </strong>
+                    O conteúdo, as fotos e o visual são os publicados.
+                    Formulários e links ficam desativados somente nesta
+                    visualização administrativa.
+                </p>
+            </div>
 
             <div className="admin-preview-toolbar">
                 <div
@@ -531,7 +602,7 @@ function PreviewPanel() {
                     <span />
                     <span />
                     <strong>
-                        dudanoibiza.com.br
+                        dudanoibiza.com.br — convite aberto
                     </strong>
                 </div>
 
@@ -669,6 +740,113 @@ function CommunicationPanel({
     )
 }
 
+function ReportIcon({
+    name,
+}) {
+    const paths = {
+        confirmed: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8 12 2.5 2.5L16 9" />
+            </>
+        ),
+        pending: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+            </>
+        ),
+        declined: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="m9 9 6 6m0-6-6 6" />
+            </>
+        ),
+        buffet: (
+            <>
+                <path d="M6 3v8a3 3 0 0 0 6 0V3M9 3v18" />
+                <path d="M17 3v18M17 3c3 3 3 7 0 10" />
+            </>
+        ),
+        child: (
+            <>
+                <circle cx="12" cy="8" r="3" />
+                <path d="M7 21v-3a5 5 0 0 1 10 0v3M9 12l-3 3m9-3 3 3" />
+            </>
+        ),
+        youth: (
+            <>
+                <circle cx="12" cy="7" r="3" />
+                <path d="M8 21v-5a4 4 0 0 1 8 0v5M5 14l3 2m11-2-3 2" />
+            </>
+        ),
+        adult: (
+            <>
+                <circle cx="12" cy="7" r="3" />
+                <path d="M5 21a7 7 0 0 1 14 0" />
+            </>
+        ),
+        age: (
+            <>
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M8 9h8M8 13h5M8 17h3" />
+            </>
+        ),
+        unknown: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.8 9a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1.2.9-1.2 1.8M12 17h.01" />
+            </>
+        ),
+        presence: (
+            <>
+                <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+                <circle cx="12" cy="7" r="4" />
+                <path d="m16 12 2 2 4-4" />
+            </>
+        ),
+    }
+
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            {paths[name]}
+        </svg>
+    )
+}
+
+
+function ReportCard({
+    label,
+    value,
+    icon,
+    tone,
+}) {
+    return (
+        <article
+            className={
+                `admin-report-card admin-report-card--${tone}`
+            }
+        >
+            <div className="admin-report-card__top">
+                <span>{label}</span>
+                <i>
+                    <ReportIcon name={icon} />
+                </i>
+            </div>
+            <strong>{value}</strong>
+        </article>
+    )
+}
+
+
 function ReportsPanel({
     data,
     onGoGuests,
@@ -799,62 +977,20 @@ function ReportsPanel({
             </header>
 
             <div className="admin-report-grid">
-                <article>
-                    <span>Confirmados</span>
-                    <strong>{report.confirmed}</strong>
-                </article>
-                <article>
-                    <span>Pendentes</span>
-                    <strong>{report.pending}</strong>
-                </article>
-                <article>
-                    <span>Não vão</span>
-                    <strong>{report.declined}</strong>
-                </article>
-                <article>
-                    <span>Buffet</span>
-                    <strong>{report.buffet}</strong>
-                </article>
-                <article>
-                    <span>Até 6 anos — total</span>
-                    <strong>{report.childrenUpTo6}</strong>
-                </article>
-                <article>
-                    <span>7 a 17 anos — total</span>
-                    <strong>{report.youth}</strong>
-                </article>
-                <article>
-                    <span>Adultos — total</span>
-                    <strong>{report.adults}</strong>
-                </article>
-                <article>
-                    <span>Acima de 6 — total</span>
-                    <strong>{report.above6}</strong>
-                </article>
-                <article>
-                    <span>Sem idade — total</span>
-                    <strong>{report.withoutAge}</strong>
-                </article>
-                <article>
-                    <span>Crianças confirmadas</span>
-                    <strong>{report.confirmedChildren}</strong>
-                </article>
-                <article>
-                    <span>Acima de 6 confirmados</span>
-                    <strong>{report.confirmedAbove6}</strong>
-                </article>
-                <article>
-                    <span>Adultos confirmados</span>
-                    <strong>{report.confirmedAdults}</strong>
-                </article>
-                <article>
-                    <span>Confirmados sem idade</span>
-                    <strong>{report.confirmedWithoutAge}</strong>
-                </article>
-                <article>
-                    <span>Presentes no dia</span>
-                    <strong>{report.checkedIn}</strong>
-                </article>
+                <ReportCard label="Confirmados" value={report.confirmed} icon="confirmed" tone="confirmed" />
+                <ReportCard label="Pendentes" value={report.pending} icon="pending" tone="pending" />
+                <ReportCard label="Não vão" value={report.declined} icon="declined" tone="declined" />
+                <ReportCard label="Buffet" value={report.buffet} icon="buffet" tone="buffet" />
+                <ReportCard label="Até 6 anos — total" value={report.childrenUpTo6} icon="child" tone="child" />
+                <ReportCard label="7 a 17 anos — total" value={report.youth} icon="youth" tone="youth" />
+                <ReportCard label="Adultos — total" value={report.adults} icon="adult" tone="adult" />
+                <ReportCard label="Acima de 6 — total" value={report.above6} icon="age" tone="age" />
+                <ReportCard label="Sem idade — total" value={report.withoutAge} icon="unknown" tone="unknown" />
+                <ReportCard label="Crianças confirmadas" value={report.confirmedChildren} icon="child" tone="confirmed-child" />
+                <ReportCard label="Acima de 6 confirmados" value={report.confirmedAbove6} icon="confirmed" tone="confirmed-age" />
+                <ReportCard label="Adultos confirmados" value={report.confirmedAdults} icon="adult" tone="confirmed-adult" />
+                <ReportCard label="Confirmados sem idade" value={report.confirmedWithoutAge} icon="unknown" tone="confirmed-unknown" />
+                <ReportCard label="Presentes no dia" value={report.checkedIn} icon="presence" tone="presence" />
             </div>
 
             <div className="admin-report-comparison">
@@ -896,6 +1032,15 @@ function ReportsPanel({
             >
                 Abrir lista e exportar PDF/XLSX
             </button>
+
+            <a
+                className="admin-report-checkin-link"
+                href="/presenca"
+                target="_blank"
+                rel="noreferrer"
+            >
+                Abrir check-in da festa ↗
+            </a>
         </section>
     )
 }

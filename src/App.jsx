@@ -35,6 +35,10 @@ const ExpensesPage = lazy(
     () => import('./ExpensesPage.jsx'),
 )
 
+const CheckinPage = lazy(
+    () => import('./CheckinPage.jsx'),
+)
+
 const AdminCommunicationModal = lazy(
     () => import('./AdminCommunicationModal.jsx'),
 )
@@ -447,9 +451,53 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
         [photos],
     )
     const [activeIndex, setActiveIndex] = useState(0)
+    const [interactionPaused, setInteractionPaused] =
+        useState(false)
+    const [manualPaused, setManualPaused] =
+        useState(false)
     const pointerStartRef = useRef(null)
     const photoCount = availablePhotos.length
     const hasMultiplePhotos = photoCount > 1
+    const autoPlayPaused =
+        interactionPaused
+        || manualPaused
+    const visibleIndex =
+        photoCount > 0
+            ? activeIndex % photoCount
+            : 0
+
+    useEffect(() => {
+        if (
+            !hasMultiplePhotos
+            || autoPlayPaused
+            || window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches
+        ) {
+            return undefined
+        }
+
+        const timer =
+            window.setInterval(
+                () => {
+                    setActiveIndex(
+                        (current) => (
+                            (current + 1)
+                            % photoCount
+                        )
+                    )
+                },
+                5_000,
+            )
+
+        return () => {
+            window.clearInterval(timer)
+        }
+    }, [
+        autoPlayPaused,
+        hasMultiplePhotos,
+        photoCount,
+    ])
 
     if (!photoCount) return null
 
@@ -491,8 +539,8 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
 
         selectPhoto(
             deltaX < 0
-                ? activeIndex + 1
-                : activeIndex - 1,
+                ? visibleIndex + 1
+                : visibleIndex - 1,
         )
     }
 
@@ -508,19 +556,39 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
             aria-label={hasMultiplePhotos
                 ? 'Fotos da Duda'
                 : undefined}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
+            onMouseEnter={() => setInteractionPaused(true)}
+            onMouseLeave={() => setInteractionPaused(false)}
+            onFocus={() => setInteractionPaused(true)}
+            onBlur={(event) => {
+                if (
+                    !event.currentTarget
+                        .contains(
+                            event.relatedTarget
+                        )
+                ) {
+                    setInteractionPaused(false)
+                }
+            }}
+            onPointerDown={(event) => {
+                setInteractionPaused(true)
+                handlePointerDown(event)
+            }}
+            onPointerUp={(event) => {
+                handlePointerUp(event)
+                setInteractionPaused(false)
+            }}
             onPointerCancel={() => {
                 pointerStartRef.current = null
+                setInteractionPaused(false)
             }}
         >
             {availablePhotos.map((photo, index) => (
                 <figure
-                    className={`invitation-photo-carousel__slide${index === activeIndex
+                    className={`invitation-photo-carousel__slide${index === visibleIndex
                         ? ' invitation-photo-carousel__slide--active'
                         : ''}`}
                     key={photo.id || photo.src}
-                    aria-hidden={index !== activeIndex}
+                    aria-hidden={index !== visibleIndex}
                     role={hasMultiplePhotos ? 'group' : undefined}
                     aria-roledescription={hasMultiplePhotos
                         ? 'slide'
@@ -531,7 +599,7 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
                 >
                     <img
                         src={photo.src}
-                        alt={index === activeIndex ? photo.alt : ''}
+                        alt={index === visibleIndex ? photo.alt : ''}
                         style={{
                             objectPosition:
                                 photo.objectPosition || 'center',
@@ -551,7 +619,7 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
                 >
                     <button
                         type="button"
-                        onClick={() => selectPhoto(activeIndex - 1)}
+                        onClick={() => selectPhoto(visibleIndex - 1)}
                         aria-label="Ver foto anterior"
                     >
                         <span aria-hidden="true">‹</span>
@@ -562,13 +630,13 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
                             {availablePhotos.map((photo, index) => (
                                 <button
                                     type="button"
-                                    className={index === activeIndex
+                                    className={index === visibleIndex
                                         ? 'is-active'
                                         : undefined}
                                     key={`dot-${photo.id || photo.src}`}
                                     onClick={() => selectPhoto(index)}
                                     aria-label={`Ver foto ${index + 1} de ${photoCount}`}
-                                    aria-current={index === activeIndex
+                                    aria-current={index === visibleIndex
                                         ? 'true'
                                         : undefined}
                                 />
@@ -579,13 +647,13 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
                             className="invitation-photo-carousel__count"
                             aria-hidden="true"
                         >
-                            {activeIndex + 1} / {photoCount}
+                            {visibleIndex + 1} / {photoCount}
                         </span>
                     )}
 
                     <button
                         type="button"
-                        onClick={() => selectPhoto(activeIndex + 1)}
+                        onClick={() => selectPhoto(visibleIndex + 1)}
                         aria-label="Ver próxima foto"
                     >
                         <span aria-hidden="true">›</span>
@@ -593,11 +661,39 @@ function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
 
                     <span
                         className="invitation-photo-carousel__status"
-                        aria-live="polite"
+                        aria-live={
+                            autoPlayPaused
+                                ? 'polite'
+                                : 'off'
+                        }
                     >
-                        Foto {activeIndex + 1} de {photoCount}
+                        Foto {visibleIndex + 1} de {photoCount}
                     </span>
                 </div>
+            ) : null}
+
+            {hasMultiplePhotos ? (
+                <button
+                    type="button"
+                    className="invitation-photo-carousel__autoplay"
+                    onClick={() => (
+                        setManualPaused(
+                            (current) => !current
+                        )
+                    )}
+                    aria-pressed={manualPaused}
+                    aria-label={
+                        manualPaused
+                            ? 'Continuar troca automática das fotos'
+                            : 'Pausar troca automática das fotos'
+                    }
+                >
+                    <span aria-hidden="true">
+                        {manualPaused
+                            ? '▶'
+                            : 'Ⅱ'}
+                    </span>
+                </button>
             ) : null}
         </div>
     )
@@ -3275,7 +3371,7 @@ function AdminPage() {
                     <section
                         className="confirm-panel admin-checkin-panel"
                         aria-labelledby="admin-checkin-title"
-                        hidden={activeAdminSection !== 'relatorios'}
+                        hidden
                     >
                         <div className="admin-checkin-heading">
                             <div>
@@ -4344,11 +4440,17 @@ function OpeningInvitationGate({
         )
 
         /*
-         * Mantemos tempo suficiente para a pessoa enxergar
-         * o selo realmente rompido antes de abrir o envelope.
-         *
-         * Nao encurtamos mais para 120ms no celular.
+         * A sequencia visual agora termina em 3,4s:
+         * selo, aba, retirada da folha e duas dobras.
+         * O pequeno intervalo final evita trocar o papel
+         * cenografico pelo formulario no meio da ultima dobra.
          */
+        const openingDuration = window.matchMedia(
+            '(prefers-reduced-motion: reduce)',
+        ).matches
+            ? 120
+            : 3550
+
         openingTimerRef.current = window.setTimeout(
             () => {
                 setStage('card-visible')
@@ -4358,7 +4460,7 @@ function OpeningInvitationGate({
                     120,
                 )
             },
-            4200,
+            openingDuration,
         )
     }
 
@@ -5118,6 +5220,20 @@ function App() {
                 )}
             >
                 <ExpensesPage />
+            </Suspense>
+        )
+    }
+
+    if (pathname === '/presenca') {
+        return (
+            <Suspense
+                fallback={(
+                    <main className="route-loading" role="status">
+                        Carregando lista de presença...
+                    </main>
+                )}
+            >
+                <CheckinPage />
             </Suspense>
         )
     }

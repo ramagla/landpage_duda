@@ -1,5 +1,9 @@
 import { createClient } from '@libsql/client'
 
+import {
+    DEFAULT_INVITATION_PHOTOS,
+} from '../shared/invitation-config.js'
+
 let client
 let schemaReady
 
@@ -291,6 +295,103 @@ export async function ensureSchema() {
                     id
                 )
             `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS app_schema_migrations (
+                    migration_key TEXT PRIMARY KEY,
+                    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            /*
+             * A foto original do convite existia apenas como fallback
+             * no frontend. Ao enviar a primeira foto, o fallback deixava
+             * de aparecer. Esta migração única transforma a foto original
+             * em um item real e gerenciável da galeria.
+             */
+            const defaultPhoto =
+                DEFAULT_INVITATION_PHOTOS[0]
+
+            const gallerySeedMigration =
+                'seed-original-invitation-photo-v1'
+
+            await db.batch(
+                [
+                    {
+                        sql: `
+                            UPDATE invitation_photos
+                            SET is_primary = 0
+                            WHERE NOT EXISTS (
+                                SELECT 1
+                                FROM app_schema_migrations
+                                WHERE migration_key = ?
+                            )
+                        `,
+                        args: [
+                            gallerySeedMigration,
+                        ],
+                    },
+                    {
+                        sql: `
+                            INSERT INTO invitation_photos (
+                                image_data,
+                                alt_text,
+                                object_position,
+                                sort_order,
+                                is_primary
+                            )
+                            SELECT ?, ?, ?, -1, 1
+                            WHERE NOT EXISTS (
+                                SELECT 1
+                                FROM app_schema_migrations
+                                WHERE migration_key = ?
+                            )
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM invitation_photos
+                                WHERE image_data = ?
+                            )
+                        `,
+                        args: [
+                            defaultPhoto.src,
+                            defaultPhoto.alt,
+                            defaultPhoto.objectPosition,
+                            gallerySeedMigration,
+                            defaultPhoto.src,
+                        ],
+                    },
+                    {
+                        sql: `
+                            UPDATE invitation_photos
+                            SET
+                                is_primary = 1,
+                                sort_order = -1
+                            WHERE image_data = ?
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM app_schema_migrations
+                                  WHERE migration_key = ?
+                              )
+                        `,
+                        args: [
+                            defaultPhoto.src,
+                            gallerySeedMigration,
+                        ],
+                    },
+                    {
+                        sql: `
+                            INSERT OR IGNORE INTO app_schema_migrations (
+                                migration_key
+                            )
+                            VALUES (?)
+                        `,
+                        args: [
+                            gallerySeedMigration,
+                        ],
+                    },
+                ],
+                'write',
+            )
 
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS admin_audit_log (

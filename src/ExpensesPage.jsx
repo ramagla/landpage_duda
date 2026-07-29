@@ -191,6 +191,140 @@ function signedMoney(cents) {
 }
 
 
+function FinanceSummaryIcon({
+    name,
+}) {
+    const paths = {
+        budget: (
+            <>
+                <path d="M4 7h16v11H4z" />
+                <path d="M16 11h4v4h-4a2 2 0 0 1 0-4Z" />
+                <path d="M4 7l12-3v3" />
+            </>
+        ),
+        estimate: (
+            <>
+                <path d="M6 3h12v18H6z" />
+                <path d="M9 7h6M9 11h6M9 15h3" />
+            </>
+        ),
+        contract: (
+            <>
+                <path d="M6 3h9l3 3v15H6z" />
+                <path d="M14 3v4h4M9 12h6M9 16h6" />
+            </>
+        ),
+        paid: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8 12 2.5 2.5L16 9" />
+            </>
+        ),
+        pending: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+            </>
+        ),
+        balance: (
+            <>
+                <path d="M4 19h16M6 19V9m12 10V9M3 9h18" />
+                <path d="m8 5 4-2 4 2v4H8z" />
+            </>
+        ),
+        overdue: (
+            <>
+                <path d="M12 3 2.8 20h18.4Z" />
+                <path d="M12 9v4M12 17h.01" />
+            </>
+        ),
+        active: (
+            <>
+                <path d="M5 4h14v16H5z" />
+                <path d="m8 12 2.5 2.5L16 9" />
+            </>
+        ),
+        signal: (
+            <>
+                <path d="M6 17h12l-1.5-2v-4a4.5 4.5 0 0 0-9 0v4Z" />
+                <path d="M10 20h4" />
+            </>
+        ),
+        reservation: (
+            <>
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M8 3v4m8-4v4M3 10h18M9 15h6" />
+            </>
+        ),
+        suppliers: (
+            <>
+                <circle cx="9" cy="8" r="3" />
+                <circle cx="17" cy="10" r="2" />
+                <path d="M3 20a6 6 0 0 1 12 0M15 15a5 5 0 0 1 6 5" />
+            </>
+        ),
+        guest: (
+            <>
+                <circle cx="12" cy="8" r="3" />
+                <path d="M5 21a7 7 0 0 1 14 0" />
+                <path d="M18 5v4m-2-2h4" />
+            </>
+        ),
+    }
+
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            {paths[name]}
+        </svg>
+    )
+}
+
+
+function FinanceSummaryCard({
+    label,
+    value,
+    icon,
+    tone = 'neutral',
+    description = '',
+}) {
+    return (
+        <article
+            className={
+                `finance-summary-card finance-summary-card--${tone}`
+            }
+        >
+            <div className="finance-summary-card__top">
+                <span>
+                    {label}
+                </span>
+
+                <span className="finance-summary-card__icon">
+                    <FinanceSummaryIcon name={icon} />
+                </span>
+            </div>
+
+            <strong>
+                {value}
+            </strong>
+
+            {description ? (
+                <small>
+                    {description}
+                </small>
+            ) : null}
+        </article>
+    )
+}
+
+
 function todayIso() {
     return new Date()
         .toISOString()
@@ -218,9 +352,19 @@ export default function ExpensesPage() {
         useState(null)
 
     const [
+        expenseModalOpen,
+        setExpenseModalOpen,
+    ] = useState(false)
+
+    const [
         editingSupplier,
         setEditingSupplier,
     ] = useState(null)
+
+    const [
+        supplierModalOpen,
+        setSupplierModalOpen,
+    ] = useState(false)
 
     const [
         paymentExpense,
@@ -236,6 +380,18 @@ export default function ExpensesPage() {
         useDialogA11y(
             Boolean(documentModal),
             () => setDocumentModal(null),
+        )
+
+    const expenseDialogRef =
+        useDialogA11y(
+            expenseModalOpen,
+            closeExpenseModal,
+        )
+
+    const supplierDialogRef =
+        useDialogA11y(
+            supplierModalOpen,
+            closeSupplierModal,
         )
 
     const paymentDialogRef =
@@ -833,11 +989,11 @@ export default function ExpensesPage() {
                     ),
             })
 
-            setEditing(null)
-
             if (!editing) {
                 formElement.reset()
             }
+
+            closeExpenseModal()
         } catch {
             // mensagem ja tratada
         }
@@ -1006,11 +1162,11 @@ export default function ExpensesPage() {
                     ),
             })
 
-            setEditingSupplier(null)
-
             if (!editingSupplier) {
                 formElement.reset()
             }
+
+            closeSupplierModal()
         } catch {
             // mensagem ja tratada
         }
@@ -1189,11 +1345,26 @@ export default function ExpensesPage() {
     ) {
         setEditing(expense)
         setActiveTab('expenses')
+        setExpenseModalOpen(true)
+    }
 
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-        })
+
+    function openNewExpense() {
+        setEditing(null)
+        setActiveTab('expenses')
+        setExpenseModalOpen(true)
+    }
+
+
+    function closeExpenseModal() {
+        setExpenseModalOpen(false)
+        setEditing(null)
+    }
+
+
+    function openExpensePayment() {
+        setPaymentExpense(editing)
+        closeExpenseModal()
     }
 
 
@@ -1207,11 +1378,20 @@ export default function ExpensesPage() {
         setActiveTab(
             'suppliers'
         )
+        setSupplierModalOpen(true)
+    }
 
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-        })
+
+    function openNewSupplier() {
+        setEditingSupplier(null)
+        setActiveTab('suppliers')
+        setSupplierModalOpen(true)
+    }
+
+
+    function closeSupplierModal() {
+        setSupplierModalOpen(false)
+        setEditingSupplier(null)
     }
 
 
@@ -1598,6 +1778,23 @@ export default function ExpensesPage() {
             totals.budgetRemaining
             || 0
         ) < 0
+
+    const confirmedGuests =
+        Number(
+            totals.confirmedGuests
+            || 0
+        )
+
+    const costPerGuest =
+        confirmedGuests > 0
+            ? Math.round(
+                Number(
+                    totals.total
+                    || 0
+                )
+                / confirmedGuests
+            )
+            : 0
 
     const financeDonutOption = {
         tooltip: {
@@ -2006,143 +2203,109 @@ export default function ExpensesPage() {
 
 
                     <section className="finance-summary-grid">
-                        <article>
-                            <span>
-                                Orçamento máximo
-                            </span>
+                        <FinanceSummaryCard
+                            label="Orçamento máximo"
+                            value={money(totals.budgetLimit)}
+                            icon="budget"
+                            tone="budget"
+                        />
 
-                            <strong>
-                                {money(
-                                    totals.budgetLimit
-                                )}
-                            </strong>
-                        </article>
+                        <FinanceSummaryCard
+                            label="Total orçado"
+                            value={money(totals.budgeted)}
+                            icon="estimate"
+                            tone="estimate"
+                        />
 
-                        <article>
-                            <span>
-                                Total orçado
-                            </span>
+                        <FinanceSummaryCard
+                            label="Contratado"
+                            value={money(totals.total)}
+                            icon="contract"
+                            tone="contract"
+                        />
 
-                            <strong>
-                                {money(
-                                    totals.budgeted
-                                )}
-                            </strong>
-                        </article>
+                        <FinanceSummaryCard
+                            label="Já pago"
+                            value={money(totals.paid)}
+                            icon="paid"
+                            tone="paid"
+                        />
 
-                        <article>
-                            <span>
-                                Contratado
-                            </span>
+                        <FinanceSummaryCard
+                            label="Falta pagar"
+                            value={money(totals.remaining)}
+                            icon="pending"
+                            tone="pending"
+                        />
 
-                            <strong>
-                                {money(
-                                    totals.total
-                                )}
-                            </strong>
-                        </article>
-
-                        <article className="finance-summary-card--paid">
-                            <span>
-                                Já pago
-                            </span>
-
-                            <strong>
-                                {money(
-                                    totals.paid
-                                )}
-                            </strong>
-                        </article>
-
-                        <article className="finance-summary-card--pending">
-                            <span>
-                                Falta pagar
-                            </span>
-
-                            <strong>
-                                {money(
-                                    totals.remaining
-                                )}
-                            </strong>
-                        </article>
-
-                        <article className={
-                            budgetAbove
-                                ? 'finance-summary-card--danger'
-                                : 'finance-summary-card--balance'
-                        }>
-                            <span>
-                                {budgetAbove
+                        <FinanceSummaryCard
+                            label={
+                                budgetAbove
                                     ? 'Acima do orçamento'
-                                    : 'Saldo do orçamento'}
-                            </span>
-
-                            <strong>
-                                {signedMoney(
+                                    : 'Saldo do orçamento'
+                            }
+                            value={
+                                signedMoney(
                                     Math.abs(
-                                        totals
-                                            .budgetRemaining
+                                        totals.budgetRemaining
                                         || 0
                                     )
-                                )}
-                            </strong>
-                        </article>
+                                )
+                            }
+                            icon="balance"
+                            tone={
+                                budgetAbove
+                                    ? 'danger'
+                                    : 'balance'
+                            }
+                        />
 
-                        <article className="finance-summary-card--danger">
-                            <span>
-                                Vencido
-                            </span>
+                        <FinanceSummaryCard
+                            label="Vencido"
+                            value={money(totals.overdue)}
+                            icon="overdue"
+                            tone="danger"
+                        />
 
-                            <strong>
-                                {money(
-                                    totals.overdue
-                                )}
-                            </strong>
-                        </article>
+                        <FinanceSummaryCard
+                            label="Contratos ativos"
+                            value={totals.contractsActive || 0}
+                            icon="active"
+                            tone="active"
+                        />
 
-                        <article>
-                            <span>
-                                Contratos ativos
-                            </span>
+                        <FinanceSummaryCard
+                            label="Sinais pendentes"
+                            value={money(totals.signalPending)}
+                            icon="signal"
+                            tone="warning"
+                        />
 
-                            <strong>
-                                {totals.contractsActive || 0}
-                            </strong>
-                        </article>
+                        <FinanceSummaryCard
+                            label="Reservas pendentes"
+                            value={totals.reservationsPending || 0}
+                            icon="reservation"
+                            tone="reservation"
+                        />
 
-                        <article className="finance-summary-card--pending">
-                            <span>
-                                Sinais pendentes
-                            </span>
+                        <FinanceSummaryCard
+                            label="Fornecedores"
+                            value={data.suppliers?.length || 0}
+                            icon="suppliers"
+                            tone="suppliers"
+                        />
 
-                            <strong>
-                                {money(totals.signalPending)}
-                            </strong>
-                        </article>
-
-                        <article className="finance-summary-card--danger">
-                            <span>
-                                Reservas pendentes
-                            </span>
-
-                            <strong>
-                                {totals.reservationsPending || 0}
-                            </strong>
-                        </article>
-
-                        <article>
-                            <span>
-                                Fornecedores
-                            </span>
-
-                            <strong>
-                                {
-                                    data.suppliers
-                                        ?.length
-                                    || 0
-                                }
-                            </strong>
-                        </article>
+                        <FinanceSummaryCard
+                            label="Custo por convidado"
+                            value={money(costPerGuest)}
+                            icon="guest"
+                            tone="guest"
+                            description={
+                                confirmedGuests > 0
+                                    ? `${confirmedGuests} pessoa${confirmedGuests === 1 ? '' : 's'} confirmada${confirmedGuests === 1 ? '' : 's'}`
+                                    : 'Aguardando confirmações'
+                            }
+                        />
                     </section>
 
 
@@ -2714,42 +2877,74 @@ export default function ExpensesPage() {
 
             {activeTab === 'expenses' ? (
                 <>
-                    <section className="finance-panel">
+                    <section className="finance-panel finance-expense-launcher">
                         <div className="finance-section-heading">
                             <div>
                                 <p className="panel-kicker">
-                                    Cadastro
+                                    Controle financeiro
                                 </p>
 
                                 <h2>
-                                    {editing
-                                        ? 'Editar despesa'
-                                        : 'Nova despesa'}
+                                    Despesas da festa
                                 </h2>
 
                                 <p>
-                                    Informe o orçamento, valor contratado,
-                                    parcelamento e o que já foi pago.
+                                    Cadastre contratos, valores, parcelas e
+                                    pagamentos sem sair da lista.
                                 </p>
                             </div>
 
-                            {editing ? (
-                                <button
-                                    type="button"
-                                    className="finance-secondary-button"
-                                    onClick={() => (
-                                        setEditing(
-                                            null
-                                        )
-                                    )}
-                                >
-                                    Cancelar edição
-                                </button>
-                            ) : null}
+                            <button
+                                type="button"
+                                className="finance-primary-button finance-new-expense-button"
+                                onClick={openNewExpense}
+                            >
+                                <span aria-hidden="true">
+                                    +
+                                </span>
+                                Nova despesa
+                            </button>
                         </div>
+                    </section>
 
+                    {expenseModalOpen ? (
+                        <div className="finance-modal-backdrop">
+                            <section
+                                className="finance-modal finance-modal--expense"
+                                ref={expenseDialogRef}
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="finance-expense-modal-title"
+                            >
+                                <header>
+                                    <div>
+                                        <p className="panel-kicker">
+                                            Cadastro
+                                        </p>
 
-                        <form
+                                        <h2 id="finance-expense-modal-title">
+                                            {editing
+                                                ? 'Editar despesa'
+                                                : 'Nova despesa'}
+                                        </h2>
+
+                                        <p>
+                                            Informe o orçamento, valor contratado,
+                                            parcelamento e o que já foi pago.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="finance-modal-close"
+                                        onClick={closeExpenseModal}
+                                        aria-label="Fechar cadastro de despesa"
+                                    >
+                                        ×
+                                    </button>
+                                </header>
+
+                                <form
                             key={
                                 editing?.id
                                 || 'new-expense'
@@ -3343,11 +3538,7 @@ export default function ExpensesPage() {
                                         <button
                                             type="button"
                                             className="finance-secondary-button"
-                                            onClick={() => (
-                                                setPaymentExpense(
-                                                    editing
-                                                )
-                                            )}
+                                            onClick={openExpensePayment}
                                         >
                                             Registrar novo pagamento
                                         </button>
@@ -3385,17 +3576,18 @@ export default function ExpensesPage() {
                                 <button
                                     type="button"
                                     className="finance-secondary-button"
-                                    onClick={() => (
-                                        setActiveTab(
-                                            'suppliers'
-                                        )
-                                    )}
+                                    onClick={() => {
+                                        closeExpenseModal()
+                                        setActiveTab('suppliers')
+                                    }}
                                 >
                                     Gerenciar fornecedores
                                 </button>
                             </div>
                         </form>
-                    </section>
+                            </section>
+                        </div>
+                    ) : null}
 
 
                     <section className="finance-panel">
@@ -3959,37 +4151,72 @@ export default function ExpensesPage() {
 
             {activeTab === 'suppliers' ? (
                 <>
-                    <section className="finance-panel">
+                    <section className="finance-panel finance-entity-launcher">
                         <div className="finance-section-heading">
                             <div>
                                 <p className="panel-kicker">
-                                    Cadastro
+                                    Parceiros da festa
                                 </p>
 
                                 <h2>
-                                    {editingSupplier
-                                        ? 'Editar fornecedor'
-                                        : 'Novo fornecedor'}
+                                    Fornecedores
                                 </h2>
+
+                                <p>
+                                    Cadastre contatos e acompanhe os valores
+                                    contratados de cada parceiro.
+                                </p>
                             </div>
 
-                            {editingSupplier ? (
-                                <button
-                                    type="button"
-                                    className="finance-secondary-button"
-                                    onClick={() => (
-                                        setEditingSupplier(
-                                            null
-                                        )
-                                    )}
-                                >
-                                    Cancelar edição
-                                </button>
-                            ) : null}
+                            <button
+                                type="button"
+                                className="finance-primary-button finance-new-expense-button"
+                                onClick={openNewSupplier}
+                            >
+                                <span aria-hidden="true">
+                                    +
+                                </span>
+                                Novo fornecedor
+                            </button>
                         </div>
+                    </section>
 
+                    {supplierModalOpen ? (
+                        <div className="finance-modal-backdrop">
+                            <section
+                                className="finance-modal finance-modal--supplier"
+                                ref={supplierDialogRef}
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="finance-supplier-modal-title"
+                            >
+                                <header>
+                                    <div>
+                                        <p className="panel-kicker">
+                                            Cadastro
+                                        </p>
+                                        <h2 id="finance-supplier-modal-title">
+                                            {editingSupplier
+                                                ? 'Editar fornecedor'
+                                                : 'Novo fornecedor'}
+                                        </h2>
+                                        <p>
+                                            Informe os dados de contato e o
+                                            serviço prestado.
+                                        </p>
+                                    </div>
 
-                        <form
+                                    <button
+                                        type="button"
+                                        className="finance-modal-close"
+                                        onClick={closeSupplierModal}
+                                        aria-label="Fechar cadastro de fornecedor"
+                                    >
+                                        ×
+                                    </button>
+                                </header>
+
+                                <form
                             key={
                                 editingSupplier?.id
                                 || 'new-supplier'
@@ -4145,7 +4372,9 @@ export default function ExpensesPage() {
                                 </button>
                             </div>
                         </form>
-                    </section>
+                            </section>
+                        </div>
+                    ) : null}
 
 
                     <section className="finance-panel">

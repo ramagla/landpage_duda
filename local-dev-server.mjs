@@ -88,6 +88,9 @@ async function handleApi(request, response, url) {
         'admin-logout',
         'admin-preview-session',
         'calendar',
+        'checkin',
+        'checkin-login',
+        'checkin-logout',
         'cron-backup',
         'expenses',
         'expenses-login',
@@ -143,4 +146,5 @@ server.listen(port, () => {
     console.log(`Convite da Duda local: http://localhost:${port}`)
     console.log(`Admin local: http://localhost:${port}/admin`)
     console.log(`Despesas local: http://localhost:${port}/despesas`)
+    console.log(`Presenca local: http://localhost:${port}/presenca`)
 })

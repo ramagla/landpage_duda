@@ -58,6 +58,12 @@ const TEST_EXPENSES_PASSWORD =
 const TEST_EXPENSES_SECRET =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
 
+const TEST_CHECKIN_PASSWORD =
+    'senha-de-presenca-de-teste'
+
+const TEST_CHECKIN_SECRET =
+    '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+
 /*
  * Mantemos o RSVP aberto independentemente
  * da data em que npm test for executado.
@@ -83,6 +89,12 @@ process.env.EXPENSES_PASSWORD =
 
 process.env.EXPENSES_SESSION_SECRET =
     TEST_EXPENSES_SECRET
+
+process.env.CHECKIN_PASSWORD =
+    TEST_CHECKIN_PASSWORD
+
+process.env.CHECKIN_SESSION_SECRET =
+    TEST_CHECKIN_SECRET
 
 process.env.ALLOW_LEGACY_INVITE_CODES =
     'false'
@@ -1257,16 +1269,29 @@ test(
                 assert.equal(
                     result.data
                         .invitationConfig
-                        .photos[0]
-                        .alt,
+                        .photos
+                        .length,
+                    2,
+                )
+
+                const addedPhoto =
+                    result.data
+                        .invitationConfig
+                        .photos
+                        .find(
+                            (photo) => (
+                                photo.alt
+                                === 'Foto de teste'
+                            )
+                        )
+
+                assert.equal(
+                    addedPhoto?.alt,
                     'Foto de teste',
                 )
 
                 const photoId =
-                    result.data
-                        .invitationConfig
-                        .photos[0]
-                        .id
+                    addedPhoto.id
 
                 const publicConfig =
                     await requestJson(
@@ -1291,7 +1316,44 @@ test(
 
                 assert.equal(
                     publicConfig.data
+                        .photos
+                        .length,
+                    2,
+                )
+
+                assert.ok(
+                    publicConfig.data
+                        .photos
+                        .some(
+                            (photo) => (
+                                photo.alt
+                                === 'Duda em frente à Torre Eiffel'
+                            )
+                        ),
+                )
+
+                assert.ok(
+                    publicConfig.data
+                        .photos
+                        .some(
+                            (photo) => (
+                                photo.alt
+                                === 'Foto de teste'
+                            )
+                        ),
+                    'A foto adicionada deve permanecer junto da principal',
+                )
+
+                assert.equal(
+                    publicConfig.data
                         .photos[0]
+                        .alt,
+                    'Duda em frente à Torre Eiffel',
+                )
+
+                assert.equal(
+                    publicConfig.data
+                        .photos[1]
                         .alt,
                     'Foto de teste',
                 )
@@ -1619,6 +1681,157 @@ test(
                             ),
                         )
                         .checkins.length,
+                    0,
+                )
+            },
+        )
+
+        await t.test(
+            'check-in usa senha e sessão separadas do admin',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/checkin',
+                        {
+                            method: 'GET',
+                            ip:
+                                '10.0.43.10',
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    401,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/checkin-login',
+                        {
+                            ip:
+                                '10.0.43.11',
+                            body: {
+                                password:
+                                    TEST_CHECKIN_PASSWORD,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                const setCookie =
+                    result.response.headers
+                        .get('set-cookie')
+                    || ''
+
+                assert.match(
+                    setCookie,
+                    /duda_checkin_session=/,
+                )
+
+                assert.match(
+                    setCookie,
+                    /HttpOnly/i,
+                )
+
+                const checkinCookie =
+                    setCookie.split(';')[0]
+
+                result =
+                    await requestJson(
+                        '/api/checkin',
+                        {
+                            method: 'GET',
+                            ip:
+                                '10.0.43.12',
+                            headers: {
+                                cookie:
+                                    checkinCookie,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .confirmed,
+                    3,
+                )
+
+                assert.equal(
+                    result.data.attendees
+                        .length,
+                    3,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/checkin',
+                        {
+                            ip:
+                                '10.0.43.13',
+                            headers: {
+                                cookie:
+                                    checkinCookie,
+                            },
+                            body: {
+                                guestId:
+                                    primaryGuest.id,
+                                attendeeKey:
+                                    'companion:1',
+                                checkedIn:
+                                    true,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .checkedIn,
+                    1,
+                )
+
+                result =
+                    await requestJson(
+                        '/api/checkin',
+                        {
+                            ip:
+                                '10.0.43.14',
+                            headers: {
+                                cookie:
+                                    checkinCookie,
+                            },
+                            body: {
+                                guestId:
+                                    primaryGuest.id,
+                                attendeeKey:
+                                    'companion:1',
+                                checkedIn:
+                                    false,
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .checkedIn,
                     0,
                 )
             },
@@ -2041,6 +2254,12 @@ test(
                     result.data.totals
                         .remaining,
                     400_000,
+                )
+
+                assert.equal(
+                    result.data.totals
+                        .confirmedGuests,
+                    3,
                 )
 
                 const expense =

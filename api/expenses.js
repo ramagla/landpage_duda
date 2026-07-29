@@ -507,6 +507,22 @@ async function getSummary() {
             LIMIT 1
         `)
 
+    const guestTotalsResult =
+        await db.execute(`
+            SELECT
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN attending = 'sim'
+                            THEN 1 + COALESCE(companions_count, 0)
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS confirmed_guests
+            FROM rsvps
+        `)
+
     const suppliersResult =
         await db.execute(`
             SELECT
@@ -1226,6 +1242,14 @@ async function getSummary() {
     totals.contractsCancelled =
         expenses.length
         - activeExpenses.length
+
+    totals.confirmedGuests =
+        Number(
+            guestTotalsResult
+                .rows[0]
+                ?.confirmed_guests
+            || 0
+        )
 
     totals.signalContracts =
         activeExpenses.filter(

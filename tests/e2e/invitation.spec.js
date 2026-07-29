@@ -338,6 +338,53 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
         ),
     ).toBeVisible()
 
+    await page.getByRole(
+        'button',
+        {
+            name: 'Prévia',
+        },
+    ).click()
+
+    await expect(
+        page.getByRole(
+            'heading',
+            {
+                name:
+                    'Convite real aberto',
+            },
+        ),
+    ).toBeVisible()
+
+    await expect(
+        page.locator(
+            'iframe[title="Prévia completa do convite"]',
+        ),
+    ).toHaveAttribute(
+        'src',
+        '/?adminPreview=1',
+    )
+
+    await expect(
+        page.getByRole(
+            'link',
+            {
+                name:
+                    'Ver em tela cheia ↗',
+            },
+        ),
+    ).toHaveAttribute(
+        'href',
+        '/?adminPreview=1',
+    )
+
+    await page.getByRole(
+        'button',
+        {
+            name: 'Resumo',
+            exact: true,
+        },
+    ).click()
+
     await expect(
         page.getByRole(
             'heading',
@@ -360,7 +407,7 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
 
     const menuItems = [
         ['Galeria', 'Galeria da Duda'],
-        ['Prévia', 'Prévia do convite'],
+        ['Prévia', 'Convite real aberto'],
         ['Comunicação', 'Envio dos convites'],
         ['Relatórios', 'Relatórios do evento'],
         ['Configurações', 'Configurações do convite'],

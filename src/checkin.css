@@ -1,0 +1,381 @@
+:root {
+    --presence-ink: #153f3a;
+    --presence-teal: #08786f;
+    --presence-mint: #dff5ee;
+    --presence-cream: #fffaf0;
+    --presence-border: rgba(8, 120, 111, .16);
+}
+
+body:has(.presence-shell) {
+    min-width: 320px;
+    min-height: 100dvh;
+    margin: 0;
+    background:
+        radial-gradient(circle at 0 0, rgba(83, 213, 187, .28), transparent 28rem),
+        radial-gradient(circle at 100% 100%, rgba(237, 196, 116, .2), transparent 30rem),
+        #edf9f5;
+}
+
+.presence-shell {
+    width: min(1040px, calc(100% - 24px));
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 22px 0 48px;
+    color: var(--presence-ink);
+    font-family: Inter, system-ui, sans-serif;
+}
+
+.presence-loading {
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+}
+
+.presence-login-shell {
+    display: grid;
+    place-items: center;
+}
+
+.presence-login-card {
+    width: min(430px, 100%);
+    padding: clamp(24px, 6vw, 42px);
+    border: 1px solid var(--presence-border);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 28px 80px rgba(16, 73, 66, .16);
+}
+
+.presence-logo {
+    display: grid;
+    width: 62px;
+    height: 62px;
+    place-items: center;
+    margin-bottom: 20px;
+    border-radius: 19px;
+    color: #fff;
+    background: linear-gradient(145deg, #159b86, #07685f);
+    font: 800 1.6rem/1 Georgia, serif;
+    box-shadow: 0 12px 30px rgba(8, 120, 111, .24);
+}
+
+.presence-kicker {
+    margin: 0;
+    color: var(--presence-teal);
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+
+.presence-login-card h1,
+.presence-header h1 {
+    margin: 6px 0 8px;
+    color: var(--presence-ink);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.2rem, 8vw, 4rem);
+    line-height: 1;
+}
+
+.presence-login-card > p:not(.presence-kicker),
+.presence-header p:last-child {
+    margin: 0;
+    color: #637d78;
+}
+
+.presence-login-card form {
+    display: grid;
+    gap: 14px;
+    margin-top: 24px;
+}
+
+.presence-login-card label,
+.presence-toolbar label {
+    display: grid;
+    gap: 7px;
+}
+
+.presence-login-card label > span,
+.presence-toolbar label > span {
+    margin: 0;
+    color: #426d67;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.presence-login-card input,
+.presence-toolbar input {
+    width: 100%;
+    min-height: 50px;
+    padding: 10px 13px;
+    border: 1px solid rgba(8, 120, 111, .24);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--presence-ink);
+    font: inherit;
+    font-size: 1rem;
+}
+
+.presence-login-card button,
+.presence-toolbar button {
+    min-height: 50px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 12px;
+    color: #fff;
+    background: var(--presence-teal);
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.presence-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 24px;
+    border: 1px solid var(--presence-border);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 18px 55px rgba(16, 73, 66, .1);
+}
+
+.presence-header h1 {
+    font-size: clamp(2.4rem, 6vw, 4.2rem);
+}
+
+.presence-logout {
+    min-height: 42px;
+    padding: 8px 15px;
+    border: 1px solid rgba(160, 62, 62, .18);
+    border-radius: 11px;
+    color: #9d4141;
+    background: #fff3f3;
+    font: inherit;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.presence-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.presence-summary article {
+    display: grid;
+    gap: 4px;
+    padding: 18px;
+    border: 1px solid var(--presence-border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .95);
+}
+
+.presence-summary span {
+    color: #66807b;
+    font-size: .65rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.presence-summary strong {
+    color: var(--presence-ink);
+    font-size: 1.8rem;
+}
+
+.presence-summary--checked {
+    background: linear-gradient(145deg, #effbf7, #d9f4ea) !important;
+}
+
+.presence-summary--checked strong {
+    color: #08745f;
+}
+
+.presence-list-panel {
+    margin-top: 14px;
+    padding: 18px;
+    border: 1px solid var(--presence-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 18px 55px rgba(16, 73, 66, .08);
+}
+
+.presence-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.presence-toolbar button {
+    background: #173f39;
+}
+
+.presence-list {
+    display: grid;
+    gap: 9px;
+    margin-top: 16px;
+}
+
+.presence-card {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(8, 120, 111, .13);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.presence-card--checked {
+    border-color: rgba(24, 142, 102, .24);
+    background: #edf9f5;
+}
+
+.presence-card__status {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 2px solid #cbdcd7;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.presence-card--checked .presence-card__status {
+    border-color: #168d68;
+    background: #168d68;
+}
+
+.presence-card__person {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.presence-card__person strong {
+    overflow: hidden;
+    color: #213f3b;
+    font-size: 1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.presence-card__person small,
+.presence-card__person span {
+    color: #71847f;
+    font-size: .72rem;
+}
+
+.presence-card__person span {
+    color: #16805f;
+    font-weight: 800;
+}
+
+.presence-card > button {
+    min-height: 44px;
+    padding: 8px 13px;
+    border: 1px solid #08786f;
+    border-radius: 11px;
+    color: #08786f;
+    background: #fff;
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.presence-card--checked > button {
+    color: #fff;
+    background: #168d68;
+    border-color: #168d68;
+}
+
+.presence-card > button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.presence-message,
+.presence-empty {
+    margin: 12px 0 0;
+    padding: 11px 13px;
+    border-radius: 10px;
+    color: #28665b;
+    background: #e7f7f1;
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.presence-message--error {
+    color: #983f3f;
+    background: #fff0f0;
+}
+
+.presence-empty {
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .presence-shell {
+        width: calc(100% - 16px);
+        padding-top: 8px;
+    }
+
+    .presence-header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 18px 15px;
+    }
+
+    .presence-logout {
+        width: 100%;
+    }
+
+    .presence-summary {
+        gap: 7px;
+    }
+
+    .presence-summary article {
+        padding: 12px 9px;
+    }
+
+    .presence-summary span {
+        font-size: .55rem;
+    }
+
+    .presence-summary strong {
+        font-size: 1.35rem;
+    }
+
+    .presence-list-panel {
+        padding: 10px;
+    }
+
+    .presence-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .presence-card {
+        grid-template-columns: 36px minmax(0, 1fr);
+        gap: 9px;
+        padding: 10px;
+    }
+
+    .presence-card__status {
+        width: 34px;
+        height: 34px;
+    }
+
+    .presence-card > button {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}

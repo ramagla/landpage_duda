@@ -42,6 +42,11 @@ Configure no projeto da Vercel:
 TURSO_DATABASE_URL=libsql://...
 TURSO_AUTH_TOKEN=...
 ADMIN_PASSWORD=sua-senha-do-painel
+ADMIN_SESSION_SECRET=um-segredo-aleatorio-com-pelo-menos-32-caracteres
+EXPENSES_PASSWORD=sua-senha-do-financeiro
+EXPENSES_SESSION_SECRET=outro-segredo-aleatorio
+CHECKIN_PASSWORD=senha-exclusiva-da-recepcao
+CHECKIN_SESSION_SECRET=outro-segredo-aleatorio
 ```
 
 A API cria/migra automaticamente as tabelas `invited_guests`, `guest_companions`, `rsvps`, `rsvp_companions` e `birthday_messages` quando os endpoints forem usados.
@@ -71,6 +76,18 @@ Nao existe botao publico para essa tela. O painel permite:
 - Ver a lista geral com status, acompanhantes, telefone e link individual.
 - Cadastrar ou editar convidado, telefone, idade, codigo do link e limite de acompanhantes.
 - Ver mensagens de parabens.
+
+## Check-in no dia da festa
+
+A lista de presença fica separada do painel administrativo:
+
+```text
+/presenca
+```
+
+Ela usa `CHECKIN_PASSWORD`, uma senha diferente do admin, e foi preparada
+para celular ou tablet. A sessão é protegida por cookie HttpOnly assinado
+com `CHECKIN_SESSION_SECRET`.
 
 ## Lista inicial
 

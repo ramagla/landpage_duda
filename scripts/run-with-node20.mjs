@@ -67,7 +67,9 @@ const child =
         commandArgs,
         {
             stdio: 'inherit',
-            shell: process.platform === 'win32',
+            shell:
+                process.platform === 'win32'
+                && command !== process.execPath,
         },
     )
 
