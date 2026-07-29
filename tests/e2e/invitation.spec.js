@@ -259,3 +259,89 @@ test('a tela pública não apresenta violações graves de acessibilidade', asyn
     expect(seriousViolations)
         .toEqual([])
 })
+
+test('o admin móvel organiza as melhorias em um único menu', async ({
+    page,
+}) => {
+    const adminData = {
+        totals: {
+            invited: 0,
+            confirmed: 0,
+            declined: 0,
+            pending: 0,
+            viewed: 0,
+            buffet: 0,
+            invitesSent: 0,
+            invitesNotSent: 0,
+            checkedIn: 0,
+        },
+        guests: [],
+        messages: [],
+    }
+
+    await page.route(
+        '**/api/admin',
+        (route) => route.fulfill({
+            status: 200,
+            contentType:
+                'application/json',
+            body:
+                JSON.stringify(adminData),
+        }),
+    )
+
+    await page.goto('/admin')
+
+    await expect(
+        page.getByRole(
+            'navigation',
+            {
+                name:
+                    'Menu principal do painel',
+            },
+        ),
+    ).toBeVisible()
+
+    const menuItems = [
+        ['Galeria', 'Galeria da Duda'],
+        ['Prévia', 'Prévia do convite'],
+        ['Comunicação', 'Envio dos convites'],
+        ['Relatórios', 'Relatórios do evento'],
+        ['Configurações', 'Configurações do convite'],
+    ]
+
+    for (
+        const [buttonName, heading]
+        of menuItems
+    ) {
+        await page
+            .getByRole(
+                'button',
+                {
+                    name:
+                        buttonName,
+                    exact: true,
+                },
+            )
+            .click()
+
+        await expect(
+            page.getByRole(
+                'heading',
+                {
+                    name:
+                        heading,
+                },
+            ),
+        ).toBeVisible()
+    }
+
+    const overflow =
+        await page.evaluate(() => (
+            document.documentElement.scrollWidth
+            - document.documentElement.clientWidth
+        ))
+
+    expect(overflow)
+        .toBeLessThanOrEqual(1)
+})

@@ -91,6 +91,7 @@ async function handleApi(request, response, url) {
         'expenses-login',
         'expenses-logout',
         'guest',
+        'invitation-config',
         'messages',
         'rsvp',
     ])

@@ -1,6 +1,6 @@
 import {
-    EVENT,
-} from '../shared/event-config.js'
+    getInvitationConfig,
+} from './_invitation-config.js'
 
 function escapeIcsText(value) {
     return String(value || '')
@@ -10,7 +10,7 @@ function escapeIcsText(value) {
         .replace(/;/g, '\\;')
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== 'GET') {
         res.setHeader(
             'Allow',
@@ -21,6 +21,10 @@ export default function handler(req, res) {
             'Method Not Allowed'
         )
     }
+
+    const {
+        event,
+    } = await getInvitationConfig()
 
     const now = new Date()
         .toISOString()
@@ -44,27 +48,27 @@ export default function handler(req, res) {
         'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        `X-WR-CALNAME:${escapeIcsText(EVENT.title)}`,
+        `X-WR-CALNAME:${escapeIcsText(event.title)}`,
 
         'BEGIN:VEVENT',
 
-        `UID:${EVENT.calendarUid}`,
+        `UID:${event.calendarUid}`,
 
         `DTSTAMP:${now}`,
 
-        `DTSTART:${EVENT.utcStart}`,
-        `DTEND:${EVENT.utcEnd}`,
+        `DTSTART:${event.utcStart}`,
+        `DTEND:${event.utcEnd}`,
 
         `SUMMARY:${escapeIcsText(
-            EVENT.title
+            event.title
         )}`,
 
         `LOCATION:${escapeIcsText(
-            EVENT.address
+            event.address
         )}`,
 
         `DESCRIPTION:${escapeIcsText(
-            EVENT.description
+            event.description
         )}`,
 
         'STATUS:CONFIRMED',

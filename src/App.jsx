@@ -6,12 +6,9 @@ import {
     useRef,
     useState,
 } from 'react'
-import AdminCommunicationModal from './AdminCommunicationModal.jsx'
 import {
-    createGuestsPdf,
-    createGuestsXlsx,
     guestMatchesAgeFilter,
-} from './admin-guest-export.js'
+} from './admin-guest-filters.js'
 import {
     getCalendarPlatform,
 } from './calendar-platform.js'
@@ -19,17 +16,26 @@ import {
 import {
     RSVP_CLOSED_MESSAGE,
     RSVP_DEADLINE_DISPLAY,
-    isRsvpClosedAt,
+    dateKeyInSaoPaulo,
 } from '../shared/rsvp-deadline.js'
 import {
+    DEFAULT_INVITATION_CONFIG,
+    buildInvitationConfig,
+} from '../shared/invitation-config.js'
+import {
     EVENT,
-    GOOGLE_CALENDAR_URL,
-    MAP_URL,
-    WAZE_URL,
 } from '../shared/event-config.js'
 
 const ExpensesPage = lazy(
     () => import('./ExpensesPage.jsx'),
+)
+
+const AdminCommunicationModal = lazy(
+    () => import('./AdminCommunicationModal.jsx'),
+)
+
+const AdminInvitationTools = lazy(
+    () => import('./AdminInvitationTools.jsx'),
 )
 
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
@@ -47,11 +53,14 @@ const DUDA_PHOTOS = [
     },
 ]
 
-function getYoutubePlayerUrl(autoplay = false) {
+function getYoutubePlayerUrl(
+    autoplay = false,
+    videoId = YOUTUBE_VIDEO_ID,
+) {
     const params = new URLSearchParams({
         autoplay: autoplay ? '1' : '0',
         loop: '1',
-        playlist: YOUTUBE_VIDEO_ID,
+        playlist: videoId,
         controls: '0',
         playsinline: '1',
         enablejsapi: '1',
@@ -69,14 +78,10 @@ function getYoutubePlayerUrl(autoplay = false) {
     }
 
     return (
-        `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`
+        `https://www.youtube.com/embed/${videoId}`
         + `?${params.toString()}`
     )
 }
-const PIX_KEY = '56765986898'
-const PIX_NAME = 'Maria Eduarda Almeida Araujo'
-const PIX_COPY_PASTE = '00020101021226330014br.gov.bcb.pix0111567659868985204000053039865802BR5921MARIA EDUARDA ALMEIDA6015ITAQUAQUECETUBA62100506DUDA166304E334'
-
 async function copyTextToClipboard(value) {
     const textValue = String(value || '').trim()
 
@@ -207,8 +212,48 @@ function getRsvpNow() {
     return new Date()
 }
 
-function isRsvpClosed() {
-    return isRsvpClosedAt(getRsvpNow())
+function getDayAfter(dateValue) {
+    const parsed =
+        new Date(`${dateValue}T12:00:00Z`)
+
+    if (Number.isNaN(parsed.getTime())) {
+        return '2026-10-15'
+    }
+
+    parsed.setUTCDate(
+        parsed.getUTCDate() + 1,
+    )
+
+    return parsed
+        .toISOString()
+        .slice(0, 10)
+}
+
+function isRsvpClosed(
+    deadline = '2026-10-14',
+) {
+    return (
+        dateKeyInSaoPaulo(
+            getRsvpNow(),
+        )
+        >= getDayAfter(deadline)
+    )
+}
+
+function getRsvpClosedMessage(
+    deadlineDisplay = RSVP_DEADLINE_DISPLAY,
+) {
+    if (
+        deadlineDisplay
+        === RSVP_DEADLINE_DISPLAY
+    ) {
+        return RSVP_CLOSED_MESSAGE
+    }
+
+    return (
+        `O prazo para confirmação terminou em ${deadlineDisplay}. `
+        + 'Para qualquer alteração, fale com o Rafael.'
+    )
 }
 
 async function readApiJson(response) {
@@ -599,8 +644,13 @@ function InvitationQuickActions() {
     )
 }
 
-function Countdown() {
-    const targetDate = useMemo(() => new Date(EVENT.startsAt), [])
+function Countdown({
+    startsAt = EVENT.startsAt,
+}) {
+    const targetDate = useMemo(
+        () => new Date(startsAt),
+        [startsAt],
+    )
     const [time, setTime] = useState(() => formatCountdown(targetDate))
 
     useEffect(() => {
@@ -626,7 +676,10 @@ function Countdown() {
 }
 
 
-function MusicPlayer({ enabled }) {
+function MusicPlayer({
+    enabled,
+    videoId = YOUTUBE_VIDEO_ID,
+}) {
     const iframeRef = useRef(null)
     const [playing, setPlaying] = useState(Boolean(enabled))
 
@@ -691,7 +744,10 @@ function MusicPlayer({ enabled }) {
                 ref={iframeRef}
                 className="music-player__frame"
                 title="Música do convite da Duda"
-                src={getYoutubePlayerUrl(false)}
+                src={getYoutubePlayerUrl(
+                    false,
+                    videoId,
+                )}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 onLoad={handlePlayerLoad}
             />
@@ -734,6 +790,10 @@ function RsvpForm({
     onGuestResolved,
     onGuestCleared,
     onRsvpSaved,
+    rsvpDeadline = '2026-10-14',
+    rsvpDeadlineDisplay =
+        RSVP_DEADLINE_DISPLAY,
+    event = EVENT,
 }) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const [lookupStatus, setLookupStatus] = useState(initialGuest ? 'success' : 'idle')
@@ -748,7 +808,13 @@ function RsvpForm({
     const [alreadyConfirmed, setAlreadyConfirmed] = useState(Boolean(initialAlreadyConfirmed))
     const [confirmationVisible, setConfirmationVisible] = useState(Boolean(initialAlreadyConfirmed))
     const confirmationRef = useRef(null)
-    const rsvpClosed = isRsvpClosed()
+    const rsvpClosed =
+        isRsvpClosed(rsvpDeadline)
+
+    const rsvpClosedMessage =
+        getRsvpClosedMessage(
+            rsvpDeadlineDisplay,
+        )
     const formLocked = rsvpClosed
 
     useEffect(() => {
@@ -819,7 +885,7 @@ function RsvpForm({
             setLookupStatus('success')
             setMessage(
                 data.alreadyConfirmed
-                    ? 'Sua resposta foi encontrada. Você pode alterá-la até 14/10/2026.'
+                    ? `Sua resposta foi encontrada. Você pode alterá-la até ${rsvpDeadlineDisplay}.`
                     : `Convite encontrado para ${data.guest.name}.`
             )
         } catch (error) {
@@ -855,7 +921,11 @@ function RsvpForm({
         }
 
         try {
-            if (rsvpClosed) throw new Error(RSVP_CLOSED_MESSAGE)
+            if (rsvpClosed) {
+                throw new Error(
+                    rsvpClosedMessage,
+                )
+            }
             if (!guest) throw new Error('Consulte seu celular antes de confirmar.')
 
             const response = await fetch('/api/rsvp', {
@@ -922,7 +992,7 @@ function RsvpForm({
                     {rsvpClosed ? (
                         <div className="deadline-closed" role="status">
                             <strong>Prazo de confirmação encerrado</strong>
-                            <span>{RSVP_CLOSED_MESSAGE}</span>
+                            <span>{rsvpClosedMessage}</span>
                         </div>
                     ) : null}
 
@@ -1104,11 +1174,11 @@ function RsvpForm({
                                 </ul>
 
                                 <small>
-                                    {EVENT.dateDisplay}
+                                    {event.dateDisplay}
                                     {' · '}
-                                    {EVENT.timeDisplay}
+                                    {event.timeDisplay}
                                     {' · '}
-                                    {EVENT.venue}
+                                    {event.venue}
                                 </small>
                             </>
                         ) : (
@@ -1141,12 +1211,17 @@ function RsvpForm({
 }
 
 
-function GiftPanel() {
+function GiftPanel({
+    settings =
+        DEFAULT_INVITATION_CONFIG.settings,
+}) {
     const [copyStatus, setCopyStatus] = useState('')
 
     async function handleCopyPixKey() {
         try {
-            await copyTextToClipboard(PIX_KEY)
+            await copyTextToClipboard(
+                settings.pixKey,
+            )
             setCopyStatus('✓ Chave Pix copiada.')
         } catch (error) {
             setCopyStatus(error.message)
@@ -1156,7 +1231,7 @@ function GiftPanel() {
     async function handleCopyPixCode() {
         try {
             await copyTextToClipboard(
-                PIX_COPY_PASTE
+                settings.pixCopyPaste
             )
 
             setCopyStatus(
@@ -1182,9 +1257,7 @@ function GiftPanel() {
             </h2>
 
             <p>
-                Sua presença já é o maior presente. Se quiser
-                levar um carinho, estas são algumas ideias que
-                combinam com a Duda.
+                {settings.giftIntro}
             </p>
 
             <div className="gift-suggestions" aria-label="Ideias de presente">
@@ -1208,11 +1281,11 @@ function GiftPanel() {
                 <div>
                     <span>Chave Pix</span>
 
-                    <strong>{PIX_KEY}</strong>
+                    <strong>{settings.pixKey}</strong>
 
                     <small>
                         Antes de fazer o Pix, confirme se o nome
-                        aparece como <b>{PIX_NAME}</b>.
+                        aparece como <b>{settings.pixName}</b>.
                     </small>
 
                     <div className="pix-actions">
@@ -1448,6 +1521,7 @@ function AdminPage() {
     const [lastUpdatedAt, setLastUpdatedAt] = useState('')
     const [refreshing, setRefreshing] = useState(false)
     const [communicationModalOpen, setCommunicationModalOpen] = useState(false)
+    const [activeAdminSection, setActiveAdminSection] = useState('resumo')
     const adminRefreshRef = useRef(null)
     const lastAutoRefreshAtRef = useRef(0)
 
@@ -2521,7 +2595,7 @@ function AdminPage() {
         )
     }
 
-    function confirmGuestExport(
+    async function confirmGuestExport(
         format,
     ) {
         if (filteredGuests.length === 0) {
@@ -2535,6 +2609,13 @@ function AdminPage() {
         }
 
         try {
+            const {
+                createGuestsPdf,
+                createGuestsXlsx,
+            } = await import(
+                './admin-guest-export.js'
+            )
+
             const filterDescription =
                 getGuestExportDescription()
 
@@ -2808,7 +2889,30 @@ function AdminPage() {
                         </button>
                     </section>
 
-                    <section className="admin-summary" aria-label="Resumo das confirmacoes">
+                    <Suspense
+                        fallback={(
+                            <div className="admin-tools-loading">
+                                Carregando menu do painel...
+                            </div>
+                        )}
+                    >
+                        <AdminInvitationTools
+                            data={data}
+                            activeSection={activeAdminSection}
+                            onSectionChange={setActiveAdminSection}
+                            onAdminAction={callAdmin}
+                            onOpenCommunication={() => (
+                                setCommunicationModalOpen(true)
+                            )}
+                            baseUrl={baseUrl}
+                        />
+                    </Suspense>
+
+                    <section
+                        className="admin-summary"
+                        aria-label="Resumo das confirmacoes"
+                        hidden={activeAdminSection !== 'resumo'}
+                    >
                         <div><span>Convidados</span><strong>{data.totals.invited}</strong></div>
                         <div><span>Confirmados</span><strong>{data.totals.confirmed}</strong></div>
                         <div><span>Nao vao</span><strong>{data.totals.declined}</strong></div>
@@ -2843,6 +2947,7 @@ function AdminPage() {
                     <section
                         className="admin-insight-grid"
                         aria-label="Acompanhamento das respostas"
+                        hidden={activeAdminSection !== 'resumo'}
                     >
                         <article>
                             <header>
@@ -2920,6 +3025,7 @@ function AdminPage() {
                     <section
                         className="confirm-panel admin-checkin-panel"
                         aria-labelledby="admin-checkin-title"
+                        hidden={activeAdminSection !== 'relatorios'}
                     >
                         <div className="admin-checkin-heading">
                             <div>
@@ -3002,6 +3108,7 @@ function AdminPage() {
                         id="cadastro-convidado"
                         className="confirm-panel admin-form-panel"
                         aria-labelledby="guest-form-title"
+                        hidden={activeAdminSection !== 'convidados'}
                     >
                         <p className="panel-kicker">Cadastro</p>
                         <h2 id="guest-form-title">Convidado</h2>
@@ -3070,6 +3177,7 @@ function AdminPage() {
                     <section
                         className="confirm-panel admin-table-panel admin-guests-panel"
                         aria-labelledby="guest-list-title"
+                        hidden={activeAdminSection !== 'convidados'}
                     >
                         <div className="admin-guests-heading">
                             <div>
@@ -3734,19 +3842,26 @@ function AdminPage() {
                     </section>
 
                     {communicationModalOpen ? (
-                        <AdminCommunicationModal
-                            guests={data.guests || []}
-                            baseUrl={baseUrl}
-                            onClose={() => (
-                                setCommunicationModalOpen(false)
-                            )}
-                            onMarkSent={handleMarkCommunication}
-                        />
+                        <Suspense fallback={null}>
+                            <AdminCommunicationModal
+                                guests={data.guests || []}
+                                baseUrl={baseUrl}
+                                invitationConfig={
+                                    data.invitationConfig
+                                    || DEFAULT_INVITATION_CONFIG
+                                }
+                                onClose={() => (
+                                    setCommunicationModalOpen(false)
+                                )}
+                                onMarkSent={handleMarkCommunication}
+                            />
+                        </Suspense>
                     ) : null}
 
                     <section
                         className="confirm-panel admin-messages-panel"
                         aria-labelledby="message-list-title"
+                        hidden={activeAdminSection !== 'comunicacao'}
                     >
                         <div className="admin-messages-heading">
                             <div>
@@ -3896,7 +4011,12 @@ function AdminPage() {
     )
 }
 
-function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
+function OpeningInvitationGate({
+    onUnlocked,
+    onMusicStart,
+    invitationConfig =
+        DEFAULT_INVITATION_CONFIG,
+}) {
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const inputRef = useRef(null)
     const openingTimerRef = useRef(null)
@@ -4011,8 +4131,20 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
             <section className="opening-gate__brand" aria-hidden="true">
                 <p>Sweet birthday</p>
                 <img className="opening-gate__balloon" src="/media/balloon-16.webp" alt="" />
-                <span>Duda</span>
-                <small>Uma tarde para brilhar, dançar e guardar na memória.</small>
+                <span>
+                    {
+                        invitationConfig
+                            .settings
+                            .celebrantName
+                    }
+                </span>
+                <small>
+                    {
+                        invitationConfig
+                            .settings
+                            .openingTagline
+                    }
+                </small>
             </section>
 
             <div className="envelope-stage">
@@ -4024,9 +4156,16 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
                     </div>
 
                     <form className="access-card" onSubmit={handleSubmit} aria-live="polite">
-                    <p className="panel-kicker">{isRsvpClosed()
+                    <p className="panel-kicker">{isRsvpClosed(
+                        invitationConfig
+                            .rsvp.deadline,
+                    )
                         ? 'Prazo de confirmação encerrado'
-                        : `Confirme sua presença até ${RSVP_DEADLINE_DISPLAY}`}</p>
+                        : `Confirme sua presença até ${
+                            invitationConfig
+                                .rsvp
+                                .deadlineDisplay
+                        }`}</p>
                     <h1>Abra seu convite</h1>
                     <p>Digite o celular para localizar seu convite individual.</p>
                     <label>
@@ -4115,11 +4254,49 @@ function OpeningInvitationGate({ onUnlocked, onMusicStart }) {
 function LandingPage() {
     const [openingData, setOpeningData] = useState(() => readOpeningSession())
     const [musicStarted, setMusicStarted] = useState(false)
+    const [
+        invitationConfig,
+        setInvitationConfig,
+    ] = useState(
+        DEFAULT_INVITATION_CONFIG,
+    )
     const activeGuest = openingData?.guest || null
+    const activeEvent =
+        invitationConfig.event
+
+    const activeSettings =
+        invitationConfig.settings
+
     const calendarPlatform = useMemo(
         () => getCalendarPlatform(),
         [],
     )
+
+    useEffect(() => {
+        let cancelled = false
+
+        fetch('/api/invitation-config')
+            .then(readApiJson)
+            .then((config) => {
+                if (!cancelled) {
+                    setInvitationConfig(
+                        buildInvitationConfig(
+                            config,
+                        ),
+                    )
+                }
+            })
+            .catch(() => {
+                /*
+                 * O convite mantém os padrões embarcados quando a
+                 * configuração remota ainda não estiver disponível.
+                 */
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     function handleUnlocked(data) {
         setOpeningData(data)
@@ -4157,9 +4334,16 @@ function LandingPage() {
                 <OpeningInvitationGate
                     onUnlocked={handleUnlocked}
                     onMusicStart={() => setMusicStarted(true)}
+                    invitationConfig={invitationConfig}
                 />
 
-                <MusicPlayer enabled={musicStarted} />
+                <MusicPlayer
+                    enabled={musicStarted}
+                    videoId={
+                        activeSettings
+                            .youtubeVideoId
+                    }
+                />
             </>
         )
     }
@@ -4169,24 +4353,44 @@ function LandingPage() {
             <main className="page-shell page-shell--revealed">
                 <section className="invite-card" aria-labelledby="invite-title">
                     <header className="invitation-hero">
-                        <InvitationPhotoCarousel />
+                        <InvitationPhotoCarousel
+                            photos={
+                                invitationConfig
+                                    .photos
+                            }
+                        />
 
                         <div className="invitation-hero__veil" aria-hidden="true" />
 
                         <div className="invitation-hero__copy">
-                            <p className="eyebrow">Save the date</p>
+                            <p className="eyebrow">
+                                Save the date
+                            </p>
                             <h1 id="invite-title">
-                                <span className="hero-age">16</span>
-                                <span className="name-script">Duda</span>
+                                <span className="hero-age">
+                                    {activeSettings.age}
+                                </span>
+                                <span className="name-script">
+                                    {
+                                        activeSettings
+                                            .celebrantName
+                                    }
+                                </span>
                             </h1>
                             <p className="tagline">
-                                Uma tarde para celebrar, dançar e
-                                guardar para sempre.
+                                {activeSettings.tagline}
                             </p>
                             <p className="hero-date">
-                                <span>{EVENT.dateCompactDisplay}</span>
+                                <span>
+                                    {
+                                        activeEvent
+                                            .dateCompactDisplay
+                                    }
+                                </span>
                                 <span aria-hidden="true">—</span>
-                                <span>{EVENT.timeDisplay}</span>
+                                <span>
+                                    {activeEvent.timeDisplay}
+                                </span>
                             </p>
                         </div>
                     </header>
@@ -4204,7 +4408,9 @@ function LandingPage() {
 
                     <div className="invitation-countdown">
                         <p>Falta pouco para a festa</p>
-                        <Countdown />
+                        <Countdown
+                            startsAt={activeEvent.startsAt}
+                        />
                     </div>
 
                     <InvitationQuickActions />
@@ -4231,11 +4437,15 @@ function LandingPage() {
                         >
                             <div>
                                 <span>Data</span>
-                                <strong>{EVENT.dateDisplay}</strong>
+                                <strong>
+                                    {activeEvent.dateDisplay}
+                                </strong>
                             </div>
                             <div>
                                 <span>Horário</span>
-                                <strong>{EVENT.timeDisplay}</strong>
+                                <strong>
+                                    {activeEvent.timeDisplay}
+                                </strong>
                             </div>
                         </div>
 
@@ -4243,15 +4453,20 @@ function LandingPage() {
                             <img src="/quintal-ibiza-logo.jpg" alt="Logo oficial do Quintal do Ibiza" />
                             <div>
                                 <span>Local da festa</span>
-                                <strong>{EVENT.venue}</strong>
-                                <a href={EVENT.venueInstagramUrl} target="_blank" rel="noreferrer">
-                                    @quintaldoibizaoficial
+                                <strong>
+                                    {activeSettings.venue}
+                                </strong>
+                                <a href={activeSettings.venueInstagramUrl} target="_blank" rel="noreferrer">
+                                    {
+                                        activeSettings
+                                            .venueInstagramHandle
+                                    }
                                 </a>
                             </div>
                         </div>
 
                         <p className="address">
-                            {EVENT.address}
+                            {activeSettings.address}
                         </p>
 
                         <div
@@ -4260,7 +4475,7 @@ function LandingPage() {
                         >
                             <a
                                 className="event-action-button"
-                                href={MAP_URL}
+                                href={activeEvent.mapUrl}
                                 target="_blank"
                                 rel="noreferrer"
                             >
@@ -4270,7 +4485,7 @@ function LandingPage() {
 
                             <a
                                 className="event-action-button"
-                                href={WAZE_URL}
+                                href={activeEvent.wazeUrl}
                                 target="_blank"
                                 rel="noreferrer"
                             >
@@ -4282,7 +4497,7 @@ function LandingPage() {
                                 className={`event-action-button event-action-button--calendar event-action-button--calendar-${calendarPlatform}`}
                                 href={calendarPlatform === 'ios'
                                     ? '/api/calendar?platform=ios'
-                                    : GOOGLE_CALENDAR_URL}
+                                    : activeEvent.googleCalendarUrl}
                                 target={calendarPlatform === 'ios'
                                     ? undefined
                                     : '_blank'}
@@ -4324,20 +4539,27 @@ function LandingPage() {
                         </div>
                         <div className="dress-code">
                             <strong>Apenas um pedido</strong>
-                            <span>Não vir de verde nem azul.</span>
+                            <span>
+                                {activeSettings.dressCode}
+                            </span>
                         </div>
                     </section>
 
                     <a
                         className="duda-instagram-card"
-                        href={EVENT.dudaInstagramUrl}
+                        href={activeSettings.dudaInstagramUrl}
                         target="_blank"
                         rel="noreferrer"
                     >
                         <span>D</span>
                         <div>
                             <small>Acompanhe a Duda</small>
-                            <strong>@mariizsq_</strong>
+                            <strong>
+                                {
+                                    activeSettings
+                                        .dudaInstagramHandle
+                                }
+                            </strong>
                         </div>
                         <span className="instagram-arrow" aria-hidden="true">↗</span>
                     </a>
@@ -4354,9 +4576,16 @@ function LandingPage() {
                                 <InviteIcon name="check" />
                             </span>
                             <div>
-                                <p className="panel-kicker">{isRsvpClosed()
+                                <p className="panel-kicker">{isRsvpClosed(
+                                    invitationConfig
+                                        .rsvp.deadline,
+                                )
                                     ? 'Prazo de confirmação encerrado'
-                                    : `Confirme até ${RSVP_DEADLINE_DISPLAY}`}</p>
+                                    : `Confirme até ${
+                                        invitationConfig
+                                            .rsvp
+                                            .deadlineDisplay
+                                    }`}</p>
                                 <h2 id="confirm-title">Você vem, {activeGuest.name}?</h2>
                             </div>
                         </div>
@@ -4371,10 +4600,22 @@ function LandingPage() {
                             initialRsvp={openingData.rsvp}
                             onGuestResolved={handleGuestResolved}
                             onRsvpSaved={handleRsvpSaved}
+                            rsvpDeadline={
+                                invitationConfig
+                                    .rsvp.deadline
+                            }
+                            rsvpDeadlineDisplay={
+                                invitationConfig
+                                    .rsvp
+                                    .deadlineDisplay
+                            }
+                            event={activeEvent}
                         />
                     </section>
 
-                    <GiftPanel />
+                    <GiftPanel
+                        settings={activeSettings}
+                    />
 
                     <section
                         id="mensagem-duda"
@@ -4403,12 +4644,23 @@ function LandingPage() {
                     <footer className="invitation-footer">
                         <span>D</span>
                         <p>Com carinho, Duda</p>
-                        <small>{EVENT.dateCompactDisplay}</small>
+                        <small>
+                            {
+                                activeEvent
+                                    .dateCompactDisplay
+                            }
+                        </small>
                     </footer>
                 </div>
             </main>
 
-            <MusicPlayer enabled={musicStarted} />
+            <MusicPlayer
+                enabled={musicStarted}
+                videoId={
+                    activeSettings
+                        .youtubeVideoId
+                }
+            />
         </>
     )
 }

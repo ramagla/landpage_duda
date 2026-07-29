@@ -3,8 +3,8 @@ import {
     useState,
 } from 'react'
 import {
-    EVENT,
-} from '../shared/event-config.js'
+    DEFAULT_INVITATION_CONFIG,
+} from '../shared/invitation-config.js'
 import {
     useDialogA11y,
 } from './use-dialog-a11y.js'
@@ -40,63 +40,74 @@ const TYPES = {
 }
 
 
-const TEMPLATES = {
-    convite_inicial: [
-        'Olá, {nome}!',
-        '',
-        'Este é o seu convite para os 16 anos da Duda.',
-        '',
-        'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
-        '{link}',
-        '',
-        'Esperamos você!',
-    ].join('\n'),
+function createTemplates(config) {
+    const {
+        event,
+        rsvp,
+        settings,
+    } = config
 
-    lembrete_60d: [
-        'Olá, {nome}!',
-        '',
-        'Faltam só 60 dias para os 16 anos da Duda!',
-        '',
-        'Estamos preparando tudo com muito carinho e gostaríamos que você confirmasse sua presença até 14/10/2026.',
-        '',
-        'Acesse seu convite individual:',
-        '{link}',
-        '',
-        'Por lá você também encontra todas as informações da festa e nossa lista de presentes/Pix.',
-        '',
-        'Esperamos você!',
-    ].join('\n'),
+    const celebration =
+        `${settings.age} anos da ${settings.celebrantName}`
 
-    lembrete_30d: [
-        'Olá, {nome}!',
-        '',
-        'Falta só 1 mês para os 16 anos da Duda!',
-        '',
-        `Data: ${EVENT.dateShortDisplay}`,
-        `Horário: ${EVENT.timeDisplay}`,
-        `Local: ${EVENT.venue}`,
-        '',
-        'Seu convite e todas as informações estão aqui:',
-        '{link}',
-        '',
-        'Estamos ansiosos para comemorar esse momento com você!',
-    ].join('\n'),
+    return {
+        convite_inicial: [
+            'Olá, {nome}!',
+            '',
+            `Este é o seu convite para os ${celebration}.`,
+            '',
+            'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
+            '{link}',
+            '',
+            'Esperamos você!',
+        ].join('\n'),
 
-    lembrete_10d: [
-        'Está chegando, {nome}!',
-        '',
-        'Faltam apenas 10 dias para os 16 anos da Duda!',
-        '',
-        `Data: ${EVENT.dateShortDisplay}`,
-        `Horário: a partir das ${EVENT.timeDisplay}`,
-        `Local: ${EVENT.venue}`,
-        `Endereço: ${EVENT.address}`,
-        '',
-        'Confira seu convite:',
-        '{link}',
-        '',
-        'Esperamos você para celebrar com a gente!',
-    ].join('\n'),
+        lembrete_60d: [
+            'Olá, {nome}!',
+            '',
+            `A festa de ${celebration} está chegando!`,
+            '',
+            `Confirme sua presença até ${rsvp.deadlineDisplay}.`,
+            '',
+            'Acesse seu convite individual:',
+            '{link}',
+            '',
+            'Por lá você também encontra todas as informações da festa e nossa lista de presentes/Pix.',
+            '',
+            'Esperamos você!',
+        ].join('\n'),
+
+        lembrete_30d: [
+            'Olá, {nome}!',
+            '',
+            `Falta só 1 mês para os ${celebration}!`,
+            '',
+            `Data: ${event.dateShortDisplay}`,
+            `Horário: ${event.timeDisplay}`,
+            `Local: ${event.venue}`,
+            '',
+            'Seu convite e todas as informações estão aqui:',
+            '{link}',
+            '',
+            'Estamos ansiosos para comemorar esse momento com você!',
+        ].join('\n'),
+
+        lembrete_10d: [
+            'Está chegando, {nome}!',
+            '',
+            `Faltam apenas 10 dias para os ${celebration}!`,
+            '',
+            `Data: ${event.dateShortDisplay}`,
+            `Horário: a partir das ${event.timeDisplay}`,
+            `Local: ${event.venue}`,
+            `Endereço: ${event.address}`,
+            '',
+            'Confira seu convite:',
+            '{link}',
+            '',
+            'Esperamos você para celebrar com a gente!',
+        ].join('\n'),
+    }
 }
 
 
@@ -192,6 +203,8 @@ function isEligible(
 export default function AdminCommunicationModal({
     guests,
     baseUrl,
+    invitationConfig =
+        DEFAULT_INVITATION_CONFIG,
     onClose,
     onMarkSent,
 }) {
@@ -207,9 +220,17 @@ export default function AdminCommunicationModal({
     const [currentIndex, setCurrentIndex] =
         useState(0)
 
+    const templates =
+        useMemo(
+            () => createTemplates(
+                invitationConfig,
+            ),
+            [invitationConfig],
+        )
+
     const [template, setTemplate] =
         useState(
-            TEMPLATES.convite_inicial
+            templates.convite_inicial
         )
 
     const [marking, setMarking] =
@@ -276,7 +297,7 @@ export default function AdminCommunicationModal({
         setCurrentIndex(0)
 
         setTemplate(
-            TEMPLATES[nextType]
+            templates[nextType]
             || ''
         )
     }

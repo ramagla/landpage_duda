@@ -1097,6 +1097,165 @@ test(
         )
 
         await t.test(
+            'admin publica configurações e gerencia a galeria',
+            async () => {
+                let result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.44',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {},
+                        },
+                    )
+
+                const originalSettings =
+                    result.data
+                        .invitationConfig
+                        .settings
+
+                result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.45',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {
+                                action:
+                                    'saveInvitationSettings',
+                                settings: {
+                                    ...originalSettings,
+                                    venue:
+                                        'Local de teste',
+                                },
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data
+                        .invitationConfig
+                        .settings
+                        .venue,
+                    'Local de teste',
+                )
+
+                result =
+                    await requestJson(
+                        '/api/admin',
+                        {
+                            ip: '10.0.0.46',
+                            headers: {
+                                cookie:
+                                    adminCookie,
+                            },
+                            body: {
+                                action:
+                                    'addInvitationPhoto',
+                                imageData:
+                                    'data:image/webp;base64,UklGRg==',
+                                altText:
+                                    'Foto de teste',
+                                objectPosition:
+                                    'center',
+                            },
+                        },
+                    )
+
+                assert.equal(
+                    result.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    result.data
+                        .invitationConfig
+                        .photos[0]
+                        .alt,
+                    'Foto de teste',
+                )
+
+                const photoId =
+                    result.data
+                        .invitationConfig
+                        .photos[0]
+                        .id
+
+                const publicConfig =
+                    await requestJson(
+                        '/api/invitation-config',
+                        {
+                            method: 'GET',
+                            ip: '10.0.0.47',
+                        },
+                    )
+
+                assert.equal(
+                    publicConfig.response.status,
+                    200,
+                )
+
+                assert.equal(
+                    publicConfig.data
+                        .settings
+                        .venue,
+                    'Local de teste',
+                )
+
+                assert.equal(
+                    publicConfig.data
+                        .photos[0]
+                        .alt,
+                    'Foto de teste',
+                )
+
+                await requestJson(
+                    '/api/admin',
+                    {
+                        ip: '10.0.0.48',
+                        headers: {
+                            cookie:
+                                adminCookie,
+                        },
+                        body: {
+                            action:
+                                'deleteInvitationPhoto',
+                            photoId,
+                        },
+                    },
+                )
+
+                await requestJson(
+                    '/api/admin',
+                    {
+                        ip: '10.0.0.49',
+                        headers: {
+                            cookie:
+                                adminCookie,
+                        },
+                        body: {
+                            action:
+                                'saveInvitationSettings',
+                            settings:
+                                originalSettings,
+                        },
+                    },
+                )
+            },
+        )
+
+        await t.test(
             'admin separa confirmação de presença real por check-in',
             async () => {
                 let result =

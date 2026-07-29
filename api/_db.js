@@ -253,6 +253,45 @@ export async function ensureSchema() {
                 ON guest_communications (invited_guest_id)
             `)
 
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS invitation_settings (
+                    id INTEGER PRIMARY KEY
+                        CHECK (id = 1),
+                    settings_json TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                INSERT OR IGNORE INTO invitation_settings (
+                    id,
+                    settings_json
+                )
+                VALUES (1, '{}')
+            `)
+
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS invitation_photos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    image_data TEXT NOT NULL,
+                    alt_text TEXT,
+                    object_position TEXT NOT NULL DEFAULT 'center',
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    is_primary INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `)
+
+            await db.execute(`
+                CREATE INDEX IF NOT EXISTS invitation_photos_order_index
+                ON invitation_photos (
+                    is_primary DESC,
+                    sort_order,
+                    id
+                )
+            `)
+
             /*
              * Gestao financeira da festa.
              *

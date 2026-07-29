@@ -11,9 +11,11 @@ import {
     publicGuest,
 } from './_db.js'
 import {
-    RSVP_CLOSED_MESSAGE,
-    isRsvpClosedAt,
+    dateKeyInSaoPaulo,
 } from '../shared/rsvp-deadline.js'
+import {
+    getInvitationConfig,
+} from './_invitation-config.js'
 
 import {
     enforceRateLimit,
@@ -33,6 +35,23 @@ function getRsvpNow() {
     }
 
     return new Date()
+}
+
+function dayAfter(dateValue) {
+    const parsed =
+        new Date(`${dateValue}T12:00:00Z`)
+
+    if (Number.isNaN(parsed.getTime())) {
+        return '2026-10-15'
+    }
+
+    parsed.setUTCDate(
+        parsed.getUTCDate() + 1,
+    )
+
+    return parsed
+        .toISOString()
+        .slice(0, 10)
 }
 
 async function ensureCompanionAttendanceColumn() {
@@ -238,13 +257,31 @@ export default async function handler(request, response) {
         return response.status(405).json({ error: 'Metodo nao permitido.' })
     }
 
-    if (isRsvpClosedAt(getRsvpNow())) {
-        return response.status(403).json({
-            error: RSVP_CLOSED_MESSAGE,
-        })
-    }
-
     try {
+        const invitationConfig =
+            await getInvitationConfig()
+
+        if (
+            dateKeyInSaoPaulo(
+                getRsvpNow(),
+            )
+            >= dayAfter(
+                invitationConfig
+                    .rsvp.deadline,
+            )
+        ) {
+            return response
+                .status(403)
+                .json({
+                    error:
+                        `O prazo para confirmação terminou em ${
+                            invitationConfig
+                                .rsvp
+                                .deadlineDisplay
+                        }. Para qualquer alteração, fale com o Rafael.`,
+                })
+        }
+
         const body = parseBody(request.body)
         const whatsappDigits = normalizePhone(body.whatsapp)
         const attending = body.attending === 'nao' ? 'nao' : 'sim'

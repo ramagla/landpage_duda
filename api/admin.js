@@ -2,6 +2,10 @@ import { randomBytes } from 'node:crypto'
 
 import { verifyAdminRequest } from './_admin-session.js'
 import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
+import {
+    getInvitationConfig,
+    saveInvitationSettings,
+} from './_invitation-config.js'
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -294,6 +298,9 @@ async function getSummary() {
         checkedIn: 0,
     })
 
+    const invitationConfig =
+        await getInvitationConfig()
+
     return {
         totals,
         guests,
@@ -306,6 +313,7 @@ async function getSummary() {
             message: row.message,
             createdAt: row.created_at,
         })),
+        invitationConfig,
     }
 }
 
@@ -862,6 +870,267 @@ async function saveGuest(body) {
     return { message: Number.isInteger(id) && id > 0 ? 'Convidado atualizado.' : 'Convidado salvo.' }
 }
 
+function parsePhotoId(value) {
+    const id =
+        Number.parseInt(
+            String(value || ''),
+            10,
+        )
+
+    return Number.isInteger(id)
+        && id > 0
+        ? id
+        : 0
+}
+
+async function addInvitationPhoto(body) {
+    const imageData =
+        String(body.imageData || '')
+
+    if (
+        !/^data:image\/webp;base64,[a-z0-9+/=]+$/i
+            .test(imageData)
+    ) {
+        return {
+            error:
+                'Envie uma imagem válida em formato WebP.',
+        }
+    }
+
+    if (imageData.length > 450_000) {
+        return {
+            error:
+                'A imagem ficou muito grande. Escolha outra foto ou reduza o arquivo.',
+        }
+    }
+
+    const countResult =
+        await getClient().execute(`
+            SELECT COUNT(*) AS total
+            FROM invitation_photos
+        `)
+
+    const total =
+        Number(countResult.rows[0]?.total || 0)
+
+    if (total >= 10) {
+        return {
+            error:
+                'A galeria aceita no máximo 10 fotos.',
+        }
+    }
+
+    const orderResult =
+        await getClient().execute(`
+            SELECT COALESCE(MAX(sort_order), -1) AS last_order
+            FROM invitation_photos
+        `)
+
+    await getClient().execute({
+        sql: `
+            INSERT INTO invitation_photos (
+                image_data,
+                alt_text,
+                object_position,
+                sort_order,
+                is_primary
+            )
+            VALUES (?, ?, ?, ?, ?)
+        `,
+        args: [
+            imageData,
+            cleanText(body.altText)
+                || 'Foto da Duda',
+            cleanText(body.objectPosition)
+                || 'center',
+            Number(
+                orderResult.rows[0]
+                    ?.last_order
+                ?? -1,
+            ) + 1,
+            total === 0 ? 1 : 0,
+        ],
+    })
+
+    return {
+        message: 'Foto adicionada à galeria.',
+    }
+}
+
+async function updateInvitationPhoto(body) {
+    const id =
+        parsePhotoId(body.photoId)
+
+    if (!id) {
+        return {
+            error: 'Foto inválida.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            UPDATE invitation_photos
+            SET
+                alt_text = ?,
+                object_position = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+        `,
+        args: [
+            cleanText(body.altText)
+                || 'Foto da Duda',
+            cleanText(body.objectPosition)
+                || 'center',
+            id,
+        ],
+    })
+
+    return {
+        message: 'Enquadramento da foto atualizado.',
+    }
+}
+
+async function setPrimaryInvitationPhoto(body) {
+    const id =
+        parsePhotoId(body.photoId)
+
+    if (!id) {
+        return {
+            error: 'Foto inválida.',
+        }
+    }
+
+    const existing =
+        await getClient().execute({
+            sql: `
+                SELECT id
+                FROM invitation_photos
+                WHERE id = ?
+                LIMIT 1
+            `,
+            args: [id],
+        })
+
+    if (!existing.rows[0]) {
+        return {
+            error: 'Foto não encontrada.',
+        }
+    }
+
+    await getClient().batch([
+        {
+            sql: `
+                UPDATE invitation_photos
+                SET is_primary = 0
+            `,
+            args: [],
+        },
+        {
+            sql: `
+                UPDATE invitation_photos
+                SET
+                    is_primary = 1,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [id],
+        },
+    ], 'write')
+
+    return {
+        message: 'Foto principal atualizada.',
+    }
+}
+
+async function reorderInvitationPhotos(body) {
+    const ids =
+        Array.isArray(body.photoIds)
+            ? body.photoIds
+                .map(parsePhotoId)
+                .filter(Boolean)
+            : []
+
+    if (!ids.length) {
+        return {
+            error: 'Ordem das fotos inválida.',
+        }
+    }
+
+    await getClient().batch(
+        ids.map((id, index) => ({
+            sql: `
+                UPDATE invitation_photos
+                SET
+                    sort_order = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `,
+            args: [
+                index,
+                id,
+            ],
+        })),
+        'write',
+    )
+
+    return {
+        message: 'Ordem da galeria atualizada.',
+    }
+}
+
+async function deleteInvitationPhoto(body) {
+    const id =
+        parsePhotoId(body.photoId)
+
+    if (!id) {
+        return {
+            error: 'Foto inválida.',
+        }
+    }
+
+    const existing =
+        await getClient().execute({
+            sql: `
+                SELECT is_primary
+                FROM invitation_photos
+                WHERE id = ?
+                LIMIT 1
+            `,
+            args: [id],
+        })
+
+    if (!existing.rows[0]) {
+        return {
+            error: 'Foto não encontrada.',
+        }
+    }
+
+    await getClient().execute({
+        sql: `
+            DELETE FROM invitation_photos
+            WHERE id = ?
+        `,
+        args: [id],
+    })
+
+    if (existing.rows[0].is_primary) {
+        await getClient().execute(`
+            UPDATE invitation_photos
+            SET is_primary = 1
+            WHERE id = (
+                SELECT id
+                FROM invitation_photos
+                ORDER BY sort_order, id
+                LIMIT 1
+            )
+        `)
+    }
+
+    return {
+        message: 'Foto removida da galeria.',
+    }
+}
+
 export default async function handler(request, response) {
     response.setHeader('Cache-Control', 'no-store')
 
@@ -883,6 +1152,53 @@ export default async function handler(request, response) {
 
         await ensureSchema()
         await ensureCompanionAttendanceColumn()
+
+        const invitationActions = {
+            saveInvitationSettings:
+                async () => {
+                    await saveInvitationSettings(
+                        body.settings,
+                    )
+
+                    return {
+                        message:
+                            'Configurações do convite salvas.',
+                    }
+                },
+            addInvitationPhoto:
+                () => addInvitationPhoto(body),
+            updateInvitationPhoto:
+                () => updateInvitationPhoto(body),
+            setPrimaryInvitationPhoto:
+                () => setPrimaryInvitationPhoto(body),
+            reorderInvitationPhotos:
+                () => reorderInvitationPhotos(body),
+            deleteInvitationPhoto:
+                () => deleteInvitationPhoto(body),
+        }
+
+        if (
+            body.action
+            && invitationActions[body.action]
+        ) {
+            const result =
+                await invitationActions[body.action]()
+
+            if (result.error) {
+                return response
+                    .status(400)
+                    .json({
+                        error: result.error,
+                    })
+            }
+
+            return response
+                .status(200)
+                .json({
+                    message: result.message,
+                    ...await getSummary(),
+                })
+        }
 
         if (body.action === 'saveGuest') {
             const saved = await saveGuest(body)
