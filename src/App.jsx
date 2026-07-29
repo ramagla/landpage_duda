@@ -21,6 +21,19 @@ const INSTAGRAM_URL = 'https://www.instagram.com/quintaldoibizaoficial/'
 const DUDA_INSTAGRAM_URL = 'https://www.instagram.com/mariizsq_/'
 const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 
+/*
+ * Novas fotos podem ser adicionadas em public e cadastradas aqui.
+ * O carrossel exibe controles somente quando houver mais de uma foto.
+ */
+const DUDA_PHOTOS = [
+    {
+        id: 'paris',
+        src: '/duda-photo.png',
+        alt: 'Duda em frente à Torre Eiffel',
+        objectPosition: 'center 28%',
+    },
+]
+
 function getYoutubePlayerUrl(autoplay = false) {
     const params = new URLSearchParams({
         autoplay: autoplay ? '1' : '0',
@@ -423,6 +436,168 @@ function InviteIcon({ name }) {
         >
             {paths[name] || paths.heart}
         </svg>
+    )
+}
+
+function InvitationPhotoCarousel({ photos = DUDA_PHOTOS }) {
+    const availablePhotos = useMemo(
+        () => photos.filter((photo) => photo?.src),
+        [photos],
+    )
+    const [activeIndex, setActiveIndex] = useState(0)
+    const pointerStartRef = useRef(null)
+    const photoCount = availablePhotos.length
+    const hasMultiplePhotos = photoCount > 1
+
+    if (!photoCount) return null
+
+    function selectPhoto(index) {
+        const nextIndex = (
+            (index % photoCount) + photoCount
+        ) % photoCount
+
+        setActiveIndex(nextIndex)
+    }
+
+    function handlePointerDown(event) {
+        if (!hasMultiplePhotos) return
+
+        pointerStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+        }
+    }
+
+    function handlePointerUp(event) {
+        if (!hasMultiplePhotos || !pointerStartRef.current) {
+            return
+        }
+
+        const deltaX =
+            event.clientX - pointerStartRef.current.x
+        const deltaY =
+            event.clientY - pointerStartRef.current.y
+
+        pointerStartRef.current = null
+
+        if (
+            Math.abs(deltaX) < 44
+            || Math.abs(deltaX) <= Math.abs(deltaY)
+        ) {
+            return
+        }
+
+        selectPhoto(
+            deltaX < 0
+                ? activeIndex + 1
+                : activeIndex - 1,
+        )
+    }
+
+    return (
+        <div
+            className={`invitation-hero__photo invitation-photo-carousel${hasMultiplePhotos
+                ? ' invitation-photo-carousel--multiple'
+                : ''}`}
+            role={hasMultiplePhotos ? 'region' : undefined}
+            aria-roledescription={hasMultiplePhotos
+                ? 'carrossel'
+                : undefined}
+            aria-label={hasMultiplePhotos
+                ? 'Fotos da Duda'
+                : undefined}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={() => {
+                pointerStartRef.current = null
+            }}
+        >
+            {availablePhotos.map((photo, index) => (
+                <figure
+                    className={`invitation-photo-carousel__slide${index === activeIndex
+                        ? ' invitation-photo-carousel__slide--active'
+                        : ''}`}
+                    key={photo.id || photo.src}
+                    aria-hidden={index !== activeIndex}
+                    role={hasMultiplePhotos ? 'group' : undefined}
+                    aria-roledescription={hasMultiplePhotos
+                        ? 'slide'
+                        : undefined}
+                    aria-label={hasMultiplePhotos
+                        ? `${index + 1} de ${photoCount}`
+                        : undefined}
+                >
+                    <img
+                        src={photo.src}
+                        alt={index === activeIndex ? photo.alt : ''}
+                        style={{
+                            objectPosition:
+                                photo.objectPosition || 'center',
+                        }}
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        fetchPriority={index === 0 ? 'high' : 'auto'}
+                        decoding="async"
+                        draggable={false}
+                    />
+                </figure>
+            ))}
+
+            {hasMultiplePhotos ? (
+                <div
+                    className="invitation-photo-carousel__controls"
+                    aria-label="Navegação das fotos"
+                >
+                    <button
+                        type="button"
+                        onClick={() => selectPhoto(activeIndex - 1)}
+                        aria-label="Ver foto anterior"
+                    >
+                        <span aria-hidden="true">‹</span>
+                    </button>
+
+                    {photoCount <= 3 ? (
+                        <div className="invitation-photo-carousel__dots">
+                            {availablePhotos.map((photo, index) => (
+                                <button
+                                    type="button"
+                                    className={index === activeIndex
+                                        ? 'is-active'
+                                        : undefined}
+                                    key={`dot-${photo.id || photo.src}`}
+                                    onClick={() => selectPhoto(index)}
+                                    aria-label={`Ver foto ${index + 1} de ${photoCount}`}
+                                    aria-current={index === activeIndex
+                                        ? 'true'
+                                        : undefined}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <span
+                            className="invitation-photo-carousel__count"
+                            aria-hidden="true"
+                        >
+                            {activeIndex + 1} / {photoCount}
+                        </span>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={() => selectPhoto(activeIndex + 1)}
+                        aria-label="Ver próxima foto"
+                    >
+                        <span aria-hidden="true">›</span>
+                    </button>
+
+                    <span
+                        className="invitation-photo-carousel__status"
+                        aria-live="polite"
+                    >
+                        Foto {activeIndex + 1} de {photoCount}
+                    </span>
+                </div>
+            ) : null}
+        </div>
     )
 }
 
@@ -3654,12 +3829,7 @@ function LandingPage() {
             <main className="page-shell page-shell--revealed">
                 <section className="invite-card" aria-labelledby="invite-title">
                     <header className="invitation-hero">
-                        <div className="invitation-hero__photo">
-                            <img
-                                src="/duda-photo.png"
-                                alt="Duda em frente à Torre Eiffel"
-                            />
-                        </div>
+                        <InvitationPhotoCarousel />
 
                         <div className="invitation-hero__veil" aria-hidden="true" />
 

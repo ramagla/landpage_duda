@@ -10270,8 +10270,137 @@ html {
     transform: scale(1.01);
 }
 
+.invitation-photo-carousel {
+    touch-action: pan-y;
+}
+
+.invitation-photo-carousel__slide {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 900ms ease;
+}
+
+.invitation-photo-carousel__slide--active {
+    z-index: 1;
+    opacity: 1;
+}
+
+.invitation-photo-carousel--multiple
+    .invitation-photo-carousel__slide--active img {
+    animation: invitationPhotoDrift 7s ease-out both;
+}
+
+.invitation-photo-carousel__controls {
+    position: absolute;
+    z-index: 4;
+    top: max(24px, calc(14px + env(safe-area-inset-top)));
+    left: 50%;
+    display: grid;
+    grid-template-columns: 46px minmax(72px, auto) 46px;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100% - 48px);
+    padding: 5px;
+    border: 1px solid rgba(255, 250, 242, .28);
+    border-radius: 999px;
+    background: rgba(49, 12, 25, .44);
+    box-shadow: 0 10px 28px rgba(24, 4, 11, .16);
+    backdrop-filter: blur(10px);
+    transform: translateX(-50%);
+}
+
+.invitation-photo-carousel__controls > button {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 250, 242, .12);
+    color: #fffaf2;
+    cursor: pointer;
+}
+
+.invitation-photo-carousel__controls > button span {
+    margin-top: -4px;
+    font-family: Georgia, serif;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1;
+}
+
+.invitation-photo-carousel__controls button:focus-visible {
+    outline: 3px solid #fffaf2;
+    outline-offset: 2px;
+}
+
+.invitation-photo-carousel__dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-width: 72px;
+}
+
+.invitation-photo-carousel__dots button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.invitation-photo-carousel__dots button::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(255, 250, 242, .88);
+    border-radius: 50%;
+    background: transparent;
+    transition:
+        width 180ms ease,
+        background-color 180ms ease;
+}
+
+.invitation-photo-carousel__dots button.is-active::before {
+    width: 20px;
+    border-radius: 999px;
+    background: #f0d7a7;
+}
+
+.invitation-photo-carousel__count {
+    min-width: 72px;
+    color: #fffaf2;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-align: center;
+}
+
+.invitation-photo-carousel__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .invitation-hero__veil {
     z-index: 1;
+    pointer-events: none;
     background:
         linear-gradient(180deg, rgba(40, 12, 22, .04) 18%, rgba(52, 15, 27, .18) 46%, rgba(53, 14, 27, .92) 84%, #3e1120 100%),
         linear-gradient(90deg, rgba(64, 16, 31, .16), transparent 45%);
@@ -10293,6 +10422,7 @@ html {
     padding: 38px 24px max(74px, calc(64px + env(safe-area-inset-bottom)));
     color: #fffaf2;
     text-align: center;
+    pointer-events: none;
     animation: publicHeroCopyReveal 900ms 120ms cubic-bezier(.2, .8, .2, 1) both;
 }
 
@@ -11395,6 +11525,15 @@ html {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes invitationPhotoDrift {
+    from {
+        transform: scale(1.01);
+    }
+    to {
+        transform: scale(1.045);
     }
 }
 
