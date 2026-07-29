@@ -12641,3 +12641,248 @@ html {
         transform: translateY(-44px);
     }
 }
+
+/* ======================================================================
+   TEMA PUBLICO COMPLETO — TURQUESA, CHAMPANHE E PRATA
+   Mantem a pagina principal alinhada a arte compartilhada no WhatsApp.
+   ====================================================================== */
+
+.page-shell--revealed {
+    background:
+        radial-gradient(circle at 12% 7%, rgba(227, 197, 143, .28), transparent 24rem),
+        radial-gradient(circle at 94% 38%, rgba(86, 189, 178, .20), transparent 25rem),
+        linear-gradient(180deg, #dff3ed 0%, #fff9ed 38%, #e8f4ef 100%);
+}
+
+.page-shell--revealed .invitation-hero {
+    background: #034b48;
+}
+
+.page-shell--revealed .invitation-hero__veil {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(2, 52, 49, .04) 18%,
+            rgba(3, 75, 72, .18) 46%,
+            rgba(3, 75, 72, .90) 84%,
+            #023b38 100%
+        ),
+        linear-gradient(90deg, rgba(3, 75, 72, .18), transparent 45%);
+}
+
+.page-shell--revealed .invitation-hero__veil::before {
+    border-color: rgba(255, 243, 212, .56);
+}
+
+.page-shell--revealed .invitation-hero__copy,
+.page-shell--revealed .invitation-hero h1#invite-title,
+.page-shell--revealed .invitation-hero .name-script {
+    color: #fff7e5 !important;
+}
+
+.page-shell--revealed .invitation-hero .eyebrow,
+.page-shell--revealed .hero-age,
+.page-shell--revealed .hero-date {
+    color: #efd6a6 !important;
+}
+
+.page-shell--revealed .invitation-hero .tagline {
+    color: rgba(255, 249, 237, .92);
+}
+
+.page-shell--revealed .invitation-welcome {
+    border-color: rgba(189, 150, 84, .34);
+    background: rgba(255, 253, 247, .97);
+    box-shadow: 0 18px 38px rgba(3, 75, 72, .14);
+}
+
+.page-shell--revealed .invitation-welcome::before {
+    border-color: rgba(227, 197, 143, .76);
+    box-shadow: 0 7px 18px rgba(3, 75, 72, .22);
+}
+
+.page-shell--revealed .countdown__item {
+    background: linear-gradient(180deg, #fffdf7, #edf7f2);
+}
+
+.page-shell--revealed .hero-quick-actions__primary,
+.page-shell--revealed button[type="submit"],
+.page-shell--revealed .secondary-button {
+    border-color: #086c67;
+    background: linear-gradient(135deg, #0b817a, #034b48);
+    color: #fff9ed;
+    box-shadow: 0 12px 26px rgba(3, 75, 72, .22);
+}
+
+.page-shell--revealed .hero-quick-actions__secondary,
+.page-shell--revealed .event-action-button,
+.page-shell--revealed .utility-button {
+    border-color: rgba(8, 108, 103, .18);
+    background: #fffdf7;
+    box-shadow: 0 8px 20px rgba(3, 75, 72, .06);
+}
+
+.page-shell--revealed .invitation-section {
+    border-color: rgba(8, 108, 103, .16);
+    background: linear-gradient(180deg, #fffdf7, #f1f8f4);
+}
+
+.page-shell--revealed .section-heading__icon {
+    border-color: rgba(189, 150, 84, .36);
+    background: #f8ecd5;
+}
+
+.page-shell--revealed .event-details > div,
+.page-shell--revealed .venue-card {
+    border-color: rgba(8, 108, 103, .14);
+    background: rgba(255, 255, 255, .78);
+}
+
+.page-shell--revealed .venue-card img {
+    border-color: rgba(8, 108, 103, .12);
+}
+
+.page-shell--revealed .venue-card a,
+.page-shell--revealed .event-action-button {
+    color: #086c67;
+}
+
+.page-shell--revealed .style-section {
+    border-color: rgba(227, 197, 143, .22);
+    background:
+        radial-gradient(circle at 100% 0, rgba(227, 197, 143, .22), transparent 15rem),
+        linear-gradient(145deg, #086c67, #023f3c);
+    color: #fff9ed;
+}
+
+.page-shell--revealed .style-section::after {
+    color: rgba(255, 249, 237, .06);
+}
+
+.page-shell--revealed .style-section .panel-kicker,
+.page-shell--revealed .dress-code strong {
+    color: #e3c58f;
+}
+
+.page-shell--revealed .style-section h2,
+.page-shell--revealed .dress-code {
+    color: #fff9ed;
+}
+
+.page-shell--revealed .style-section > div:first-child > p:last-child {
+    color: rgba(255, 249, 237, .76);
+}
+
+.page-shell--revealed .dress-code {
+    border-color: rgba(227, 197, 143, .30);
+    background: rgba(255, 249, 237, .09);
+}
+
+.page-shell--revealed .duda-instagram-card {
+    border-color: rgba(8, 108, 103, .16);
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(3, 75, 72, .07);
+}
+
+.page-shell--revealed .duda-instagram-card > span:first-child {
+    background: linear-gradient(145deg, #0b817a, #034b48);
+    color: #efd6a6;
+}
+
+.page-shell--revealed input,
+.page-shell--revealed select,
+.page-shell--revealed textarea {
+    border-color: rgba(8, 108, 103, .20);
+    background: #fff;
+}
+
+.page-shell--revealed input:focus,
+.page-shell--revealed select:focus,
+.page-shell--revealed textarea:focus {
+    border-color: #56bdb2;
+    box-shadow: 0 0 0 4px rgba(86, 189, 178, .16);
+}
+
+.page-shell--revealed .choice:has(input:checked),
+.page-shell--revealed .companion-attendance label:has(input:checked) {
+    border-color: rgba(8, 108, 103, .38);
+    background: #e1f3ee;
+    box-shadow: inset 0 0 0 1px rgba(8, 108, 103, .06);
+}
+
+.page-shell--revealed .companions-box,
+.page-shell--revealed .companion-attendance label {
+    background: #f5faf7;
+}
+
+.page-shell--revealed .companion-row--fixed {
+    border-color: rgba(8, 108, 103, .12);
+}
+
+.page-shell--revealed .gift-panel {
+    background:
+        radial-gradient(circle at 100% 0, rgba(227, 197, 143, .20), transparent 16rem),
+        rgba(255, 253, 247, .97);
+}
+
+.page-shell--revealed .gift-suggestions span {
+    border-color: rgba(8, 108, 103, .14);
+    background: #e4f3ef;
+}
+
+.page-shell--revealed .pix-card {
+    border-color: rgba(189, 150, 84, .28);
+    background: linear-gradient(145deg, #fff9ed, #edf7f2);
+}
+
+.page-shell--revealed .pix-card img {
+    border-color: rgba(8, 108, 103, .12);
+    box-shadow: 0 12px 26px rgba(3, 75, 72, .09);
+}
+
+.page-shell--revealed .message-sender,
+.page-shell--revealed .event-calendar-ios-help {
+    border-color: rgba(189, 150, 84, .30);
+    background: #fff8e8;
+}
+
+.page-shell--revealed button:focus-visible,
+.page-shell--revealed a:focus-visible {
+    outline-color: rgba(86, 189, 178, .48);
+}
+
+.page-shell--revealed + .music-player .music-player__control {
+    border-color: rgba(255, 243, 212, .46);
+    background: linear-gradient(145deg, #0b817a, #034b48);
+    color: #fff9ed;
+    box-shadow: 0 12px 30px rgba(3, 75, 72, .28);
+}
+
+.page-shell--revealed + .music-player .music-player__control > span {
+    background: rgba(255, 249, 237, .14);
+    color: #efd6a6;
+}
+
+.page-shell--revealed + .music-player .music-player__control:focus-visible {
+    outline-color: rgba(86, 189, 178, .56);
+}
+
+.page-shell--revealed .privacy-notice {
+    border-top-color: rgba(8, 108, 103, .14);
+}
+
+.page-shell--revealed .privacy-notice summary,
+.page-shell--revealed .rsvp-confirmation-summary h3 {
+    color: #086c67;
+}
+
+@media (min-width: 920px) {
+    body:has(.page-shell--revealed) {
+        background:
+            radial-gradient(circle at 12% 7%, rgba(227, 197, 143, .28), transparent 30rem),
+            radial-gradient(circle at 94% 38%, rgba(86, 189, 178, .20), transparent 32rem),
+            linear-gradient(180deg, #dff3ed 0%, #fff9ed 38%, #e8f4ef 100%);
+    }
+}
+
+/* === TEMA PUBLICO COMPLETO — END === */

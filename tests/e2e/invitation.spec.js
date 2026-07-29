@@ -119,6 +119,37 @@ test('o convite interno é simétrico e oferece calendário do iPhone', async ({
     await expect(timeCard)
         .toBeVisible()
 
+    const publicPalette =
+        await page.locator('.page-shell--revealed')
+            .evaluate((element) => {
+                const primaryButton =
+                    element.querySelector(
+                        '.hero-quick-actions__primary',
+                    )
+                const styleSection =
+                    element.querySelector('.style-section')
+
+                return {
+                    accent:
+                        getComputedStyle(element)
+                            .getPropertyValue('--invite-wine')
+                            .trim(),
+                    primaryBackground:
+                        getComputedStyle(primaryButton)
+                            .backgroundImage,
+                    styleBackground:
+                        getComputedStyle(styleSection)
+                            .backgroundImage,
+                }
+            })
+
+    expect(publicPalette.accent)
+        .toBe('#086c67')
+    expect(publicPalette.primaryBackground)
+        .toContain('rgb(11, 129, 122)')
+    expect(publicPalette.styleBackground)
+        .toContain('rgb(8, 108, 103)')
+
     const [dateBox, timeBox] =
         await Promise.all([
             dateCard.boundingBox(),
