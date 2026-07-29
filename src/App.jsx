@@ -6,6 +6,9 @@ import {
     createGuestsXlsx,
     guestMatchesAgeFilter,
 } from './admin-guest-export.js'
+import {
+    getCalendarPlatform,
+} from './calendar-platform.js'
 
 import {
     RSVP_CLOSED_MESSAGE,
@@ -73,67 +76,6 @@ const GOOGLE_CALENDAR_URL = (
     + `&location=${encodeURIComponent(EVENT_ADDRESS)}`
     + '&ctz=America%2FSao_Paulo'
 )
-
-function getCalendarPlatform() {
-    if (
-        typeof window === 'undefined'
-        || typeof navigator === 'undefined'
-    ) {
-        return 'desktop'
-    }
-
-    const userAgent =
-        navigator.userAgent || ''
-
-    const isIOS = (
-        /iPhone|iPad|iPod/i.test(userAgent)
-        || (
-            navigator.platform === 'MacIntel'
-            && navigator.maxTouchPoints > 1
-        )
-    )
-
-    if (isIOS) {
-        return 'ios'
-    }
-
-    if (/Android/i.test(userAgent)) {
-        return 'android'
-    }
-
-    return 'desktop'
-}
-
-
-function openCalendarEvent() {
-    if (typeof window === 'undefined') return
-
-    const platform =
-        getCalendarPlatform()
-
-    /*
-     * iPhone/iPad:
-     * entregamos um calendario ICS para o Calendario Apple.
-     */
-    if (platform === 'ios') {
-        window.location.assign(
-            '/api/calendar'
-        )
-
-        return
-    }
-
-    /*
-     * Android e desktop:
-     * abre o Google Agenda com todos os dados preenchidos.
-     */
-    window.open(
-        GOOGLE_CALENDAR_URL,
-        '_blank',
-        'noopener,noreferrer',
-    )
-}
-
 
 async function copyTextToClipboard(value) {
     const textValue = String(value || '').trim()
@@ -3877,6 +3819,7 @@ function LandingPage() {
                         id="local-evento"
                         className="invitation-section event-section"
                         aria-labelledby="event-title"
+                        data-calendar-platform={calendarPlatform}
                     >
                         <div className="section-heading">
                             <span className="section-heading__icon">
@@ -3903,7 +3846,7 @@ function LandingPage() {
                         </div>
 
                         <div className="venue-card">
-                            <img src="/quintal-ibiza-logo.svg" alt="Logo Quintal do Ibiza" />
+                            <img src="/quintal-ibiza-logo.jpg" alt="Logo oficial do Quintal do Ibiza" />
                             <div>
                                 <span>Local da festa</span>
                                 <strong>Quintal do Ibiza</strong>
@@ -3941,43 +3884,40 @@ function LandingPage() {
                                 <span>Waze</span>
                             </a>
 
-                            {calendarPlatform === 'ios' ? (
-                                <a
-                                    className="event-action-button event-action-button--ios-calendar"
-                                    href="/api/calendar?platform=ios"
-                                >
-                                    <InviteIcon name="calendar" />
-                                    <span className="event-action-button__copy">
-                                        <strong>Calendário do iPhone</strong>
-                                        <small>
-                                            Continuar → Adicionar
-                                        </small>
-                                    </span>
-                                </a>
-                            ) : (
-                                <button
-                                    className="event-action-button"
-                                    type="button"
-                                    onClick={openCalendarEvent}
-                                >
-                                    <InviteIcon name="calendar" />
-                                    <span>Adicionar à agenda</span>
-                                </button>
-                            )}
+                            <a
+                                className={`event-action-button event-action-button--calendar event-action-button--calendar-${calendarPlatform}`}
+                                href={calendarPlatform === 'ios'
+                                    ? '/api/calendar?platform=ios'
+                                    : GOOGLE_CALENDAR_URL}
+                                target={calendarPlatform === 'ios'
+                                    ? undefined
+                                    : '_blank'}
+                                rel={calendarPlatform === 'ios'
+                                    ? undefined
+                                    : 'noreferrer'}
+                            >
+                                <InviteIcon name="calendar" />
+                                <span className="event-action-button__copy">
+                                    <strong>
+                                        {calendarPlatform === 'ios'
+                                            ? 'Agenda do iPhone'
+                                            : 'Google Agenda'}
+                                    </strong>
+                                    <small>
+                                        {calendarPlatform === 'ios'
+                                            ? 'Continuar → Adicionar'
+                                            : calendarPlatform === 'android'
+                                                ? 'Abrir no Android'
+                                                : 'Adicionar o evento'}
+                                    </small>
+                                </span>
+                            </a>
                         </div>
 
                         {calendarPlatform === 'ios' ? (
                             <p className="event-calendar-ios-help">
-                                O iPhone pede duas confirmações de segurança:
-                                toque em <strong>Continuar</strong> e depois
-                                em <strong>Adicionar</strong>.
-                                <a
-                                    href={GOOGLE_CALENDAR_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    Prefere o Google Agenda?
-                                </a>
+                                No iPhone, toque em <strong>Continuar</strong> e
+                                depois em <strong>Adicionar</strong>.
                             </p>
                         ) : null}
                     </section>

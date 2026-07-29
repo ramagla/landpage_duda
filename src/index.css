@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Parisienne&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Bodoni+Moda:ital,wght@1,500;1,600&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&family=Parisienne&family=Playfair+Display:wght@600;700;800&display=swap');
 
 :root {
     color: #17211f;
@@ -11936,3 +11936,143 @@ html {
 }
 
 /* === CALENDARIO DO IPHONE — END === */
+
+/* ======================================================================
+   AJUSTES MOBILE — ASSINATURA, LOCAL E AGENDA POR PLATAFORMA
+   ====================================================================== */
+
+.opening-gate__brand span,
+.page-shell--revealed h1#invite-title .name-script {
+    font-family: "Bodoni Moda", "Playfair Display", Georgia, serif !important;
+    font-style: italic;
+    font-weight: 500 !important;
+    letter-spacing: -.075em !important;
+}
+
+.opening-gate__brand span {
+    font-size: clamp(4.35rem, 20vw, 5.8rem);
+    line-height: .78;
+}
+
+.page-shell--revealed h1#invite-title .name-script {
+    line-height: .82;
+}
+
+.page-shell--revealed .event-section {
+    padding: 22px 18px;
+}
+
+.page-shell--revealed .event-section .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 9px;
+    width: 100%;
+    text-align: center;
+}
+
+.page-shell--revealed .event-section .section-heading::after {
+    display: none;
+}
+
+.page-shell--revealed .event-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.page-shell--revealed .event-details > div {
+    align-content: center;
+    justify-items: center;
+    min-height: 82px;
+    padding: 13px 8px;
+    text-align: center;
+}
+
+.page-shell--revealed .event-details strong {
+    font-size: clamp(.82rem, 3.7vw, .96rem);
+}
+
+.page-shell--revealed .venue-card {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) 58px;
+    gap: 8px;
+    min-height: 102px;
+    padding: 14px;
+    text-align: center;
+}
+
+.page-shell--revealed .venue-card::after {
+    content: "";
+    width: 58px;
+}
+
+.page-shell--revealed .venue-card img {
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-color: rgba(104, 31, 53, .10);
+    border-radius: 50%;
+}
+
+.page-shell--revealed .venue-card div {
+    justify-items: center;
+}
+
+.page-shell--revealed .venue-card a {
+    justify-content: center;
+    margin-top: -2px;
+    font-size: .68rem;
+    white-space: nowrap;
+}
+
+.page-shell--revealed .address {
+    max-width: 330px;
+    margin: 15px auto 0;
+    text-align: center;
+}
+
+.page-shell--revealed .event-action-grid {
+    gap: 10px;
+}
+
+.page-shell--revealed .event-action-button {
+    min-height: 56px;
+}
+
+.page-shell--revealed .event-action-button--calendar {
+    min-height: 62px;
+}
+
+.event-calendar-ios-help {
+    display: block;
+    margin: 10px auto 0;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    font-size: .66rem;
+    text-align: center;
+}
+
+@media (max-width: 359px) {
+    .page-shell--revealed .event-section {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .page-shell--revealed .venue-card {
+        grid-template-columns: 52px minmax(0, 1fr) 52px;
+        gap: 8px;
+        padding: 12px 8px;
+    }
+
+    .page-shell--revealed .venue-card::after {
+        width: 52px;
+    }
+
+    .page-shell--revealed .venue-card img {
+        width: 52px;
+        height: 52px;
+    }
+}
+
+/* === AJUSTES MOBILE — END === */

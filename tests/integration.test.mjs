@@ -12,6 +12,9 @@ import {
     spawn,
 } from 'node:child_process'
 import test from 'node:test'
+import {
+    detectCalendarPlatform,
+} from '../src/calendar-platform.js'
 
 
 const ROOT = fileURLToPath(
@@ -340,6 +343,53 @@ async function requestJson(
         raw,
     }
 }
+
+test(
+    'agenda identifica iPhone, iPad e Android',
+    () => {
+        assert.equal(
+            detectCalendarPlatform({
+                userAgent:
+                    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X)',
+                platform:
+                    'iPhone',
+            }),
+            'ios',
+        )
+
+        assert.equal(
+            detectCalendarPlatform({
+                userAgent:
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)',
+                platform:
+                    'MacIntel',
+                maxTouchPoints:
+                    5,
+            }),
+            'ios',
+        )
+
+        assert.equal(
+            detectCalendarPlatform({
+                userAgent:
+                    'Mozilla/5.0 (Linux; Android 15; Pixel 9)',
+                platform:
+                    'Linux armv8l',
+            }),
+            'android',
+        )
+
+        assert.equal(
+            detectCalendarPlatform({
+                userAgent:
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                platform:
+                    'Win32',
+            }),
+            'desktop',
+        )
+    },
+)
 
 
 test(
