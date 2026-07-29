@@ -11882,3 +11882,57 @@ html {
 }
 
 /* === ASSINATURA DUDA — END === */
+
+/* ======================================================================
+   CALENDARIO DO IPHONE
+   ====================================================================== */
+
+.page-shell--revealed .event-action-button--ios-calendar {
+    min-height: 62px;
+}
+
+.event-action-button__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+}
+
+.event-action-button__copy strong {
+    font-size: .72rem;
+    line-height: 1.1;
+}
+
+.event-action-button__copy small {
+    color: var(--invite-muted);
+    font-size: .59rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.event-calendar-ios-help {
+    display: grid;
+    gap: 7px;
+    margin: 10px 2px 0;
+    padding: 11px 12px;
+    border: 1px solid rgba(185, 145, 76, .28);
+    border-radius: 12px;
+    background: #fff8eb;
+    color: var(--invite-muted);
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+.event-calendar-ios-help strong {
+    color: var(--invite-wine);
+}
+
+.event-calendar-ios-help a {
+    width: max-content;
+    color: var(--invite-wine);
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* === CALENDARIO DO IPHONE — END === */

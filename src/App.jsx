@@ -3780,6 +3780,10 @@ function LandingPage() {
     const [openingData, setOpeningData] = useState(() => readOpeningSession())
     const [musicStarted, setMusicStarted] = useState(false)
     const activeGuest = openingData?.guest || null
+    const calendarPlatform = useMemo(
+        () => getCalendarPlatform(),
+        [],
+    )
 
     function handleUnlocked(data) {
         setOpeningData(data)
@@ -3937,15 +3941,45 @@ function LandingPage() {
                                 <span>Waze</span>
                             </a>
 
-                            <button
-                                className="event-action-button"
-                                type="button"
-                                onClick={openCalendarEvent}
-                            >
-                                <InviteIcon name="calendar" />
-                                <span>Adicionar à agenda</span>
-                            </button>
+                            {calendarPlatform === 'ios' ? (
+                                <a
+                                    className="event-action-button event-action-button--ios-calendar"
+                                    href="/api/calendar?platform=ios"
+                                >
+                                    <InviteIcon name="calendar" />
+                                    <span className="event-action-button__copy">
+                                        <strong>Calendário do iPhone</strong>
+                                        <small>
+                                            Continuar → Adicionar
+                                        </small>
+                                    </span>
+                                </a>
+                            ) : (
+                                <button
+                                    className="event-action-button"
+                                    type="button"
+                                    onClick={openCalendarEvent}
+                                >
+                                    <InviteIcon name="calendar" />
+                                    <span>Adicionar à agenda</span>
+                                </button>
+                            )}
                         </div>
+
+                        {calendarPlatform === 'ios' ? (
+                            <p className="event-calendar-ios-help">
+                                O iPhone pede duas confirmações de segurança:
+                                toque em <strong>Continuar</strong> e depois
+                                em <strong>Adicionar</strong>.
+                                <a
+                                    href={GOOGLE_CALENDAR_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    Prefere o Google Agenda?
+                                </a>
+                            </p>
+                        ) : null}
                     </section>
 
                     <section className="invitation-section style-section" aria-labelledby="style-title">

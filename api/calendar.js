@@ -43,6 +43,7 @@ export default function handler(req, res) {
         'PRODID:-//Duda 16 Anos//Convite Digital//PT-BR',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
+        'X-WR-CALNAME:16 anos da Duda',
 
         'BEGIN:VEVENT',
 
@@ -66,6 +67,7 @@ export default function handler(req, res) {
         )}`,
 
         'STATUS:CONFIRMED',
+        'TRANSP:OPAQUE',
 
         'END:VEVENT',
         'END:VCALENDAR',
@@ -74,7 +76,7 @@ export default function handler(req, res) {
 
     res.setHeader(
         'Content-Type',
-        'text/calendar; charset=utf-8',
+        'text/calendar; charset=utf-8; method=PUBLISH',
     )
 
     /*
@@ -83,12 +85,17 @@ export default function handler(req, res) {
      */
     res.setHeader(
         'Content-Disposition',
-        'inline; filename="duda-16-anos.ics"',
+        'inline; filename="duda-16-anos.ics"; filename*=UTF-8\'\'duda-16-anos.ics',
+    )
+
+    res.setHeader(
+        'Content-Language',
+        'pt-BR',
     )
 
     res.setHeader(
         'Cache-Control',
-        'public, max-age=3600',
+        'public, max-age=300, s-maxage=300',
     )
 
     return res.status(200).send(

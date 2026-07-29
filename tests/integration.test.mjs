@@ -438,6 +438,78 @@ test(
         )
 
         await t.test(
+            'calendario entrega evento ICS compativel com iPhone',
+            async () => {
+                const {
+                    response,
+                    raw,
+                } = await requestJson(
+                    '/api/calendar?platform=ios',
+                    {
+                        method: 'GET',
+                        ip: '10.0.0.9',
+                    },
+                )
+
+                assert.equal(
+                    response.status,
+                    200,
+                )
+
+                assert.match(
+                    response.headers.get(
+                        'content-type',
+                    ),
+                    /^text\/calendar;/,
+                )
+
+                assert.match(
+                    response.headers.get(
+                        'content-disposition',
+                    ),
+                    /^inline;.*\.ics/,
+                )
+
+                assert.equal(
+                    response.headers.get(
+                        'content-language',
+                    ),
+                    'pt-BR',
+                )
+
+                assert.match(
+                    raw,
+                    /^BEGIN:VCALENDAR\r\n/,
+                )
+
+                assert.match(
+                    raw,
+                    /\r\nBEGIN:VEVENT\r\n/,
+                )
+
+                assert.match(
+                    raw,
+                    /\r\nDTSTART:20261114T200000Z\r\n/,
+                )
+
+                assert.match(
+                    raw,
+                    /\r\nDTEND:20261115T020000Z\r\n/,
+                )
+
+                assert.match(
+                    raw,
+                    /\r\nSUMMARY:16 anos da Duda\r\n/,
+                )
+
+                assert.match(
+                    raw,
+                    /\r\nEND:VCALENDAR\r\n$/,
+                )
+            },
+        )
+
+        await t.test(
             'abre convite com telefone e token validos',
             async () => {
                 const {

@@ -65,6 +65,18 @@ function createResponseAdapter(response) {
             response.setHeader('Content-Type', 'application/json; charset=utf-8')
             response.end(JSON.stringify(payload))
         },
+        send(payload) {
+            response.statusCode = this.statusCode
+
+            if (!response.hasHeader('Content-Type')) {
+                response.setHeader(
+                    'Content-Type',
+                    'text/plain; charset=utf-8',
+                )
+            }
+
+            response.end(payload)
+        },
     }
 }
 
@@ -74,6 +86,7 @@ async function handleApi(request, response, url) {
         'admin',
         'admin-login',
         'admin-logout',
+        'calendar',
         'expenses',
         'expenses-login',
         'expenses-logout',
