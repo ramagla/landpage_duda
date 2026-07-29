@@ -1,19 +1,21 @@
 import {
     verifyCheckinRequest,
-} from './_checkin-session.js'
+} from '../server/_checkin-session.js'
 
 import {
     getCheckinSummary,
     setCheckin,
-} from './_checkin-data.js'
+} from '../server/_checkin-data.js'
 
 import {
     parseBody,
-} from './_db.js'
+} from '../server/_db.js'
 
 import {
     recordAdminAudit,
-} from './_admin-audit.js'
+} from '../server/_admin-audit.js'
+import checkinLoginHandler from '../server/checkin-login.js'
+import checkinLogoutHandler from '../server/checkin-logout.js'
 
 
 export default async function handler(
@@ -24,6 +26,20 @@ export default async function handler(
         'Cache-Control',
         'no-store',
     )
+
+    if (request.query?.auth === 'login') {
+        return checkinLoginHandler(
+            request,
+            response,
+        )
+    }
+
+    if (request.query?.auth === 'logout') {
+        return checkinLogoutHandler(
+            request,
+            response,
+        )
+    }
 
     if (
         request.method !== 'GET'

@@ -7,11 +7,11 @@ import {
     normalizePhone,
     parseBody,
     publicGuest,
-} from './_db.js'
+} from '../server/_db.js'
 
 import {
     enforceRateLimit,
-} from './_rate-limit.js'
+} from '../server/_rate-limit.js'
 
 function validPhoneDigits(value) {
     return /^\d{10,11}$/.test(value)

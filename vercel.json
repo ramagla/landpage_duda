@@ -57,6 +57,34 @@
   ],
   "rewrites": [
     {
+      "source": "/api/admin-login",
+      "destination": "/api/admin?auth=login"
+    },
+    {
+      "source": "/api/admin-logout",
+      "destination": "/api/admin?auth=logout"
+    },
+    {
+      "source": "/api/admin-preview-session",
+      "destination": "/api/admin?auth=preview"
+    },
+    {
+      "source": "/api/expenses-login",
+      "destination": "/api/expenses?auth=login"
+    },
+    {
+      "source": "/api/expenses-logout",
+      "destination": "/api/expenses?auth=logout"
+    },
+    {
+      "source": "/api/checkin-login",
+      "destination": "/api/checkin?auth=login"
+    },
+    {
+      "source": "/api/checkin-logout",
+      "destination": "/api/checkin?auth=logout"
+    },
+    {
       "source": "/admin",
       "destination": "/index.html"
     },

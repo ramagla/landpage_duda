@@ -1,6 +1,6 @@
 import {
     getInvitationConfig,
-} from './_invitation-config.js'
+} from '../server/_invitation-config.js'
 
 function escapeIcsText(value) {
     return String(value || '')

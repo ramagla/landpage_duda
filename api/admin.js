@@ -1,19 +1,22 @@
 import { randomBytes } from 'node:crypto'
 
-import { verifyAdminRequest } from './_admin-session.js'
-import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from './_db.js'
+import { verifyAdminRequest } from '../server/_admin-session.js'
+import { cleanText, ensureSchema, getClient, guestPhonePlaceholder, isGuestPhonePlaceholder, normalizePhone, parseAge, parseBody, slugify } from '../server/_db.js'
 import {
     getInvitationConfig,
     saveInvitationSettings,
-} from './_invitation-config.js'
+} from '../server/_invitation-config.js'
 import {
     listAdminAudit,
     recordAdminAudit,
-} from './_admin-audit.js'
+} from '../server/_admin-audit.js'
 import {
     createEventBackup,
     listEventBackups,
-} from './_event-backup.js'
+} from '../server/_event-backup.js'
+import adminLoginHandler from '../server/admin-login.js'
+import adminLogoutHandler from '../server/admin-logout.js'
+import adminPreviewSessionHandler from '../server/admin-preview-session.js'
 
 async function ensureCompanionAttendanceColumn() {
     await getClient().execute("ALTER TABLE rsvp_companions ADD COLUMN attending TEXT NOT NULL DEFAULT 'sim'").catch((error) => {
@@ -1241,6 +1244,18 @@ async function deleteInvitationPhoto(body) {
 
 export default async function handler(request, response) {
     response.setHeader('Cache-Control', 'no-store')
+
+    if (request.query?.auth === 'login') {
+        return adminLoginHandler(request, response)
+    }
+
+    if (request.query?.auth === 'logout') {
+        return adminLogoutHandler(request, response)
+    }
+
+    if (request.query?.auth === 'preview') {
+        return adminPreviewSessionHandler(request, response)
+    }
 
     if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST')

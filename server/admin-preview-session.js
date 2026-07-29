@@ -1,3 +1,4 @@
+// Subrota consolidada na funcao /api/admin.
 import {
     verifyAdminRequest,
 } from './_admin-session.js'

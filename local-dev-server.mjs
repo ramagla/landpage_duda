@@ -82,31 +82,33 @@ function createResponseAdapter(response) {
 
 async function handleApi(request, response, url) {
     const endpoint = url.pathname.replace(/^\/api\//, '')
-    const allowed = new Set([
-        'admin',
-        'admin-login',
-        'admin-logout',
-        'admin-preview-session',
-        'calendar',
-        'checkin',
-        'checkin-login',
-        'checkin-logout',
-        'cron-backup',
-        'expenses',
-        'expenses-login',
-        'expenses-logout',
-        'guest',
-        'invitation-config',
-        'messages',
-        'rsvp',
-    ])
+    const routes = {
+        admin: { module: 'admin' },
+        'admin-login': { module: 'admin', auth: 'login' },
+        'admin-logout': { module: 'admin', auth: 'logout' },
+        'admin-preview-session': { module: 'admin', auth: 'preview' },
+        calendar: { module: 'calendar' },
+        checkin: { module: 'checkin' },
+        'checkin-login': { module: 'checkin', auth: 'login' },
+        'checkin-logout': { module: 'checkin', auth: 'logout' },
+        'cron-backup': { module: 'cron-backup' },
+        expenses: { module: 'expenses' },
+        'expenses-login': { module: 'expenses', auth: 'login' },
+        'expenses-logout': { module: 'expenses', auth: 'logout' },
+        guest: { module: 'guest' },
+        'invitation-config': { module: 'invitation-config' },
+        messages: { module: 'messages' },
+        rsvp: { module: 'rsvp' },
+    }
+    const route = routes[endpoint]
 
-    if (!allowed.has(endpoint)) return false
+    if (!route) return false
 
-    const modulePath = `./api/${endpoint}.js?dev=${Date.now()}`
+    const modulePath = `./api/${route.module}.js?dev=${Date.now()}`
     const { default: handler } = await import(modulePath)
     const body = request.method === 'GET' ? {} : await readBody(request)
     const query = Object.fromEntries(url.searchParams.entries())
+    if (route.auth) query.auth = route.auth
 
     await handler({
         method: request.method,

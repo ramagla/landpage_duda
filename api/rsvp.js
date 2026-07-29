@@ -9,20 +9,20 @@ import {
     parseAge,
     parseBody,
     publicGuest,
-} from './_db.js'
+} from '../server/_db.js'
 import {
     dateKeyInSaoPaulo,
 } from '../shared/rsvp-deadline.js'
 import {
     getInvitationConfig,
-} from './_invitation-config.js'
+} from '../server/_invitation-config.js'
 import {
     recordAdminAudit,
-} from './_admin-audit.js'
+} from '../server/_admin-audit.js'
 
 import {
     enforceRateLimit,
-} from './_rate-limit.js'
+} from '../server/_rate-limit.js'
 
 function getRsvpNow() {
     const testNow = process.env.NODE_ENV !== 'production'

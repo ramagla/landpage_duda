@@ -1,6 +1,6 @@
 import {
     createEventBackup,
-} from './_event-backup.js'
+} from '../server/_event-backup.js'
 
 export default async function handler(
     request,

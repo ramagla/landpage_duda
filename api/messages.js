@@ -4,11 +4,11 @@ import {
     getClient,
     normalizePhone,
     parseBody,
-} from './_db.js'
+} from '../server/_db.js'
 
 import {
     enforceRateLimit,
-} from './_rate-limit.js'
+} from '../server/_rate-limit.js'
 
 
 function validPhoneDigits(value) {

@@ -2,11 +2,13 @@ import {
     ensureSchema,
     getClient,
     parseBody,
-} from './_db.js'
+} from '../server/_db.js'
 
 import {
     verifyExpensesRequest,
-} from './_expenses-session.js'
+} from '../server/_expenses-session.js'
+import expensesLoginHandler from '../server/expenses-login.js'
+import expensesLogoutHandler from '../server/expenses-logout.js'
 
 
 function cleanText(value) {
@@ -3983,6 +3985,20 @@ export default async function handler(
         'Cache-Control',
         'no-store',
     )
+
+    if (request.query?.auth === 'login') {
+        return expensesLoginHandler(
+            request,
+            response,
+        )
+    }
+
+    if (request.query?.auth === 'logout') {
+        return expensesLogoutHandler(
+            request,
+            response,
+        )
+    }
 
     if (
         request.method !== 'POST'

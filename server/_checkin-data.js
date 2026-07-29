@@ -1,3 +1,4 @@
+// Modulo compartilhado; fora de /api para nao gerar funcao serverless.
 import {
     cleanText,
     ensureSchema,

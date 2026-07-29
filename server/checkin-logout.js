@@ -1,3 +1,4 @@
+// Subrota consolidada na funcao /api/checkin.
 import {
     clearCheckinSessionCookie,
 } from './_checkin-session.js'

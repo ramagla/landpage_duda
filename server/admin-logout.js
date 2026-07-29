@@ -1,9 +1,9 @@
+// Subrota consolidada na funcao /api/admin.
 import {
-    clearExpensesSessionCookie,
-} from './_expenses-session.js'
+    clearAdminSessionCookie,
+} from './_admin-session.js'
 
-
-export default function handler(
+export default async function handler(
     request,
     response,
 ) {
@@ -12,9 +12,7 @@ export default function handler(
         'no-store',
     )
 
-    if (
-        request.method !== 'POST'
-    ) {
+    if (request.method !== 'POST') {
         response.setHeader(
             'Allow',
             'POST',
@@ -23,20 +21,18 @@ export default function handler(
         return response
             .status(405)
             .json({
-                error:
-                    'Metodo nao permitido.',
+                error: 'Metodo nao permitido.',
             })
     }
 
     response.setHeader(
         'Set-Cookie',
-        clearExpensesSessionCookie(),
+        clearAdminSessionCookie(),
     )
 
     return response
         .status(200)
         .json({
-            message:
-                'Sessao encerrada.',
+            message: 'Sessao encerrada.',
         })
 }

@@ -27,7 +27,10 @@ export default [
         },
     },
     {
-        files: ['api/**/*.js'],
+        files: [
+            'api/**/*.js',
+            'server/**/*.js',
+        ],
         languageOptions: {
             ecmaVersion: 2022,
             globals: globals.node,

@@ -138,7 +138,7 @@ const {
     ensureSchema,
     getClient,
 } = await import(
-    `../api/_db.js?integration=${Date.now()}`
+    `../server/_db.js?integration=${Date.now()}`
 )
 
 await ensureSchema()

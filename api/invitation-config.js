@@ -1,6 +1,6 @@
 import {
     getInvitationConfig,
-} from './_invitation-config.js'
+} from '../server/_invitation-config.js'
 
 export default async function handler(
     request,
