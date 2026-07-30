@@ -1779,20 +1779,20 @@ export default function ExpensesPage() {
             || 0
         ) < 0
 
-    const confirmedGuests =
+    const invitedGuests =
         Number(
-            totals.confirmedGuests
+            totals.invitedGuests
             || 0
         )
 
     const costPerGuest =
-        confirmedGuests > 0
+        invitedGuests > 0
             ? Math.round(
                 Number(
                     totals.total
                     || 0
                 )
-                / confirmedGuests
+                / invitedGuests
             )
             : 0
 
@@ -2301,9 +2301,9 @@ export default function ExpensesPage() {
                             icon="guest"
                             tone="guest"
                             description={
-                                confirmedGuests > 0
-                                    ? `${confirmedGuests} pessoa${confirmedGuests === 1 ? '' : 's'} confirmada${confirmedGuests === 1 ? '' : 's'}`
-                                    : 'Aguardando confirmações'
+                                invitedGuests > 0
+                                    ? `${invitedGuests} pessoa${invitedGuests === 1 ? '' : 's'} na lista de convidados`
+                                    : 'Lista de convidados vazia'
                             }
                         />
                     </section>

@@ -2262,6 +2262,35 @@ test(
                     3,
                 )
 
+                const invitedTotalResult =
+                    await db.execute(`
+                        SELECT COALESCE(
+                            SUM(
+                                1 + COALESCE(max_companions, 0)
+                            ),
+                            0
+                        ) AS total
+                        FROM invited_guests
+                    `)
+
+                assert.equal(
+                    result.data.totals
+                        .invitedGuests,
+                    Number(
+                        invitedTotalResult
+                            .rows[0]
+                            ?.total
+                        || 0
+                    ),
+                )
+
+                assert.ok(
+                    result.data.totals
+                        .invitedGuests
+                    > result.data.totals
+                        .confirmedGuests,
+                )
+
                 const expense =
                     result.data.expenses
                         .find(

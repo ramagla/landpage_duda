@@ -5224,7 +5224,10 @@ function App() {
         )
     }
 
-    if (pathname === '/presenca') {
+    if (
+        pathname === '/presenca'
+        || pathname === '/checkin'
+    ) {
         return (
             <Suspense
                 fallback={(

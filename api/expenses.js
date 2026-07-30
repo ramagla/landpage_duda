@@ -512,17 +512,28 @@ async function getSummary() {
     const guestTotalsResult =
         await db.execute(`
             SELECT
-                COALESCE(
-                    SUM(
-                        CASE
-                            WHEN attending = 'sim'
-                            THEN 1 + COALESCE(companions_count, 0)
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ) AS confirmed_guests
-            FROM rsvps
+                (
+                    SELECT COALESCE(
+                        SUM(
+                            CASE
+                                WHEN attending = 'sim'
+                                THEN 1 + COALESCE(companions_count, 0)
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    )
+                    FROM rsvps
+                ) AS confirmed_guests,
+                (
+                    SELECT COALESCE(
+                        SUM(
+                            1 + COALESCE(max_companions, 0)
+                        ),
+                        0
+                    )
+                    FROM invited_guests
+                ) AS invited_guests
         `)
 
     const suppliersResult =
@@ -1250,6 +1261,14 @@ async function getSummary() {
             guestTotalsResult
                 .rows[0]
                 ?.confirmed_guests
+            || 0
+        )
+
+    totals.invitedGuests =
+        Number(
+            guestTotalsResult
+                .rows[0]
+                ?.invited_guests
             || 0
         )
 

@@ -95,6 +95,10 @@
     {
       "source": "/presenca",
       "destination": "/index.html"
+    },
+    {
+      "source": "/checkin",
+      "destination": "/index.html"
     }
   ]
 }
