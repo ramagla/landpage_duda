@@ -20,7 +20,7 @@ export const DEFAULT_INVITATION_SETTINGS = Object.freeze({
     pixName: 'Maria Eduarda Almeida Araujo',
     pixCopyPaste: '00020101021226330014br.gov.bcb.pix0111567659868985204000053039865802BR5921MARIA EDUARDA ALMEIDA6015ITAQUAQUECETUBA62100506DUDA166304E334',
     youtubeVideoId: '_zR6ROjoOX0',
-    giftIntro: 'Se quiser nos presentear, deixamos algumas sugestões e o PIX da Duda.',
+    giftIntro: 'Algumas ideias para escolher um carinho que combine com a Duda.',
 })
 
 export const DEFAULT_INVITATION_PHOTOS = Object.freeze([

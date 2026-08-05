@@ -11845,11 +11845,12 @@ html {
     text-align: center;
 }
 
-.invitation-footer > span {
-    color: var(--invite-wine);
-    font-family: "Great Vibes", cursive;
-    font-size: 3.2rem;
-    line-height: .8;
+.invitation-footer > img {
+    display: block;
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: drop-shadow(0 7px 12px rgba(27, 23, 23, .16));
 }
 
 .invitation-footer p {
@@ -12537,10 +12538,8 @@ html {
 
 .opening-gate {
     background:
-        radial-gradient(circle at 50% 28%, rgba(237, 235, 221, .56) 0%, rgba(237, 235, 221, .28) 34%, rgba(237, 235, 221, .06) 67%, rgba(27, 23, 23, .08) 100%),
-        linear-gradient(135deg, rgba(237, 235, 221, .06), rgba(129, 1, 0, .04)),
-        url('/media/animal-print-gold.webp') center / cover no-repeat,
-        #bda78b;
+        radial-gradient(circle at 50% 25%, rgba(237, 235, 221, .99), rgba(237, 235, 221, .95) 48%, rgba(237, 235, 221, .92) 100%),
+        #edebdd;
 }
 
 .opening-gate::before {
@@ -12576,6 +12575,15 @@ html {
     text-shadow: 0 1px 5px rgba(237, 235, 221, .96);
 }
 
+.opening-gate__brand small {
+    padding: 6px 12px;
+    border: 1px solid rgba(99, 0, 0, .14);
+    border-radius: 999px;
+    background: rgba(237, 235, 221, .86);
+    box-shadow: 0 8px 24px rgba(27, 23, 23, .10);
+    backdrop-filter: blur(8px);
+}
+
 .opening-gate__disco {
     mix-blend-mode: normal;
     filter: saturate(.70) contrast(1.06);
@@ -12594,7 +12602,7 @@ html {
 }
 
 .opening-gate .envelope__back {
-    background: linear-gradient(135deg, #810100, #630000) !important;
+    background: linear-gradient(135deg, #8f3d38, #6d2d2a) !important;
 }
 
 .opening-gate .envelope__flap {
@@ -12605,15 +12613,15 @@ html {
 }
 
 .opening-gate .envelope__pocket--left {
-    background: linear-gradient(135deg, #810100, #630000) !important;
+    background: linear-gradient(135deg, #8f3d38, #672a28) !important;
 }
 
 .opening-gate .envelope__pocket--right {
-    background: linear-gradient(225deg, #810100, #630000) !important;
+    background: linear-gradient(225deg, #8f3d38, #672a28) !important;
 }
 
 .opening-gate .envelope__front {
-    background: linear-gradient(180deg, #810100, #630000) !important;
+    background: linear-gradient(180deg, #7d322f, #5f2825) !important;
 }
 
 .opening-gate .envelope > span {
@@ -14378,4 +14386,35 @@ html {
     .opening-gate--unlocked .letter-sheet {
         transform: translateY(0) scale(1) !important;
     }
+}
+
+/* Acabamento dos novos ícones de Instagram, música e selo final. */
+.page-shell--revealed .duda-instagram-card > span:first-child .invite-icon {
+    width: 23px;
+    height: 23px;
+    stroke-width: 2;
+}
+
+.music-player__control .invite-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.page-shell--revealed + .music-player .music-player__control {
+    border-color: rgba(95, 40, 37, .28);
+    background: rgba(237, 235, 221, .96);
+    color: #5f2825;
+    box-shadow: 0 12px 28px rgba(27, 23, 23, .18);
+    backdrop-filter: blur(12px);
+}
+
+.page-shell--revealed + .music-player .music-player__control > span {
+    background: linear-gradient(145deg, #8f3d38, #5f2825);
+    color: #edebdd;
 }

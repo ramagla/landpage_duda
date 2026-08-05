@@ -417,6 +417,13 @@ function InviteIcon({ name }) {
             </>
         ),
         heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />,
+        instagram: (
+            <>
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+            </>
+        ),
         map: (
             <>
                 <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z" />
@@ -424,7 +431,15 @@ function InviteIcon({ name }) {
             </>
         ),
         message: <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />,
+        music: (
+            <>
+                <path d="M9 18V5l11-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="17" cy="16" r="3" />
+            </>
+        ),
         navigation: <path d="m3 11 19-9-9 19-2-8Z" />,
+        pause: <path d="M9 5v14M15 5v14" />,
         pin: (
             <>
                 <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -872,7 +887,7 @@ function MusicPlayer({
                 title={playing ? 'Pausar música' : 'Tocar música'}
             >
                 <span aria-hidden="true">
-                    {playing ? '❚❚' : '♪'}
+                    <InviteIcon name={playing ? 'pause' : 'music'} />
                 </span>
 
                 <small>
@@ -1327,6 +1342,9 @@ function GiftPanel({
         DEFAULT_INVITATION_CONFIG.settings,
 }) {
     const [copyStatus, setCopyStatus] = useState('')
+    const giftIntro = /pix da duda/i.test(settings.giftIntro)
+        ? 'Algumas ideias para escolher um carinho que combine com a Duda.'
+        : settings.giftIntro
 
     async function handleCopyPixKey() {
         try {
@@ -1368,7 +1386,7 @@ function GiftPanel({
             </h2>
 
             <p>
-                {settings.giftIntro}
+                {giftIntro}
             </p>
 
             <div className="gift-suggestions" aria-label="Ideias de presente">
@@ -1376,11 +1394,16 @@ function GiftPanel({
                 <span>Acessórios</span>
                 <span>Cremes</span>
                 <span>Maquiagem</span>
+                <span>Body splash</span>
+                <span>Skincare</span>
+                <span>Bolsas</span>
+                <span>Semijoias</span>
+                <span>Roupas</span>
+                <span>Vale-presente</span>
             </div>
 
             <p className="pix-intro">
-                Se preferir, você também pode enviar um Pix para
-                ela escolher algo especial.
+                Se preferir, envie um Pix para ela escolher algo especial.
             </p>
 
             <div className="pix-card">
@@ -5085,7 +5108,9 @@ function LandingPage() {
                         target="_blank"
                         rel="noreferrer"
                     >
-                        <span>D</span>
+                        <span aria-hidden="true">
+                            <InviteIcon name="instagram" />
+                        </span>
                         <div>
                             <small>Acompanhe a Duda</small>
                             <strong>
@@ -5176,7 +5201,12 @@ function LandingPage() {
                     </section>
 
                     <footer className="invitation-footer">
-                        <span>D</span>
+                        <img
+                            src="/media/selo.webp"
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                        />
                         <p>Com carinho, Duda</p>
                         <small>
                             {
