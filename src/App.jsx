@@ -417,13 +417,6 @@ function InviteIcon({ name }) {
             </>
         ),
         heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />,
-        instagram: (
-            <>
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-            </>
-        ),
         map: (
             <>
                 <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z" />
@@ -4541,7 +4534,7 @@ function OpeningInvitationGate({
 
             <section className="opening-gate__brand" aria-hidden="true">
                 <p>Sweet birthday</p>
-                <img className="opening-gate__balloon" src="/media/balloon-16.webp" alt="" />
+                <img className="opening-gate__balloon" src="/media/balloon-16-clean.webp" alt="" />
                 <span>
                     {
                         invitationConfig
@@ -5109,7 +5102,10 @@ function LandingPage() {
                         rel="noreferrer"
                     >
                         <span aria-hidden="true">
-                            <InviteIcon name="instagram" />
+                            <img
+                                src="/media/instagram-logo.svg"
+                                alt=""
+                            />
                         </span>
                         <div>
                             <small>Acompanhe a Duda</small>

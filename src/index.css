@@ -12591,10 +12591,18 @@ html {
 }
 
 .opening-gate__balloon {
+    background:
+        radial-gradient(
+            circle at 69% 65%,
+            rgba(224, 167, 47, .24) 0 7%,
+            rgba(237, 235, 221, .12) 12%,
+            transparent 18%
+        );
     filter:
-        contrast(1.06)
-        saturate(.82)
-        drop-shadow(0 16px 24px rgba(27, 23, 23, .14));
+        contrast(1.14)
+        brightness(.92)
+        saturate(.76)
+        drop-shadow(0 16px 24px rgba(27, 23, 23, .22));
 }
 
 .opening-gate .envelope {
@@ -12607,8 +12615,8 @@ html {
 
 .opening-gate .envelope__flap {
     background:
-        linear-gradient(120deg, rgba(255, 255, 255, .42), transparent 32% 68%, rgba(99, 0, 0, .16)),
-        linear-gradient(180deg, #f5dfa3 0%, #d4a53f 48%, #9a6412 100%) !important;
+        linear-gradient(120deg, rgba(255, 255, 255, .52), transparent 30% 66%, rgba(99, 0, 0, .18)),
+        linear-gradient(180deg, #f8df86 0%, #e0a72f 48%, #a96908 100%) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .56);
 }
 
@@ -14389,10 +14397,11 @@ html {
 }
 
 /* Acabamento dos novos ícones de Instagram, música e selo final. */
-.page-shell--revealed .duda-instagram-card > span:first-child .invite-icon {
-    width: 23px;
-    height: 23px;
-    stroke-width: 2;
+.page-shell--revealed .duda-instagram-card > span:first-child img {
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
 }
 
 .music-player__control .invite-icon {
@@ -14417,4 +14426,17 @@ html {
 .page-shell--revealed + .music-player .music-player__control > span {
     background: linear-gradient(145deg, #8f3d38, #5f2825);
     color: #edebdd;
+}
+
+.page-shell--revealed .invitation-welcome::before {
+    content: "";
+    display: block;
+    width: 58px;
+    height: 58px;
+    margin: -54px auto 10px;
+    border: 0;
+    border-radius: 50%;
+    background: url('/media/selo.webp') center / contain no-repeat;
+    box-shadow: none;
+    filter: drop-shadow(0 7px 12px rgba(27, 23, 23, .22));
 }
