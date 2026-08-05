@@ -986,7 +986,7 @@ button[type='submit'] {
     animation: sealFade 900ms 1850ms ease forwards;
 }
 
-.envelope span {
+.envelope > span {
     position: absolute;
     left: 0;
     right: 0;
