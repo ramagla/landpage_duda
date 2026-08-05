@@ -4421,6 +4421,7 @@ function OpeningInvitationGate({
     const discoTapResetTimerRef = useRef(null)
     const partyTimerRef = useRef(null)
     const discoTapCountRef = useRef(0)
+    const lastTouchTapRef = useRef(0)
     const [stage, setStage] = useState('intro')
     const [whatsappValue, setWhatsappValue] = useState('')
     const [message, setMessage] = useState('')
@@ -4451,7 +4452,7 @@ function OpeningInvitationGate({
                 () => {
                     discoTapCountRef.current = 0
                 },
-                1400,
+                2600,
             )
             return
         }
@@ -4462,6 +4463,22 @@ function OpeningInvitationGate({
             () => setPartyMode(false),
             5200,
         )
+    }
+
+    function handleDiscoPointerDown(event) {
+        if (
+            event.pointerType !== 'touch'
+            && event.pointerType !== 'pen'
+        ) return
+
+        event.preventDefault()
+        lastTouchTapRef.current = Date.now()
+        handleDiscoTap()
+    }
+
+    function handleDiscoClick() {
+        if (Date.now() - lastTouchTapRef.current < 500) return
+        handleDiscoTap()
     }
 
     function startOpening() {
@@ -4567,7 +4584,8 @@ function OpeningInvitationGate({
             <button
                 className="opening-gate__disco opening-gate__disco--left"
                 type="button"
-                onClick={handleDiscoTap}
+                onPointerDown={handleDiscoPointerDown}
+                onClick={handleDiscoClick}
                 disabled={stage !== 'intro'}
                 aria-label="Bola de discoteca"
             >
@@ -4576,7 +4594,8 @@ function OpeningInvitationGate({
             <button
                 className="opening-gate__disco opening-gate__disco--right"
                 type="button"
-                onClick={handleDiscoTap}
+                onPointerDown={handleDiscoPointerDown}
+                onClick={handleDiscoClick}
                 disabled={stage !== 'intro'}
                 aria-label="Bola de discoteca"
             >

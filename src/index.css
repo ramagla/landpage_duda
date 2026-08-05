@@ -14445,6 +14445,17 @@ html {
     background: transparent;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: 6;
+}
+
+.opening-gate .opening-gate__disco::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
 }
 
 .opening-gate .opening-gate__disco:disabled {
@@ -14469,6 +14480,10 @@ html {
 .opening-gate .opening-gate__disco:focus-visible {
     outline: 3px solid #810100;
     outline-offset: 5px;
+}
+
+.opening-gate .opening-gate__brand {
+    pointer-events: none;
 }
 
 .opening-gate__party-surprise {
