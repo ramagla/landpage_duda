@@ -4418,7 +4418,6 @@ function OpeningInvitationGate({
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const inputRef = useRef(null)
     const openingTimerRef = useRef(null)
-    const discoTapResetTimerRef = useRef(null)
     const partyTimerRef = useRef(null)
     const discoTapCountRef = useRef(0)
     const lastTouchTapRef = useRef(0)
@@ -4428,6 +4427,7 @@ function OpeningInvitationGate({
     const [validatedData, setValidatedData] = useState(null)
     const [sealBroken, setSealBroken] = useState(false)
     const [partyMode, setPartyMode] = useState(false)
+    const [discoTapProgress, setDiscoTapProgress] = useState(0)
 
     useEffect(() => {
         return () => {
@@ -4436,7 +4436,6 @@ function OpeningInvitationGate({
                     openingTimerRef.current,
                 )
             }
-            window.clearTimeout(discoTapResetTimerRef.current)
             window.clearTimeout(partyTimerRef.current)
         }
     }, [])
@@ -4444,20 +4443,16 @@ function OpeningInvitationGate({
     function handleDiscoTap() {
         if (stage !== 'intro' || partyMode) return
 
-        discoTapCountRef.current += 1
-        window.clearTimeout(discoTapResetTimerRef.current)
+        const nextTapCount = discoTapCountRef.current + 1
 
-        if (discoTapCountRef.current < 3) {
-            discoTapResetTimerRef.current = window.setTimeout(
-                () => {
-                    discoTapCountRef.current = 0
-                },
-                2600,
-            )
+        if (nextTapCount < 3) {
+            discoTapCountRef.current = nextTapCount
+            setDiscoTapProgress(nextTapCount)
             return
         }
 
         discoTapCountRef.current = 0
+        setDiscoTapProgress(0)
         setPartyMode(true)
         partyTimerRef.current = window.setTimeout(
             () => setPartyMode(false),
@@ -4465,19 +4460,14 @@ function OpeningInvitationGate({
         )
     }
 
-    function handleDiscoPointerDown(event) {
-        if (
-            event.pointerType !== 'touch'
-            && event.pointerType !== 'pen'
-        ) return
-
-        event.preventDefault()
+    function handleDiscoTouchStart(event) {
+        event.stopPropagation()
         lastTouchTapRef.current = Date.now()
         handleDiscoTap()
     }
 
     function handleDiscoClick() {
-        if (Date.now() - lastTouchTapRef.current < 500) return
+        if (Date.now() - lastTouchTapRef.current < 1000) return
         handleDiscoTap()
     }
 
@@ -4486,8 +4476,8 @@ function OpeningInvitationGate({
 
         setPartyMode(false)
         window.clearTimeout(partyTimerRef.current)
-        window.clearTimeout(discoTapResetTimerRef.current)
         discoTapCountRef.current = 0
+        setDiscoTapProgress(0)
 
         /*
          * A musica e iniciada exatamente no gesto que rompe o selo.
@@ -4579,12 +4569,12 @@ function OpeningInvitationGate({
     )
 
     return (
-        <main className={`opening-gate opening-gate--${stage}${partyMode ? ' opening-gate--party' : ''}`} aria-label="Abertura do convite da Duda">
+        <main className={`opening-gate opening-gate--${stage}${partyMode ? ' opening-gate--party' : ''}${discoTapProgress ? ` opening-gate--disco-tap-${discoTapProgress}` : ''}`} aria-label="Abertura do convite da Duda">
             <div className="opening-gate__sparkles" aria-hidden="true" />
             <button
                 className="opening-gate__disco opening-gate__disco--left"
                 type="button"
-                onPointerDown={handleDiscoPointerDown}
+                onTouchStart={handleDiscoTouchStart}
                 onClick={handleDiscoClick}
                 disabled={stage !== 'intro'}
                 aria-label="Bola de discoteca"
@@ -4594,7 +4584,7 @@ function OpeningInvitationGate({
             <button
                 className="opening-gate__disco opening-gate__disco--right"
                 type="button"
-                onPointerDown={handleDiscoPointerDown}
+                onTouchStart={handleDiscoTouchStart}
                 onClick={handleDiscoClick}
                 disabled={stage !== 'intro'}
                 aria-label="Bola de discoteca"

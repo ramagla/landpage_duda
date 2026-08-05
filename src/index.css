@@ -14486,6 +14486,26 @@ html {
     pointer-events: none;
 }
 
+.opening-gate--disco-tap-1 .opening-gate__disco img {
+    animation: secretDiscoTapOne 520ms ease-out;
+}
+
+.opening-gate--disco-tap-2 .opening-gate__disco img {
+    animation: secretDiscoTapTwo 520ms ease-out;
+}
+
+@keyframes secretDiscoTapOne {
+    0% { filter: brightness(1); }
+    42% { filter: brightness(1.42) drop-shadow(0 0 18px rgba(237, 235, 221, .96)); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes secretDiscoTapTwo {
+    0% { filter: brightness(1); }
+    42% { filter: brightness(1.58) drop-shadow(0 0 24px rgba(237, 235, 221, 1)); }
+    100% { filter: brightness(1); }
+}
+
 .opening-gate__party-surprise {
     position: absolute;
     top: 50%;
