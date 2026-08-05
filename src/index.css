@@ -12375,10 +12375,10 @@ html {
 
 .opening-gate {
     background:
-        radial-gradient(circle at 50% 28%, rgba(237, 235, 221, .92) 0%, rgba(237, 235, 221, .72) 34%, rgba(237, 235, 221, .30) 67%, rgba(27, 23, 23, .16) 100%),
-        linear-gradient(135deg, rgba(237, 235, 221, .18), rgba(129, 1, 0, .10)),
+        radial-gradient(circle at 50% 28%, rgba(237, 235, 221, .56) 0%, rgba(237, 235, 221, .28) 34%, rgba(237, 235, 221, .06) 67%, rgba(27, 23, 23, .08) 100%),
+        linear-gradient(135deg, rgba(237, 235, 221, .06), rgba(129, 1, 0, .04)),
         url('/media/animal-print-gold.webp') center / cover no-repeat,
-        #c99b4b;
+        #bda78b;
 }
 
 .opening-gate::before {
