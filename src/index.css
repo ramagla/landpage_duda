@@ -12375,15 +12375,17 @@ html {
 
 .opening-gate {
     background:
-        radial-gradient(circle at 50% 25%, rgba(237, 235, 221, .99), rgba(237, 235, 221, .95) 48%, rgba(237, 235, 221, .92) 100%),
-        #edebdd;
+        radial-gradient(circle at 50% 28%, rgba(237, 235, 221, .92) 0%, rgba(237, 235, 221, .72) 34%, rgba(237, 235, 221, .30) 67%, rgba(27, 23, 23, .16) 100%),
+        linear-gradient(135deg, rgba(237, 235, 221, .18), rgba(129, 1, 0, .10)),
+        url('/media/animal-print-gold.webp') center / cover no-repeat,
+        #c99b4b;
 }
 
 .opening-gate::before {
-    opacity: .30;
+    opacity: .16;
     background-image:
         radial-gradient(circle, rgba(27, 23, 23, .34) 0 1px, transparent 1.5px),
-        radial-gradient(circle, rgba(129, 1, 0, .44) 0 1px, transparent 1.5px);
+        radial-gradient(circle, rgba(237, 235, 221, .70) 0 1px, transparent 1.5px);
 }
 
 .opening-gate__sparkles {
@@ -12409,6 +12411,7 @@ html {
 .opening-gate__brand small,
 .opening-gate__footer {
     color: #630000;
+    text-shadow: 0 1px 5px rgba(237, 235, 221, .96);
 }
 
 .opening-gate__disco {
@@ -12433,7 +12436,10 @@ html {
 }
 
 .opening-gate .envelope__flap {
-    background: linear-gradient(180deg, #edebdd, #810100) !important;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, .42), transparent 32% 68%, rgba(99, 0, 0, .16)),
+        linear-gradient(180deg, #f5dfa3 0%, #d4a53f 48%, #9a6412 100%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .56);
 }
 
 .opening-gate .envelope__pocket--left {
