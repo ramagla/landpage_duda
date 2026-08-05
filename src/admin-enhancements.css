@@ -32,17 +32,17 @@
     height: 4.4rem;
     place-items: center;
     border-radius: 50%;
-    color: #fff;
-    background: #0b7771;
+    color: #edebdd;
+    background: #630000;
     font-size: 1.15rem;
 }
 
 .admin-health-card header > .is-attention {
-    background: #bb7a19;
+    background: #630000;
 }
 
 .admin-health-card header > .is-critical {
-    background: #a83d4b;
+    background: #810100;
 }
 
 .admin-health-bars {
@@ -54,7 +54,7 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: .3rem;
-    color: #4a696c;
+    color: #630000;
     font-size: .82rem;
 }
 
@@ -63,14 +63,14 @@
     overflow: hidden;
     height: .6rem;
     border-radius: 999px;
-    background: #deeee9;
+    background: #edebdd;
 }
 
 .admin-health-bars em {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #49b7a7, #08746f);
+    background: linear-gradient(90deg, #810100, #630000);
 }
 
 .admin-health-alerts {
@@ -84,13 +84,13 @@
 .admin-health-alerts li {
     padding: .65rem .75rem;
     border-radius: .65rem;
-    color: #765314;
-    background: #fff7df;
+    color: #630000;
+    background: #edebdd;
 }
 
 .admin-health-alerts .is-clear {
-    color: #24625e;
-    background: #e9f8f3;
+    color: #630000;
+    background: #edebdd;
 }
 
 .admin-backup-status {
@@ -99,8 +99,8 @@
     margin: .5rem 0 1rem;
     padding: 1rem;
     border-radius: .8rem;
-    color: #315e62;
-    background: #eff8f5;
+    color: #630000;
+    background: #edebdd;
 }
 
 .admin-backup-card button,
@@ -109,8 +109,8 @@
     padding: .65rem .9rem;
     border: 0;
     border-radius: .7rem;
-    color: #fff;
-    background: #08746f;
+    color: #edebdd;
+    background: #630000;
     font-weight: 800;
 }
 
@@ -132,9 +132,9 @@
     justify-content: space-between;
     gap: .8rem;
     padding: .75rem;
-    border: 1px solid rgba(49, 94, 98, .12);
+    border: 1px solid rgba(99, 0, 0, .12);
     border-radius: .7rem;
-    background: #f8fcfa;
+    background: #edebdd;
 }
 
 .admin-audit-card li span {
@@ -144,7 +144,7 @@
 
 .admin-audit-card small,
 .admin-audit-card time {
-    color: #6e8284;
+    color: #1b1717;
     font-size: .72rem;
 }
 
@@ -159,10 +159,10 @@
     gap: 1rem;
     margin: 0 0 1rem;
     padding: .85rem 1rem;
-    border: 1px solid #d9a743;
+    border: 1px solid #810100;
     border-radius: .8rem;
-    color: #704f14;
-    background: #fff7df;
+    color: #630000;
+    background: #edebdd;
 }
 
 .admin-offline-sync > div {
@@ -173,14 +173,14 @@
 .admin-tool-heading .admin-upload-photo {
     position: relative;
     overflow: hidden;
-    color: #fff;
-    background: #08746f;
-    box-shadow: 0 10px 24px rgba(8, 116, 111, .2);
+    color: #edebdd;
+    background: #630000;
+    box-shadow: 0 10px 24px rgba(99, 0, 0, .2);
 }
 
 .admin-tool-heading .admin-upload-photo > span {
     margin: 0;
-    color: #fff;
+    color: #edebdd;
     font-size: .82rem;
     font-weight: 900;
     letter-spacing: .02em;
@@ -188,11 +188,11 @@
 }
 
 .admin-tool-heading .admin-upload-photo:hover {
-    background: #075e63;
+    background: #1b1717;
 }
 
 .admin-tool-heading .admin-upload-photo:focus-within {
-    outline: 3px solid rgba(8, 116, 111, .25);
+    outline: 3px solid rgba(99, 0, 0, .25);
     outline-offset: 3px;
 }
 
@@ -203,9 +203,9 @@
     gap: 1rem;
     margin-bottom: 1rem;
     padding: .65rem;
-    border: 1px solid rgba(49, 94, 98, .14);
+    border: 1px solid rgba(99, 0, 0, .14);
     border-radius: .9rem;
-    background: #f3faf7;
+    background: #edebdd;
 }
 
 .admin-real-preview-note {
@@ -214,9 +214,9 @@
     gap: .75rem;
     margin-bottom: 1rem;
     padding: .8rem .9rem;
-    border: 1px solid rgba(8, 116, 111, .16);
+    border: 1px solid rgba(99, 0, 0, .16);
     border-radius: .85rem;
-    background: linear-gradient(135deg, #edf9f5, #f9fcf8);
+    background: linear-gradient(135deg, #edebdd, #edebdd);
 }
 
 .admin-real-preview-note > span {
@@ -226,8 +226,8 @@
     flex: 0 0 2rem;
     place-items: center;
     border-radius: 50%;
-    color: #fff;
-    background: #08746f;
+    color: #edebdd;
+    background: #630000;
     font-weight: 900;
 }
 
@@ -235,13 +235,13 @@
     display: grid;
     gap: .1rem;
     margin: 0;
-    color: #587478;
+    color: #630000;
     font-size: .75rem;
     line-height: 1.45;
 }
 
 .admin-real-preview-note strong {
-    color: #185d5d;
+    color: #1b1717;
     font-size: .8rem;
 }
 
@@ -253,29 +253,29 @@
 .admin-preview-toolbar button {
     min-height: 2.55rem;
     padding: .55rem .8rem;
-    border: 1px solid rgba(49, 94, 98, .18);
+    border: 1px solid rgba(99, 0, 0, .18);
     border-radius: .7rem;
-    color: #315e62;
-    background: #fff;
+    color: #630000;
+    background: #edebdd;
     font-weight: 800;
     cursor: pointer;
 }
 
 .admin-preview-toolbar button:hover,
 .admin-preview-toolbar button.is-active {
-    color: #fff;
-    border-color: #08746f;
-    background: #08746f;
+    color: #edebdd;
+    border-color: #630000;
+    background: #630000;
 }
 
 .admin-live-preview {
     overflow: hidden;
     width: 100%;
     margin: 0 auto;
-    border: 1px solid rgba(17, 72, 73, .18);
+    border: 1px solid rgba(27, 23, 23, .18);
     border-radius: 1.15rem;
-    background: #e8f4ef;
-    box-shadow: 0 24px 55px rgba(18, 75, 76, .16);
+    background: #edebdd;
+    box-shadow: 0 24px 55px rgba(27, 23, 23, .16);
     transition: width 220ms ease;
 }
 
@@ -289,23 +289,23 @@
     gap: .38rem;
     min-height: 2.6rem;
     padding: .55rem .75rem;
-    border-bottom: 1px solid rgba(17, 72, 73, .12);
-    background: #f7faf8;
+    border-bottom: 1px solid rgba(27, 23, 23, .12);
+    background: #edebdd;
 }
 
 .admin-live-preview__browser span {
     width: .65rem;
     height: .65rem;
     border-radius: 50%;
-    background: #e38181;
+    background: #810100;
 }
 
 .admin-live-preview__browser span + span {
-    background: #e2bd68;
+    background: #810100;
 }
 
 .admin-live-preview__browser span + span + span {
-    background: #63b28a;
+    background: #810100;
 }
 
 .admin-live-preview__browser strong {
@@ -314,8 +314,8 @@
     margin-left: .45rem;
     padding: .35rem .65rem;
     border-radius: .55rem;
-    color: #637779;
-    background: #eaf1ee;
+    color: #1b1717;
+    background: #edebdd;
     font-size: .72rem;
     text-align: center;
     text-overflow: ellipsis;
@@ -328,7 +328,7 @@
     height: min(760px, calc(100vh - 170px));
     min-height: 620px;
     border: 0;
-    background: #e7fbf5;
+    background: #edebdd;
 }
 
 @media (max-width: 760px) {

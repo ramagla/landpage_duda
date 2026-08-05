@@ -1,9 +1,9 @@
 :root {
-    --presence-ink: #153f3a;
-    --presence-teal: #08786f;
-    --presence-mint: #dff5ee;
-    --presence-cream: #fffaf0;
-    --presence-border: rgba(8, 120, 111, .16);
+    --presence-ink: #1b1717;
+    --presence-teal: #630000;
+    --presence-mint: #edebdd;
+    --presence-cream: #edebdd;
+    --presence-border: rgba(99, 0, 0, .16);
 }
 
 body:has(.presence-shell) {
@@ -11,9 +11,9 @@ body:has(.presence-shell) {
     min-height: 100dvh;
     margin: 0;
     background:
-        radial-gradient(circle at 0 0, rgba(83, 213, 187, .28), transparent 28rem),
-        radial-gradient(circle at 100% 100%, rgba(237, 196, 116, .2), transparent 30rem),
-        #edf9f5;
+        radial-gradient(circle at 0 0, rgba(129, 1, 0, .28), transparent 28rem),
+        radial-gradient(circle at 100% 100%, rgba(129, 1, 0, .2), transparent 30rem),
+        #edebdd;
 }
 
 .presence-shell {
@@ -41,8 +41,8 @@ body:has(.presence-shell) {
     padding: clamp(24px, 6vw, 42px);
     border: 1px solid var(--presence-border);
     border-radius: 24px;
-    background: rgba(255, 255, 255, .96);
-    box-shadow: 0 28px 80px rgba(16, 73, 66, .16);
+    background: rgba(237, 235, 221, .96);
+    box-shadow: 0 28px 80px rgba(27, 23, 23, .16);
 }
 
 .presence-logo {
@@ -52,10 +52,10 @@ body:has(.presence-shell) {
     place-items: center;
     margin-bottom: 20px;
     border-radius: 19px;
-    color: #fff;
-    background: linear-gradient(145deg, #159b86, #07685f);
+    color: #edebdd;
+    background: linear-gradient(145deg, #630000, #1b1717);
     font: 800 1.6rem/1 Georgia, serif;
-    box-shadow: 0 12px 30px rgba(8, 120, 111, .24);
+    box-shadow: 0 12px 30px rgba(99, 0, 0, .24);
 }
 
 .presence-kicker {
@@ -79,7 +79,7 @@ body:has(.presence-shell) {
 .presence-login-card > p:not(.presence-kicker),
 .presence-header p:last-child {
     margin: 0;
-    color: #637d78;
+    color: #1b1717;
 }
 
 .presence-login-card form {
@@ -97,7 +97,7 @@ body:has(.presence-shell) {
 .presence-login-card label > span,
 .presence-toolbar label > span {
     margin: 0;
-    color: #426d67;
+    color: #630000;
     font-size: .68rem;
     font-weight: 900;
     letter-spacing: .08em;
@@ -109,9 +109,9 @@ body:has(.presence-shell) {
     width: 100%;
     min-height: 50px;
     padding: 10px 13px;
-    border: 1px solid rgba(8, 120, 111, .24);
+    border: 1px solid rgba(99, 0, 0, .24);
     border-radius: 12px;
-    background: #fff;
+    background: #edebdd;
     color: var(--presence-ink);
     font: inherit;
     font-size: 1rem;
@@ -123,7 +123,7 @@ body:has(.presence-shell) {
     padding: 10px 16px;
     border: 0;
     border-radius: 12px;
-    color: #fff;
+    color: #edebdd;
     background: var(--presence-teal);
     font: inherit;
     font-weight: 900;
@@ -138,8 +138,8 @@ body:has(.presence-shell) {
     padding: 24px;
     border: 1px solid var(--presence-border);
     border-radius: 22px;
-    background: rgba(255, 255, 255, .94);
-    box-shadow: 0 18px 55px rgba(16, 73, 66, .1);
+    background: rgba(237, 235, 221, .94);
+    box-shadow: 0 18px 55px rgba(27, 23, 23, .1);
 }
 
 .presence-header h1 {
@@ -149,10 +149,10 @@ body:has(.presence-shell) {
 .presence-logout {
     min-height: 42px;
     padding: 8px 15px;
-    border: 1px solid rgba(160, 62, 62, .18);
+    border: 1px solid rgba(129, 1, 0, .18);
     border-radius: 11px;
-    color: #9d4141;
-    background: #fff3f3;
+    color: #810100;
+    background: #edebdd;
     font: inherit;
     font-weight: 850;
     cursor: pointer;
@@ -171,11 +171,11 @@ body:has(.presence-shell) {
     padding: 18px;
     border: 1px solid var(--presence-border);
     border-radius: 16px;
-    background: rgba(255, 255, 255, .95);
+    background: rgba(237, 235, 221, .95);
 }
 
 .presence-summary span {
-    color: #66807b;
+    color: #1b1717;
     font-size: .65rem;
     font-weight: 900;
     letter-spacing: .06em;
@@ -188,11 +188,11 @@ body:has(.presence-shell) {
 }
 
 .presence-summary--checked {
-    background: linear-gradient(145deg, #effbf7, #d9f4ea) !important;
+    background: linear-gradient(145deg, #edebdd, #edebdd) !important;
 }
 
 .presence-summary--checked strong {
-    color: #08745f;
+    color: #630000;
 }
 
 .presence-list-panel {
@@ -200,8 +200,8 @@ body:has(.presence-shell) {
     padding: 18px;
     border: 1px solid var(--presence-border);
     border-radius: 20px;
-    background: rgba(255, 255, 255, .94);
-    box-shadow: 0 18px 55px rgba(16, 73, 66, .08);
+    background: rgba(237, 235, 221, .94);
+    box-shadow: 0 18px 55px rgba(27, 23, 23, .08);
 }
 
 .presence-toolbar {
@@ -212,7 +212,7 @@ body:has(.presence-shell) {
 }
 
 .presence-toolbar button {
-    background: #173f39;
+    background: #1b1717;
 }
 
 .presence-list {
@@ -227,14 +227,14 @@ body:has(.presence-shell) {
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid rgba(8, 120, 111, .13);
+    border: 1px solid rgba(99, 0, 0, .13);
     border-radius: 14px;
-    background: #fff;
+    background: #edebdd;
 }
 
 .presence-card--checked {
-    border-color: rgba(24, 142, 102, .24);
-    background: #edf9f5;
+    border-color: rgba(99, 0, 0, .24);
+    background: #edebdd;
 }
 
 .presence-card__status {
@@ -242,16 +242,16 @@ body:has(.presence-shell) {
     width: 38px;
     height: 38px;
     place-items: center;
-    border: 2px solid #cbdcd7;
+    border: 2px solid #edebdd;
     border-radius: 50%;
-    color: #fff;
+    color: #edebdd;
     font-size: 1rem;
     font-weight: 900;
 }
 
 .presence-card--checked .presence-card__status {
-    border-color: #168d68;
-    background: #168d68;
+    border-color: #630000;
+    background: #630000;
 }
 
 .presence-card__person {
@@ -262,7 +262,7 @@ body:has(.presence-shell) {
 
 .presence-card__person strong {
     overflow: hidden;
-    color: #213f3b;
+    color: #1b1717;
     font-size: 1rem;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -270,22 +270,22 @@ body:has(.presence-shell) {
 
 .presence-card__person small,
 .presence-card__person span {
-    color: #71847f;
+    color: #1b1717;
     font-size: .72rem;
 }
 
 .presence-card__person span {
-    color: #16805f;
+    color: #630000;
     font-weight: 800;
 }
 
 .presence-card > button {
     min-height: 44px;
     padding: 8px 13px;
-    border: 1px solid #08786f;
+    border: 1px solid #630000;
     border-radius: 11px;
-    color: #08786f;
-    background: #fff;
+    color: #630000;
+    background: #edebdd;
     font: inherit;
     font-size: .76rem;
     font-weight: 900;
@@ -293,9 +293,9 @@ body:has(.presence-shell) {
 }
 
 .presence-card--checked > button {
-    color: #fff;
-    background: #168d68;
-    border-color: #168d68;
+    color: #edebdd;
+    background: #630000;
+    border-color: #630000;
 }
 
 .presence-card > button:disabled {
@@ -308,15 +308,15 @@ body:has(.presence-shell) {
     margin: 12px 0 0;
     padding: 11px 13px;
     border-radius: 10px;
-    color: #28665b;
-    background: #e7f7f1;
+    color: #630000;
+    background: #edebdd;
     font-size: .82rem;
     font-weight: 750;
 }
 
 .presence-message--error {
-    color: #983f3f;
-    background: #fff0f0;
+    color: #630000;
+    background: #edebdd;
 }
 
 .presence-empty {

@@ -1802,9 +1802,9 @@ export default function ExpensesPage() {
             valueFormatter: (value) => money(value),
         },
         color: [
-            '#0f8f7d',
-            '#f2b84b',
-            '#d95f59',
+            '#630000',
+            '#810100',
+            '#1b1717',
         ],
         series: [
             {
@@ -1816,7 +1816,7 @@ export default function ExpensesPage() {
                 avoidLabelOverlap: true,
                 label: {
                     formatter: '{b}',
-                    color: '#31524d',
+                    color: '#1b1717',
                     fontWeight: 700,
                 },
                 data: [
@@ -1867,8 +1867,8 @@ export default function ExpensesPage() {
             },
         },
         color: [
-            '#0f8f7d',
-            '#8bb7ff',
+            '#630000',
+            '#810100',
         ],
         series: [
             {
@@ -1906,14 +1906,14 @@ export default function ExpensesPage() {
                     show: true,
                     width: 12,
                     itemStyle: {
-                        color: '#0f8f7d',
+                        color: '#810100',
                     },
                 },
                 axisLine: {
                     lineStyle: {
                         width: 12,
                         color: [
-                            [1, '#e5f0ed'],
+                            [1, '#edebdd'],
                         ],
                     },
                 },
@@ -1932,7 +1932,7 @@ export default function ExpensesPage() {
                 detail: {
                     valueAnimation: true,
                     formatter: '{value}%',
-                    color: '#173f39',
+                    color: '#1b1717',
                     fontSize: 24,
                     fontWeight: 900,
                 },

@@ -97,7 +97,7 @@ async function optimizePhoto(file) {
             alpha: false,
         })
 
-    context.fillStyle = '#fff'
+    context.fillStyle = '#edebdd'
     context.fillRect(0, 0, width, height)
     context.drawImage(
         image,
