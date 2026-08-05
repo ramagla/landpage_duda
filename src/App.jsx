@@ -4418,11 +4418,15 @@ function OpeningInvitationGate({
     const invitationCode = useMemo(() => getInvitationCode(), [])
     const inputRef = useRef(null)
     const openingTimerRef = useRef(null)
+    const discoTapResetTimerRef = useRef(null)
+    const partyTimerRef = useRef(null)
+    const discoTapCountRef = useRef(0)
     const [stage, setStage] = useState('intro')
     const [whatsappValue, setWhatsappValue] = useState('')
     const [message, setMessage] = useState('')
     const [validatedData, setValidatedData] = useState(null)
     const [sealBroken, setSealBroken] = useState(false)
+    const [partyMode, setPartyMode] = useState(false)
 
     useEffect(() => {
         return () => {
@@ -4431,11 +4435,42 @@ function OpeningInvitationGate({
                     openingTimerRef.current,
                 )
             }
+            window.clearTimeout(discoTapResetTimerRef.current)
+            window.clearTimeout(partyTimerRef.current)
         }
     }, [])
 
+    function handleDiscoTap() {
+        if (stage !== 'intro' || partyMode) return
+
+        discoTapCountRef.current += 1
+        window.clearTimeout(discoTapResetTimerRef.current)
+
+        if (discoTapCountRef.current < 3) {
+            discoTapResetTimerRef.current = window.setTimeout(
+                () => {
+                    discoTapCountRef.current = 0
+                },
+                1400,
+            )
+            return
+        }
+
+        discoTapCountRef.current = 0
+        setPartyMode(true)
+        partyTimerRef.current = window.setTimeout(
+            () => setPartyMode(false),
+            5200,
+        )
+    }
+
     function startOpening() {
         if (stage !== 'intro') return
+
+        setPartyMode(false)
+        window.clearTimeout(partyTimerRef.current)
+        window.clearTimeout(discoTapResetTimerRef.current)
+        discoTapCountRef.current = 0
 
         /*
          * A musica e iniciada exatamente no gesto que rompe o selo.
@@ -4527,10 +4562,42 @@ function OpeningInvitationGate({
     )
 
     return (
-        <main className={`opening-gate opening-gate--${stage}`} aria-label="Abertura do convite da Duda">
+        <main className={`opening-gate opening-gate--${stage}${partyMode ? ' opening-gate--party' : ''}`} aria-label="Abertura do convite da Duda">
             <div className="opening-gate__sparkles" aria-hidden="true" />
-            <img className="opening-gate__disco opening-gate__disco--left" src="/media/disco-ball.webp" alt="" aria-hidden="true" />
-            <img className="opening-gate__disco opening-gate__disco--right" src="/media/disco-ball.webp" alt="" aria-hidden="true" />
+            <button
+                className="opening-gate__disco opening-gate__disco--left"
+                type="button"
+                onClick={handleDiscoTap}
+                disabled={stage !== 'intro'}
+                aria-label="Bola de discoteca"
+            >
+                <img src="/media/disco-ball.webp" alt="" />
+            </button>
+            <button
+                className="opening-gate__disco opening-gate__disco--right"
+                type="button"
+                onClick={handleDiscoTap}
+                disabled={stage !== 'intro'}
+                aria-label="Bola de discoteca"
+            >
+                <img src="/media/disco-ball.webp" alt="" />
+            </button>
+
+            <div
+                className="opening-gate__party-surprise"
+                role="status"
+                aria-live="polite"
+                aria-hidden={!partyMode}
+            >
+                <span aria-hidden="true">✦</span>
+                <strong>Modo Festa da Duda</strong>
+                <p>Você encontrou o brilho secreto da Duda ✨</p>
+            </div>
+            <div className="opening-gate__party-confetti" aria-hidden="true">
+                {Array.from({ length: 18 }, (_, index) => (
+                    <i key={index} />
+                ))}
+            </div>
 
             <section className="opening-gate__brand" aria-hidden="true">
                 <p>Sweet birthday</p>
