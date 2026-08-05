@@ -12591,13 +12591,7 @@ html {
 }
 
 .opening-gate__balloon {
-    background:
-        radial-gradient(
-            circle at 69% 65%,
-            rgba(224, 167, 47, .24) 0 7%,
-            rgba(237, 235, 221, .12) 12%,
-            transparent 18%
-        );
+    background: transparent;
     filter:
         contrast(1.14)
         brightness(.92)
@@ -12615,8 +12609,8 @@ html {
 
 .opening-gate .envelope__flap {
     background:
-        linear-gradient(120deg, rgba(255, 255, 255, .52), transparent 30% 66%, rgba(99, 0, 0, .18)),
-        linear-gradient(180deg, #f8df86 0%, #e0a72f 48%, #a96908 100%) !important;
+        linear-gradient(120deg, rgba(255, 255, 255, .52), transparent 30% 66%, rgba(27, 23, 23, .10)),
+        linear-gradient(180deg, #f7f4e9 0%, #edebdd 52%, #d9d4c4 100%) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .56);
 }
 
