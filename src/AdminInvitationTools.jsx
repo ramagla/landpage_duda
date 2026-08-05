@@ -698,17 +698,17 @@ function CommunicationPanel({
 
             <div className="admin-share-artwork">
                 <img
-                    src="/og-convite-duda-v2.jpg"
+                    src="/og-convite-duda-v3.jpg"
                     alt="Arte de compartilhamento do convite"
                 />
                 <div>
-                    <h3>Arte do WhatsApp preservada</h3>
+                    <h3>Arte do WhatsApp na nova paleta</h3>
                     <p>
                         Baixe a imagem para enviá-la junto com o link
                         individual.
                     </p>
                     <a
-                        href="/og-convite-duda-v2.jpg"
+                        href="/og-convite-duda-v3.jpg"
                         download="convite-duda-whatsapp.jpg"
                     >
                         Baixar imagem

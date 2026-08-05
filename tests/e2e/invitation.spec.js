@@ -74,7 +74,7 @@ test('a abertura móvel usa a nova identidade sem rolagem horizontal', async ({
     expect(openingStyle.fontFamily)
         .toContain('Parisienne')
     expect(openingStyle.color)
-        .toBe('rgb(0, 112, 106)')
+        .toBe('rgb(27, 23, 23)')
 
     const overflow =
         await page.evaluate(() => (
@@ -96,7 +96,7 @@ test('a abertura móvel usa a nova identidade sem rolagem horizontal', async ({
         page.locator('meta[property="og:image"]'),
     ).toHaveAttribute(
         'content',
-        'https://www.dudanoibiza.com.br/og-convite-duda-v2.jpg',
+        'https://www.dudanoibiza.com.br/og-convite-duda-v3.jpg',
     )
 })
 
@@ -144,11 +144,11 @@ test('o convite interno é simétrico e oferece calendário do iPhone', async ({
             })
 
     expect(publicPalette.accent)
-        .toBe('#086c67')
+        .toBe('#1b1717')
     expect(publicPalette.primaryBackground)
-        .toContain('rgb(11, 129, 122)')
+        .toContain('rgb(99, 0, 0)')
     expect(publicPalette.styleBackground)
-        .toContain('rgb(8, 108, 103)')
+        .toContain('rgb(27, 23, 23)')
 
     const [dateBox, timeBox] =
         await Promise.all([
@@ -474,9 +474,9 @@ test('o admin móvel organiza as melhorias em um único menu', async ({
     expect(uploadStyle.text)
         .toContain('Adicionar foto')
     expect(uploadStyle.background)
-        .toBe('rgb(8, 116, 111)')
+        .toBe('rgb(99, 0, 0)')
     expect(uploadStyle.color)
-        .toBe('rgb(255, 255, 255)')
+        .toBe('rgb(237, 235, 221)')
 
     await page
         .getByRole(
