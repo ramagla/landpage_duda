@@ -1232,6 +1232,168 @@ button[type='submit'] {
     }
 }
 
+/* ======================================================================
+   ABERTURA MOBILE EM LANDSCAPE
+   Em celulares baixos, distribui marca e envelope lado a lado para que
+   o selo permaneça visível sem exigir rolagem antes da interação.
+   ====================================================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+    .opening-gate.opening-gate--intro {
+        display: block;
+        width: 100%;
+        height: 100dvh;
+        min-height: 100dvh;
+        padding:
+            max(8px, env(safe-area-inset-top))
+            max(10px, env(safe-area-inset-right))
+            max(8px, env(safe-area-inset-bottom))
+            max(10px, env(safe-area-inset-left));
+        overflow: hidden;
+    }
+
+    .opening-gate__brand {
+        position: absolute !important;
+        top: 50% !important;
+        right: auto !important;
+        left: max(10px, env(safe-area-inset-left)) !important;
+        width: 41vw;
+        margin: 0 !important;
+        animation: none !important;
+        transform: translateY(-50%) !important;
+    }
+
+    .opening-gate__brand p {
+        margin-bottom: 2px;
+        font-size: clamp(.56rem, 1.55vw, .68rem);
+    }
+
+    .opening-gate__balloon {
+        width: clamp(104px, 20vw, 146px);
+        margin: -4px 0 -40px;
+    }
+
+    .opening-gate__brand span {
+        font-size: clamp(2.85rem, 7.4vw, 4.15rem);
+        line-height: .8;
+    }
+
+    .opening-gate__brand small {
+        width: min(38vw, 290px);
+        margin-top: 4px;
+        font-size: clamp(.64rem, 1.55vw, .78rem);
+        line-height: 1.18;
+    }
+
+    .opening-gate.opening-gate--intro .envelope-stage {
+        position: absolute !important;
+        inset: 0 0 0 44% !important;
+        display: grid;
+        grid-template-areas: "stack";
+        place-items: center;
+        width: 56% !important;
+        height: 100dvh;
+        min-height: 0 !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    .opening-gate.opening-gate--intro .envelope,
+    .opening-gate.opening-gate--intro .letter-sheet {
+        grid-area: stack;
+    }
+
+    .opening-gate.opening-gate--intro .envelope {
+        position: relative;
+        inset: auto !important;
+        width: min(50vw, 350px);
+        transform: none;
+    }
+
+    .opening-gate.opening-gate--intro .letter-sheet {
+        width: min(48vw, 340px);
+    }
+
+    .opening-gate.opening-gate--intro .envelope__seal-hint {
+        bottom: calc(100% + 7px);
+        min-width: 148px !important;
+        padding: 6px 10px !important;
+    }
+
+    .opening-gate.opening-gate--intro .envelope__seal-hint strong {
+        font-size: .68rem !important;
+    }
+
+    .opening-gate.opening-gate--intro .envelope__seal-hint small {
+        font-size: .59rem !important;
+    }
+
+    .opening-gate__disco--left {
+        top: max(8px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
+        width: 58px;
+        height: 58px;
+        opacity: .72;
+    }
+
+    .opening-gate__disco--right {
+        top: max(7px, env(safe-area-inset-top));
+        right: max(8px, env(safe-area-inset-right));
+        width: 70px;
+        height: 70px;
+        opacity: .72;
+    }
+
+    .opening-gate.opening-gate--intro .opening-gate__footer {
+        display: none;
+    }
+
+    .opening-gate + .music-player .music-player__control {
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(8px, env(safe-area-inset-bottom));
+        width: 46px !important;
+        height: 46px !important;
+        min-height: 46px !important;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    .opening-gate + .music-player .music-player__control > span {
+        display: grid !important;
+    }
+
+    .opening-gate + .music-player .music-player__control small {
+        display: none !important;
+    }
+
+    .opening-gate--opening .opening-gate__brand,
+    .opening-gate--card-visible .opening-gate__brand,
+    .opening-gate--checking .opening-gate__brand,
+    .opening-gate--error .opening-gate__brand,
+    .opening-gate--unlocked .opening-gate__brand {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .opening-gate--card-visible,
+    .opening-gate--checking,
+    .opening-gate--error,
+    .opening-gate--unlocked {
+        min-height: 620px;
+        overflow-y: auto;
+    }
+
+    .opening-gate--card-visible .envelope-stage,
+    .opening-gate--checking .envelope-stage,
+    .opening-gate--error .envelope-stage,
+    .opening-gate--unlocked .envelope-stage {
+        width: min(100%, 560px);
+        min-height: 600px;
+        margin: 0 auto;
+    }
+}
+
 /* Refined invitation direction: cleaner, lighter, more editorial */
 body {
     background:
@@ -14141,5 +14303,79 @@ html {
             transform: translateY(-66px) scale(1);
             filter: drop-shadow(0 16px 20px rgba(27, 23, 23, .15));
         }
+    }
+}
+
+/* ======================================================================
+   ESTADOS ABERTOS EM TELAS MOVEIS
+   Remove os deslocamentos negativos usados pela capa e mantém o formulário
+   acessível após a abertura, inclusive com teclado e orientação horizontal.
+   ====================================================================== */
+
+@media (max-width: 520px) {
+    .opening-gate--card-visible,
+    .opening-gate--checking,
+    .opening-gate--error,
+    .opening-gate--unlocked {
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .opening-gate--card-visible .opening-gate__brand,
+    .opening-gate--checking .opening-gate__brand,
+    .opening-gate--error .opening-gate__brand,
+    .opening-gate--unlocked .opening-gate__brand {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .opening-gate--card-visible .envelope-stage,
+    .opening-gate--checking .envelope-stage,
+    .opening-gate--error .envelope-stage,
+    .opening-gate--unlocked .envelope-stage {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        margin: 0 auto !important;
+        transform: none !important;
+    }
+
+    .opening-gate--card-visible .letter-sheet,
+    .opening-gate--checking .letter-sheet,
+    .opening-gate--error .letter-sheet,
+    .opening-gate--unlocked .letter-sheet {
+        width: min(88vw, 390px);
+        transform: translateY(-56px) scale(1) !important;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+    .opening-gate--card-visible,
+    .opening-gate--checking,
+    .opening-gate--error,
+    .opening-gate--unlocked {
+        min-height: 620px;
+    }
+
+    .opening-gate--card-visible .envelope-stage,
+    .opening-gate--checking .envelope-stage,
+    .opening-gate--error .envelope-stage,
+    .opening-gate--unlocked .envelope-stage {
+        position: relative !important;
+        inset: auto !important;
+        width: min(100%, 560px) !important;
+        height: 620px !important;
+        min-height: 620px !important;
+    }
+
+    .opening-gate--card-visible .letter-sheet,
+    .opening-gate--checking .letter-sheet,
+    .opening-gate--error .letter-sheet,
+    .opening-gate--unlocked .letter-sheet {
+        transform: translateY(0) scale(1) !important;
     }
 }
