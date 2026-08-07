@@ -14,7 +14,7 @@ export const DEFAULT_INVITATION_SETTINGS = Object.freeze({
     venueInstagramHandle: '@quintaldoibizaoficial',
     dudaInstagramUrl: 'https://www.instagram.com/mariizsq_/',
     dudaInstagramHandle: '@mariizsq_',
-    dressCode: 'Não vir de verde nem azul.',
+    dressCode: 'Não vir de vermelho.',
     rsvpDeadline: '2026-10-14',
     pixKey: '56765986898',
     pixName: 'Maria Eduarda Almeida Araujo',

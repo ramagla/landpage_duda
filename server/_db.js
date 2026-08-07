@@ -485,6 +485,48 @@ export async function ensureSchema() {
                 'write',
             )
 
+            const dressCodeMigration =
+                'update-dress-code-red-v1'
+
+            await db.batch(
+                [
+                    {
+                        sql: `
+                            UPDATE invitation_settings
+                            SET
+                                settings_json = json_set(
+                                    settings_json,
+                                    '$.dressCode',
+                                    ?
+                                ),
+                                updated_at = datetime('now')
+                            WHERE id = 1
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM app_schema_migrations
+                                  WHERE migration_key = ?
+                              )
+                        `,
+                        args: [
+                            'Não vir de vermelho.',
+                            dressCodeMigration,
+                        ],
+                    },
+                    {
+                        sql: `
+                            INSERT OR IGNORE INTO app_schema_migrations (
+                                migration_key
+                            )
+                            VALUES (?)
+                        `,
+                        args: [
+                            dressCodeMigration,
+                        ],
+                    },
+                ],
+                'write',
+            )
+
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS admin_audit_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
