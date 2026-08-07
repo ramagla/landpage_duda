@@ -25,11 +25,39 @@ export const DEFAULT_INVITATION_SETTINGS = Object.freeze({
 
 export const DEFAULT_INVITATION_PHOTOS = Object.freeze([
     {
-        id: 'paris',
-        src: '/media/duda-photo.webp',
-        alt: 'Duda em frente à Torre Eiffel',
-        objectPosition: 'center 28%',
+        id: 'duda-16-cake',
+        src: '/media/duda-16-cake.jpg',
+        alt: 'Duda celebrando seus 16 anos com o bolo',
+        objectPosition: 'center 42%',
         isPrimary: true,
+    },
+    {
+        id: 'duda-16-portrait',
+        src: '/media/duda-16-portrait.jpg',
+        alt: 'Retrato da Duda para seus 16 anos',
+        objectPosition: 'center 32%',
+        isPrimary: false,
+    },
+    {
+        id: 'duda-16-dress',
+        src: '/media/duda-16-dress.jpg',
+        alt: 'Duda usando vestido preto',
+        objectPosition: 'center 36%',
+        isPrimary: false,
+    },
+    {
+        id: 'duda-16-seated',
+        src: '/media/duda-16-seated.jpg',
+        alt: 'Duda com balões de 16 anos',
+        objectPosition: 'center 58%',
+        isPrimary: false,
+    },
+    {
+        id: 'duda-16-balloons',
+        src: '/media/duda-16-balloons.jpg',
+        alt: 'Duda entre os balões de 16 anos',
+        objectPosition: 'center 38%',
+        isPrimary: false,
     },
 ])
 

@@ -55,10 +55,34 @@ const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
  */
 const DUDA_PHOTOS = [
     {
-        id: 'paris',
-        src: '/media/duda-photo.webp',
-        alt: 'Duda em frente à Torre Eiffel',
-        objectPosition: 'center 28%',
+        id: 'duda-16-cake',
+        src: '/media/duda-16-cake.jpg',
+        alt: 'Duda celebrando seus 16 anos com o bolo',
+        objectPosition: 'center 42%',
+    },
+    {
+        id: 'duda-16-portrait',
+        src: '/media/duda-16-portrait.jpg',
+        alt: 'Retrato da Duda para seus 16 anos',
+        objectPosition: 'center 32%',
+    },
+    {
+        id: 'duda-16-dress',
+        src: '/media/duda-16-dress.jpg',
+        alt: 'Duda usando vestido preto',
+        objectPosition: 'center 36%',
+    },
+    {
+        id: 'duda-16-seated',
+        src: '/media/duda-16-seated.jpg',
+        alt: 'Duda com balões de 16 anos',
+        objectPosition: 'center 58%',
+    },
+    {
+        id: 'duda-16-balloons',
+        src: '/media/duda-16-balloons.jpg',
+        alt: 'Duda entre os balões de 16 anos',
+        objectPosition: 'center 38%',
     },
 ]
 

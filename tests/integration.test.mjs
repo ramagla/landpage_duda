@@ -1271,7 +1271,7 @@ test(
                         .invitationConfig
                         .photos
                         .length,
-                    2,
+                    6,
                 )
 
                 const addedPhoto =
@@ -1318,7 +1318,7 @@ test(
                     publicConfig.data
                         .photos
                         .length,
-                    2,
+                    6,
                 )
 
                 assert.ok(
@@ -1327,7 +1327,7 @@ test(
                         .some(
                             (photo) => (
                                 photo.alt
-                                === 'Duda em frente à Torre Eiffel'
+                                === 'Duda celebrando seus 16 anos com o bolo'
                             )
                         ),
                 )
@@ -1348,14 +1348,14 @@ test(
                     publicConfig.data
                         .photos[0]
                         .alt,
-                    'Duda em frente à Torre Eiffel',
+                    'Duda celebrando seus 16 anos com o bolo',
                 )
 
                 assert.equal(
                     publicConfig.data
                         .photos[1]
                         .alt,
-                    'Foto de teste',
+                    'Retrato da Duda para seus 16 anos',
                 )
 
                 await requestJson(

@@ -394,6 +394,97 @@ export async function ensureSchema() {
                 'write',
             )
 
+            /*
+             * Substitui a galeria antiga pela seleção atual da Duda. A foto
+             * do bolo é a principal, portanto sempre abre o carrossel.
+             */
+            const galleryPhotosMigration =
+                'seed-duda-16-gallery-v2'
+
+            const galleryPhotoInserts =
+                DEFAULT_INVITATION_PHOTOS.map(
+                    (photo, index) => ({
+                        sql: `
+                            INSERT INTO invitation_photos (
+                                image_data,
+                                alt_text,
+                                object_position,
+                                sort_order,
+                                is_primary
+                            )
+                            SELECT ?, ?, ?, ?, ?
+                            WHERE NOT EXISTS (
+                                SELECT 1
+                                FROM app_schema_migrations
+                                WHERE migration_key = ?
+                            )
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM invitation_photos
+                                WHERE image_data = ?
+                            )
+                        `,
+                        args: [
+                            photo.src,
+                            photo.alt,
+                            photo.objectPosition,
+                            index,
+                            photo.isPrimary ? 1 : 0,
+                            galleryPhotosMigration,
+                            photo.src,
+                        ],
+                    }),
+                )
+
+            await db.batch(
+                [
+                    {
+                        sql: `
+                            DELETE FROM invitation_photos
+                            WHERE NOT EXISTS (
+                                SELECT 1
+                                FROM app_schema_migrations
+                                WHERE migration_key = ?
+                            )
+                        `,
+                        args: [
+                            galleryPhotosMigration,
+                        ],
+                    },
+                    ...galleryPhotoInserts,
+                    {
+                        sql: `
+                            UPDATE invitation_photos
+                            SET
+                                is_primary = 1,
+                                sort_order = -1
+                            WHERE image_data = ?
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM app_schema_migrations
+                                  WHERE migration_key = ?
+                              )
+                        `,
+                        args: [
+                            DEFAULT_INVITATION_PHOTOS[0].src,
+                            galleryPhotosMigration,
+                        ],
+                    },
+                    {
+                        sql: `
+                            INSERT OR IGNORE INTO app_schema_migrations (
+                                migration_key
+                            )
+                            VALUES (?)
+                        `,
+                        args: [
+                            galleryPhotosMigration,
+                        ],
+                    },
+                ],
+                'write',
+            )
+
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS admin_audit_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
