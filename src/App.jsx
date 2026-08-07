@@ -56,7 +56,7 @@ const YOUTUBE_VIDEO_ID = '_zR6ROjoOX0'
 const DUDA_PHOTOS = [
     {
         id: 'duda-16-cake',
-        src: '/media/duda-16-cake.jpg',
+        src: '/media/duda-16-cake-v2.jpg',
         alt: 'Duda celebrando seus 16 anos com o bolo',
         objectPosition: 'center 42%',
     },

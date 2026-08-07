@@ -26,7 +26,7 @@ export const DEFAULT_INVITATION_SETTINGS = Object.freeze({
 export const DEFAULT_INVITATION_PHOTOS = Object.freeze([
     {
         id: 'duda-16-cake',
-        src: '/media/duda-16-cake.jpg',
+        src: '/media/duda-16-cake-v2.jpg',
         alt: 'Duda celebrando seus 16 anos com o bolo',
         objectPosition: 'center 42%',
         isPrimary: true,

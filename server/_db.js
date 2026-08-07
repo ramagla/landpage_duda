@@ -485,6 +485,45 @@ export async function ensureSchema() {
                 'write',
             )
 
+            const cakePhotoMigration =
+                'replace-duda-16-cake-v2'
+
+            await db.batch(
+                [
+                    {
+                        sql: `
+                            UPDATE invitation_photos
+                            SET
+                                image_data = ?,
+                                updated_at = datetime('now')
+                            WHERE image_data = ?
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM app_schema_migrations
+                                  WHERE migration_key = ?
+                              )
+                        `,
+                        args: [
+                            '/media/duda-16-cake-v2.jpg',
+                            '/media/duda-16-cake.jpg',
+                            cakePhotoMigration,
+                        ],
+                    },
+                    {
+                        sql: `
+                            INSERT OR IGNORE INTO app_schema_migrations (
+                                migration_key
+                            )
+                            VALUES (?)
+                        `,
+                        args: [
+                            cakePhotoMigration,
+                        ],
+                    },
+                ],
+                'write',
+            )
+
             const dressCodeMigration =
                 'update-dress-code-red-v1'
 
