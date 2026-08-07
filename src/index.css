@@ -10664,8 +10664,8 @@ html {
     height: 100%;
     object-fit: cover;
     object-position: center 28%;
-    filter: saturate(.88) contrast(1.03);
-    transform: scale(1.01);
+    filter: none;
+    transform: scale(1);
 }
 
 .invitation-photo-carousel {
@@ -10818,8 +10818,8 @@ html {
     z-index: 1;
     pointer-events: none;
     background:
-        linear-gradient(180deg, rgba(27, 23, 23, .04) 18%, rgba(27, 23, 23, .18) 46%, rgba(27, 23, 23, .92) 84%, #1b1717 100%),
-        linear-gradient(90deg, rgba(27, 23, 23, .16), transparent 45%);
+        linear-gradient(180deg, rgba(27, 23, 23, .01) 28%, rgba(27, 23, 23, .08) 56%, rgba(27, 23, 23, .78) 86%, #1b1717 100%),
+        linear-gradient(90deg, rgba(27, 23, 23, .08), transparent 45%);
 }
 
 .invitation-hero__veil::before {
@@ -11976,10 +11976,10 @@ html {
 
 @keyframes invitationPhotoDrift {
     from {
-        transform: scale(1.01);
+        transform: scale(1);
     }
     to {
-        transform: scale(1.045);
+        transform: scale(1.018);
     }
 }
 
@@ -13098,12 +13098,12 @@ html {
     background:
         linear-gradient(
             180deg,
-            rgba(27, 23, 23, .04) 18%,
-            rgba(27, 23, 23, .18) 46%,
-            rgba(27, 23, 23, .90) 84%,
+            rgba(27, 23, 23, .01) 28%,
+            rgba(27, 23, 23, .08) 56%,
+            rgba(27, 23, 23, .76) 86%,
             #1b1717 100%
         ),
-        linear-gradient(90deg, rgba(27, 23, 23, .18), transparent 45%);
+        linear-gradient(90deg, rgba(27, 23, 23, .08), transparent 45%);
 }
 
 .page-shell--revealed .invitation-hero__veil::before {
