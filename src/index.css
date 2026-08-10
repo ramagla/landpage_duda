@@ -11867,6 +11867,40 @@ html {
     letter-spacing: .14em;
 }
 
+.invitation-footer__credit {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    margin-top: 8px;
+}
+
+.invitation-footer__brand {
+    color: var(--invite-wine-deep);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -.05em;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.invitation-footer__brand span {
+    color: var(--invite-gold);
+}
+
+.invitation-footer__developer {
+    color: var(--invite-muted);
+    font-size: .61rem;
+    letter-spacing: .04em;
+    text-decoration: none;
+}
+
+.invitation-footer__brand:hover,
+.invitation-footer__developer:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 .page-shell--revealed button,
 .page-shell--revealed a {
     -webkit-tap-highlight-color: transparent;

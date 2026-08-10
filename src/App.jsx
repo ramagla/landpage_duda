@@ -5310,6 +5310,25 @@ function LandingPage() {
                                     .dateCompactDisplay
                             }
                         </small>
+                        <div className="invitation-footer__credit">
+                            <a
+                                className="invitation-footer__brand"
+                                href="https://portif-lio-iota-nine.vercel.app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Mimo — portfólio de Rafael Almeida"
+                            >
+                                mimo<span>.</span>
+                            </a>
+                            <a
+                                className="invitation-footer__developer"
+                                href="https://portif-lio-iota-nine.vercel.app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Desenvolvido por Rafael Almeida ↗
+                            </a>
+                        </div>
                     </footer>
                 </div>
             </main>
