@@ -1129,11 +1129,50 @@ button[type='submit'] {
     position: absolute;
     bottom: max(14px, env(safe-area-inset-bottom));
     z-index: 4;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
     margin: 0;
     color: #630000;
-    font-size: 0.78rem;
-    font-weight: 700;
     text-align: center;
+}
+
+.opening-gate__footer > p {
+    margin: 0;
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.opening-gate__credit {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+}
+
+.opening-gate__credit a {
+    color: #630000;
+    font-size: .58rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-decoration: none;
+}
+
+.opening-gate__credit .opening-gate__mimo {
+    color: #1b1717;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: -.05em;
+    line-height: 1;
+}
+
+.opening-gate__mimo span {
+    color: #630000;
+}
+
+.opening-gate__credit a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .page-shell--revealed {

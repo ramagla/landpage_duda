@@ -4741,16 +4741,33 @@ function OpeningInvitationGate({
                 </div>
             </div>
 
-            <p
-                className="opening-gate__footer"
-                aria-live="polite"
-            >
-                {stage === 'intro'
-                    ? 'Toque no selo para abrir seu convite'
-                    : stage === 'opening'
-                        ? 'Abrindo seu convite...'
-                        : 'O acesso ao convite está liberado'}
-            </p>
+            <div className="opening-gate__footer">
+                <p aria-live="polite">
+                    {stage === 'intro'
+                        ? 'Toque no selo para abrir seu convite'
+                        : stage === 'opening'
+                            ? 'Abrindo seu convite...'
+                            : 'O acesso ao convite está liberado'}
+                </p>
+                <div className="opening-gate__credit">
+                    <a
+                        className="opening-gate__mimo"
+                        href="https://portif-lio-iota-nine.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Mimo — portfólio de Rafael Almeida"
+                    >
+                        mimo<span>.</span>
+                    </a>
+                    <a
+                        href="https://portif-lio-iota-nine.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Desenvolvido por Rafael Almeida ↗
+                    </a>
+                </div>
+            </div>
         </main>
     )
 }
