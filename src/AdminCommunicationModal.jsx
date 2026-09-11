@@ -50,11 +50,16 @@ function createTemplates(config) {
     const celebration =
         `${settings.age} anos da ${settings.celebrantName}`
 
+    const dressCode =
+        settings.dressCode
+
     return {
         convite_inicial: [
             'Olá, {nome}!',
             '',
             `Este é o seu convite para os ${celebration}.`,
+            '',
+            `Dress code: ${dressCode}`,
             '',
             'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
             '{link}',
@@ -68,6 +73,8 @@ function createTemplates(config) {
             `A festa de ${celebration} está chegando!`,
             '',
             `Confirme sua presença até ${rsvp.deadlineDisplay}.`,
+            '',
+            `Dress code: ${dressCode}`,
             '',
             'Acesse seu convite individual:',
             '{link}',
@@ -85,6 +92,7 @@ function createTemplates(config) {
             `Data: ${event.dateShortDisplay}`,
             `Horário: ${event.timeDisplay}`,
             `Local: ${event.venue}`,
+            `Dress code: ${dressCode}`,
             '',
             'Seu convite e todas as informações estão aqui:',
             '{link}',
@@ -101,6 +109,7 @@ function createTemplates(config) {
             `Horário: a partir das ${event.timeDisplay}`,
             `Local: ${event.venue}`,
             `Endereço: ${event.address}`,
+            `Dress code: ${dressCode}`,
             '',
             'Confira seu convite:',
             '{link}',
