@@ -50,8 +50,11 @@ function createTemplates(config) {
     const celebration =
         `${settings.age} anos da ${settings.celebrantName}`
 
-    const dressCode =
-        settings.dressCode
+    const dressCodeReminder = [
+        '🖤 *DRESS CODE: ALL BLACK*',
+        'Para a festa, venha *todo(a) de preto*.',
+        'Não use roupas de outras cores.',
+    ].join('\n')
 
     return {
         convite_inicial: [
@@ -59,7 +62,7 @@ function createTemplates(config) {
             '',
             `Este é o seu convite para os ${celebration}.`,
             '',
-            `Dress code: ${dressCode}`,
+            dressCodeReminder,
             '',
             'Para abrir o convite, acesse o link abaixo e informe o seu número de celular:',
             '{link}',
@@ -68,13 +71,15 @@ function createTemplates(config) {
         ].join('\n'),
 
         lembrete_60d: [
+            '🔔 *LEMBRETE: FALTAM 60 DIAS!*',
+            '',
             'Olá, {nome}!',
             '',
-            `A festa de ${celebration} está chegando!`,
+            `Faltam 60 dias para a festa de ${celebration}!`,
             '',
             `Confirme sua presença até ${rsvp.deadlineDisplay}.`,
             '',
-            `Dress code: ${dressCode}`,
+            dressCodeReminder,
             '',
             'Acesse seu convite individual:',
             '{link}',
@@ -85,6 +90,8 @@ function createTemplates(config) {
         ].join('\n'),
 
         lembrete_30d: [
+            '🔔 *LEMBRETE: FALTA 1 MÊS!*',
+            '',
             'Olá, {nome}!',
             '',
             `Falta só 1 mês para os ${celebration}!`,
@@ -92,7 +99,7 @@ function createTemplates(config) {
             `Data: ${event.dateShortDisplay}`,
             `Horário: ${event.timeDisplay}`,
             `Local: ${event.venue}`,
-            `Dress code: ${dressCode}`,
+            dressCodeReminder,
             '',
             'Seu convite e todas as informações estão aqui:',
             '{link}',
@@ -101,6 +108,8 @@ function createTemplates(config) {
         ].join('\n'),
 
         lembrete_10d: [
+            '🚨 *LEMBRETE FINAL: FALTAM 10 DIAS!*',
+            '',
             'Está chegando, {nome}!',
             '',
             `Faltam apenas 10 dias para os ${celebration}!`,
@@ -109,7 +118,7 @@ function createTemplates(config) {
             `Horário: a partir das ${event.timeDisplay}`,
             `Local: ${event.venue}`,
             `Endereço: ${event.address}`,
-            `Dress code: ${dressCode}`,
+            dressCodeReminder,
             '',
             'Confira seu convite:',
             '{link}',

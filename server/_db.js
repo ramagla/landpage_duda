@@ -525,7 +525,7 @@ export async function ensureSchema() {
             )
 
             const dressCodeMigration =
-                'update-dress-code-all-black-v2'
+                'clarify-dress-code-all-black-v3'
 
             await db.batch(
                 [
@@ -547,7 +547,7 @@ export async function ensureSchema() {
                               )
                         `,
                         args: [
-                            'All black — tudo de preto.',
+                            'All black — venha todo(a) de preto.',
                             dressCodeMigration,
                         ],
                     },
