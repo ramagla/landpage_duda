@@ -576,6 +576,36 @@ async function syncConfirmedCompanions(guestId, guestAge, companions) {
     const rsvp = rsvpResult.rows[0]
     if (!rsvp) return
 
+    const companionSlots =
+        companions.map((companion) => companion.slot)
+
+    if (companionSlots.length > 0) {
+        const placeholders =
+            companionSlots.map(() => '?').join(', ')
+
+        await getClient().execute({
+            sql: `
+                DELETE FROM rsvp_companions
+                WHERE rsvp_id = ?
+                  AND companion_slot NOT IN (${placeholders})
+            `,
+            args: [
+                rsvp.id,
+                ...companionSlots,
+            ],
+        })
+    } else {
+        await getClient().execute({
+            sql: `
+                DELETE FROM rsvp_companions
+                WHERE rsvp_id = ?
+            `,
+            args: [
+                rsvp.id,
+            ],
+        })
+    }
+
     for (const companion of companions) {
         await getClient().execute({
             sql: `
