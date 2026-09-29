@@ -25,17 +25,10 @@ const TYPES = {
     },
 
     lembrete_30d: {
-        label: 'Lembrete de 30 dias',
-        shortLabel: '30 dias',
+        label: 'Última chamada — 30 dias',
+        shortLabel: 'Final',
         availableFrom: '2026-10-15T00:00:00-03:00',
         availableDisplay: '15/10/2026',
-    },
-
-    lembrete_10d: {
-        label: 'Lembrete de 10 dias',
-        shortLabel: '10 dias',
-        availableFrom: '2026-11-04T00:00:00-03:00',
-        availableDisplay: '04/11/2026',
     },
 }
 
@@ -90,40 +83,24 @@ function createTemplates(config) {
         ].join('\n'),
 
         lembrete_30d: [
-            '🔔 *LEMBRETE: FALTA 1 MÊS!*',
+            '🚨 *ÚLTIMA CHAMADA PARA CONFIRMAÇÃO!*',
             '',
             'Olá, {nome}!',
             '',
-            `Falta só 1 mês para os ${celebration}!`,
+            `Falta 1 mês para os ${celebration}!`,
+            '',
+            'Este é o último lembrete para confirmar sua presença.',
+            `Confirme até ${rsvp.deadlineDisplay} para podermos contar com você na festa.`,
             '',
             `Data: ${event.dateShortDisplay}`,
             `Horário: ${event.timeDisplay}`,
             `Local: ${event.venue}`,
             dressCodeReminder,
             '',
-            'Seu convite e todas as informações estão aqui:',
+            'Confirme sua presença pelo seu convite individual:',
             '{link}',
             '',
-            'Estamos ansiosos para comemorar esse momento com você!',
-        ].join('\n'),
-
-        lembrete_10d: [
-            '🚨 *LEMBRETE FINAL: FALTAM 10 DIAS!*',
-            '',
-            'Está chegando, {nome}!',
-            '',
-            `Faltam apenas 10 dias para os ${celebration}!`,
-            '',
-            `Data: ${event.dateShortDisplay}`,
-            `Horário: a partir das ${event.timeDisplay}`,
-            `Local: ${event.venue}`,
-            `Endereço: ${event.address}`,
-            dressCodeReminder,
-            '',
-            'Confira seu convite:',
-            '{link}',
-            '',
-            'Esperamos você para celebrar com a gente!',
+            'Esperamos sua confirmação!',
         ].join('\n'),
     }
 }
@@ -203,11 +180,11 @@ function isEligible(
         return false
     }
 
-    if (
-        type === 'lembrete_30d'
-        || type === 'lembrete_10d'
-    ) {
-        return guest.status === 'sim'
+    if (type === 'lembrete_30d') {
+        return (
+            guest.status !== 'sim'
+            && guest.status !== 'nao'
+        )
     }
 
     if (type === 'lembrete_60d') {
@@ -566,13 +543,6 @@ export default function AdminCommunicationModal({
                                         : '—'}
                                 </span>
 
-                                <span>
-                                    10d
-                                    {' '}
-                                    {currentGuest.communications?.lembrete_10d
-                                        ? '✓'
-                                        : '—'}
-                                </span>
                             </div>
                         </div>
 
